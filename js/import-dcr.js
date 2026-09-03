@@ -125,7 +125,7 @@ async function handleDCRFiles(files) {
           if (['demand', 'date', 'total', 'grand', 'financial', 'period', 'sl.', 'sr.'].some(function (w) { return didLower.includes(w); })) continue;
           if (!/^[A-Za-z]{1,3}[0-9]/.test(demandId)) continue;
 
-          var gstin = String(r[GCOL] || '').trim();
+          var gstin = String(r[GCOL] || '').trim().toUpperCase();
           if (!gstin || gstin.length < 10) { skipped++; continue; }
 
           var existingIdx = AppState.cases.findIndex(function (c) { return c.demandId === demandId; });

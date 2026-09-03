@@ -66,8 +66,8 @@ async function handleTaxpayerRegisterFile(file) {
       logEl.innerHTML =
         '✅ <strong>Taxpayer Register imported successfully!</strong><br>' +
         '📌 Columns detected — GSTIN: Col ' + (gstinCol + 1) + ' | Address: Col ' + (addrCol + 1) +
-        (legalCol >= 0 ? ' | Legal Name: Col ' + (legalCol + 1) : '') +
-        (tradeCol >= 0 ? ' | Trade Name: Col ' + (tradeCol + 1) : '') +
+        (legalCol >= 0 ? ' | Legal Name: Col ' + (legalCol + 1) : ' | ⚠️ Legal Name: not found') +
+        (tradeCol >= 0 ? ' | Trade Name: Col ' + (tradeCol + 1) : ' | ⚠️ Trade Name: not found (won\'t display)') +
         (statusCol >= 0 ? ' | Reg Status: Col ' + (statusCol + 1) : ' | ⚠️ Reg Status: not found (collectible filter disabled)') + '<br>' +
         '🆕 New GSTINs mapped: <strong>' + mapped + '</strong><br>' +
         '🔄 Existing updated: <strong>' + updated + '</strong><br>' +

@@ -324,8 +324,10 @@ function renderBulkResults(resultsElId) {
     var regStatus = bulkRegStatus(n);
     var statusPill = regStatus === 'Unknown' ? '<span class="pill pill-gray">Unknown</span>'
       : (isCollectible(n.gstin) ? '<span class="pill pill-green">' + xe(regStatus) + '</span>' : '<span class="pill pill-red">' + xe(regStatus) + '</span>');
+    var tradeName = (AppState.addressCache[n.gstin] || {}).tradeName || '';
+    var taxpayerCell = xe(tradeName || n.legalName);
     return '<tr><td><input type="checkbox" data-id="' + n.id + '" onchange="bulkToggleCaseCheck(this)"' + checked + '></td><td>' + (i + 1) + '</td>'
-      + '<td>' + xe(n.legalName) + '</td><td class="gstin-cell">' + xe(n.gstin) + '</td>'
+      + '<td>' + taxpayerCell + '</td><td class="gstin-cell">' + xe(n.gstin) + '</td>'
       + '<td style="cursor:pointer;" onclick="openBulkDemandEditor(' + idx + ')" title="Click to view/edit the demands included in this notice">' + typePill + '</td>'
       + '<td>' + statusPill + '</td>'
       + '<td><span class="count-link" onclick="openBulkDemandEditor(' + idx + ')" title="View ' + n.cases.length + ' demand' + (n.cases.length === 1 ? '' : 's') + '">' + n.cases.length + '</span></td>'
