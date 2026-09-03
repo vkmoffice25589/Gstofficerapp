@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(node --check js/notices.js)",
+      "Bash(node --check js/wizard.js)",
+      "Bash(node --check js/notice-history.js)",
+      "Bash(node --check js/downloads.js)",
+      "Bash(node --check js/import-dcr.js)",
+      "Bash(node --check js/import-taxpayer-register.js)",
+      "Bash(sed -i -e 's/nav\\(\\\\\\\\'\\\\''import\\\\\\\\'\\\\''\\)/nav\\(\\\\\\\\'\\\\''bulknotice\\\\\\\\'\\\\''\\)/g' -e 's/nav\\(\\\\\\\\'\\\\''tpreg\\\\\\\\'\\\\''\\)/nav\\(\\\\\\\\'\\\\''bulknotice\\\\\\\\'\\\\''\\)/g' -e 's/onclick: \"nav\\('\\\\''tpreg'\\\\''\\)\"/onclick: \"nav\\('\\\\''bulknotice'\\\\''\\)\"/g' dashboard.js)",
+      "Bash(grep -n \"nav\\('import'\\)\\\\|nav\\('tpreg'\\)\\\\|nav\\(\\\\\\\\\\\\\\\\'import\\\\\\\\\\\\\\\\'\\)\\\\|nav\\(\\\\\\\\\\\\\\\\'tpreg\\\\\\\\\\\\\\\\'\\)\" dashboard.js)"
+    ]
+  }
+}

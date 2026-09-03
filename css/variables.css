@@ -1,0 +1,104 @@
+/* =====================================================================
+   GST RECOVERY — DESIGN SYSTEM
+   Centralized tokens. Every other stylesheet consumes these — no colour,
+   radius, shadow or spacing value should be hand-picked outside this file.
+   ===================================================================== */
+:root {
+  /* ---- Core surfaces ---- */
+  --page-background: #F8FAFC;
+  --surface: #FFFFFF;
+  --surface-2: #F1F5F9;
+  --surface-3: #E9EEF5;
+  --border: #E2E8F0;
+  --border-strong: #D1D5DB;
+
+  /* legacy aliases (existing CSS still references these names) */
+  --bg: var(--page-background);
+  --surface2: var(--surface-2);
+  --surface3: var(--surface-3);
+  --border-bright: var(--border-strong);
+
+  /* ---- Text ---- */
+  --navy-text: #0F172A;
+  --muted-text: #64748B;
+  --faint-text: #94A3B8;
+  --ink: var(--navy-text);
+  --ink2: var(--muted-text);
+  --ink3: var(--faint-text);
+
+  /* ---- Primary (electric blue) ---- */
+  --primary-blue: #0052FF;
+  --primary-blue-dark: #0040CC;
+  --primary-blue-dim: rgba(0,82,255,0.08);
+  --primary-blue-border: rgba(0,82,255,0.28);
+
+  /* Sidebar — solid dark navy; nav-active — same electric blue as primary actions */
+  --sidebar-navy: #071228;
+  --sidebar-navy-2: #0C1B3A;
+  --nav-active-blue: #0052FF;
+  --nav-inactive-text: #94A3B8;
+
+  /* Notice-type semantic accents (Intimation / Urgent / Both) */
+  --type-intimation: #2563EB;
+  --type-intimation-dim: rgba(37,99,235,0.08);
+  --type-urgent: #DC2626;
+  --type-urgent-dim: rgba(220,38,38,0.08);
+  --type-both: #7C3AED;
+  --type-both-dim: rgba(124,58,237,0.08);
+
+  /* legacy aliases */
+  --header-navy: var(--sidebar-navy);
+  --primary: var(--sidebar-navy);
+  --primary-dim: rgba(11,23,54,0.06);
+  --primary-border: rgba(11,23,54,0.2);
+  --accent: var(--primary-blue);
+  --blue: var(--primary-blue);
+  --blue-dim: var(--primary-blue-dim);
+  --blue-border: var(--primary-blue-border);
+
+  /* ---- Semantic — soft tinted pills ---- */
+  --success: #15803D;
+  --success-dim: #DCFCE7;
+  --success-border: #BBF7D0;
+  --warning: #B45309;
+  --warning-dim: #FEF3C7;
+  --warning-border: #FDE68A;
+  --danger: #DC2626;
+  --danger-dim: #FEE2E2;
+  --danger-border: #FECACA;
+
+  /* legacy aliases */
+  --green: var(--success); --green-dim: var(--success-dim); --green-border: var(--success-border);
+  --orange: var(--warning); --orange-dim: var(--warning-dim); --orange-border: var(--warning-border);
+  --red: var(--danger); --red-dim: var(--danger-dim); --red-border: var(--danger-border);
+  --gold: #92640A; --gold-dim: #FDF1D6; --gold-border: #F5DFA5;
+  --purple: #6D28D9; --purple-dim: #EDE6FC; --purple-border: #DCCCF7;
+
+  /* ---- Typography ---- */
+  --font-ui: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'IBM Plex Mono', 'SFMono-Regular', Consolas, monospace;
+  --sans: var(--font-ui);
+  --mono: var(--font-mono);
+  --display: var(--font-ui);
+
+  /* ---- Spacing scale ---- */
+  --sp-1: 4px; --sp-2: 8px; --sp-3: 12px; --sp-4: 16px; --sp-5: 20px; --sp-6: 24px;
+
+  /* ---- Radius ---- */
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+
+  /* ---- Shadows — flat, only where truly needed ---- */
+  --shadow-sm: 0 1px 3px 0 rgba(0,0,0,0.05);
+  --shadow-md: 0 2px 8px 0 rgba(0,0,0,0.06);
+  --shadow-lg: 0 8px 20px rgba(15,23,42,0.12);
+
+  /* Dashboard chart palette — literal hex values (not var()) so JS can read them
+     via getComputedStyle().getPropertyValue(), which does not resolve nested var(). */
+  --chart-recoverable: #DC2626;
+  --chart-eligible: #B45309;
+  --chart-issued: #0052FF;
+  --chart-attached: #6D28D9;
+  --chart-noncollectible: #94A3B8;
+}

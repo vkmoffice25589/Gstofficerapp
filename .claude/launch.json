@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "gst-app",
+      "runtimeExecutable": "C:\\Python314\\python.exe",
+      "runtimeArgs": ["-m", "http.server", "8080", "--directory", "C:\\Project\\Gstofficerapp"],
+      "port": 8080
+    }
+  ]
+}

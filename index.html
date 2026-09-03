@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>GST Recovery Management System</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"/>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="css/variables.css"/>
+<link rel="stylesheet" href="css/base.css"/>
+<link rel="stylesheet" href="css/dashboard.css"/>
+<link rel="stylesheet" href="css/wizard.css"/>
+</head>
+<body>
+
+<div class="layout">
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      <div class="logo-icon"><i class="fa-solid fa-landmark"></i></div>
+      <div>
+        <div class="logo-name">GST RECOVERY</div>
+        <div class="logo-sub">Arrear Notice &amp; Recovery Management System</div>
+      </div>
+    </div>
+
+    <div class="sb-section">Overview</div>
+    <div class="sb-item active" onclick="nav('dashboard')" data-page="dashboard"><span class="sb-icon"><i class="fa-solid fa-gauge-high"></i></span> Dashboard</div>
+
+    <div class="sb-section">Enforcement</div>
+    <div class="sb-item" onclick="nav('bulknotice')" data-page="bulknotice"><span class="sb-icon"><i class="fa-solid fa-bolt"></i></span> Generate Arrear Notice</div>
+    <div class="sb-item" onclick="nav('history')" data-page="history"><span class="sb-icon"><i class="fa-solid fa-clock-rotate-left"></i></span> Notice History</div>
+    <div class="sb-item" onclick="nav('cases')" data-page="cases"><span class="sb-icon"><i class="fa-solid fa-chart-bar"></i></span> Reports <span class="sb-badge" id="sb-cases">0</span></div>
+
+    <div class="sb-section">Records</div>
+    <div class="sb-item" onclick="nav('taxpayers')" data-page="taxpayers"><span class="sb-icon"><i class="fa-solid fa-user-shield"></i></span> Recovery Profile</div>
+    <div class="sb-item" onclick="nav('downloads')" data-page="downloads"><span class="sb-icon"><i class="fa-solid fa-download"></i></span> Downloads</div>
+
+    <div class="sb-section">System</div>
+    <div class="sb-item" onclick="nav('settings')" data-page="settings"><span class="sb-icon"><i class="fa-solid fa-gear"></i></span> Settings</div>
+
+    <div class="sb-spacer"></div>
+    <div class="sb-item sb-footer-item" onclick="showHelpSupport()"><span class="sb-icon"><i class="fa-solid fa-circle-question"></i></span> Help &amp; Support</div>
+  </aside>
+
+  <div class="main-col">
+    <header>
+      <div id="global-search-wrap" style="position:relative;">
+        <i class="fa-solid fa-magnifying-glass"></i>
+        <input type="text" id="global-search" placeholder="Search GSTIN or taxpayer name..."/>
+        <div id="global-search-results" class="gs-results"></div>
+      </div>
+
+      <div class="header-actions">
+        <div class="office-chip" onclick="nav('settings')" title="Change office / circle">
+          <i class="fa-solid fa-location-dot"></i>
+          <span id="hdr-office-circle">—</span>
+          <i class="fa-solid fa-chevron-down" style="font-size:9px;opacity:0.6;"></i>
+        </div>
+
+        <button class="hbtn-icon" title="Export Backup" onclick="Storage.backup()"><i class="fa-solid fa-download"></i></button>
+        <button class="hbtn-icon" title="Restore Backup" onclick="document.getElementById('restore-file-input').click()"><i class="fa-solid fa-upload"></i></button>
+        <input type="file" id="restore-file-input" accept=".json" style="display:none;" onchange="if(this.files[0]){var r=new FileReader();r.onload=function(e){try{Storage.restoreFromObject(JSON.parse(e.target.result));nav('dashboard');}catch(err){showToast('❌ Invalid backup file');}};r.readAsText(this.files[0]);}this.value='';"/>
+        <button class="hbtn-icon" title="Clear All Data" onclick="Storage.clear()"><i class="fa-solid fa-trash"></i></button>
+
+        <div class="hdr-divider"></div>
+
+        <button class="hbtn-icon hbtn-bell" title="Action items needing attention" onclick="nav('dashboard')">
+          <i class="fa-solid fa-bell"></i>
+          <span class="hbtn-badge" id="hdr-notif-badge" style="display:none;">0</span>
+        </button>
+        <div class="hdr-avatar" onclick="nav('settings')" title="Office settings">
+          <div class="hdr-avatar-circle" id="hdr-avatar-initials">—</div>
+          <div class="hdr-avatar-text">
+            <div class="hdr-avatar-name" id="hdr-desig">—</div>
+            <div class="hdr-avatar-role" id="hdr-division">—</div>
+          </div>
+          <i class="fa-solid fa-chevron-down" style="font-size:9px;opacity:0.5;"></i>
+        </div>
+      </div>
+    </header>
+
+    <main class="main">
+
+    <!-- ===== DASHBOARD ===== -->
+    <div class="page active" id="page-dashboard">
+      <div class="dash-header">
+        <div>
+          <div class="ph-title"><i class="fa-solid fa-gauge-high"></i>GST Recovery Dashboard</div>
+          <div class="ph-sub">Overview of outstanding arrears, recovery actions and taxpayer enforcement status</div>
+        </div>
+        <div class="dash-header-right">
+          <div class="dash-office-chip"><i class="fa-solid fa-building" style="color:var(--blue);"></i> <strong id="dash-office-name">—</strong> · <span id="dash-office-division">—</span></div>
+          <select class="fsel" id="dash-fy-select" onchange="setDashboardFY(this.value)"><option value="all">All Financial Years</option></select>
+          <button class="btn btn-outline btn-sm" onclick="refreshDashboard()"><i class="fa-solid fa-rotate"></i> Refresh</button>
+        </div>
+      </div>
+
+      <div class="kpi-grid" id="dash-kpi-grid"></div>
+      <div id="dash-body"></div>
+    </div>
+
+    <!-- ===== REPORTS ===== -->
+    <div class="page" id="page-cases">
+      <div class="ph">
+        <div><div class="ph-title"><i class="fa-solid fa-chart-bar"></i>Reports</div><div class="ph-sub">Taxpayers grouped by GSTIN, classified by collectibility</div></div>
+      </div>
+
+      <div class="tabs">
+        <div class="tab active" data-tab="top100" onclick="reportTab('top100', this)">Top 100 Arrear</div>
+        <div class="tab" data-tab="collectible" onclick="reportTab('collectible', this)">Top 100 Collectible</div>
+        <div class="tab" data-tab="noncollectible" onclick="reportTab('noncollectible', this)">Top 100 Non-Collectible</div>
+      </div>
+
+      <div id="report-tab-info" style="display:none;margin-bottom:14px;padding:10px 14px;background:var(--orange-dim);border:1px solid var(--orange-border);border-radius:6px;font-size:12px;color:var(--orange);">
+        ⚠️ Taxpayer Register not loaded — collectibility classification is based only on notice eligibility, not registration status.
+      </div>
+
+      <div class="table-wrap" id="report-table-wrap"></div>
+    </div>
+
+    <!-- ===== ARREAR NOTICE ===== -->
+    <div class="page" id="page-bulknotice">
+      <div class="ph">
+        <div><div class="ph-title"><i class="fa-solid fa-bolt"></i>Generate Arrear Notice</div><div class="ph-sub">Upload DCR and Taxpayer Register to generate arrear notice or initiate recovery actions.</div></div>
+      </div>
+
+      <input type="file" id="dcr-file-input" accept=".xlsx,.xls" multiple style="display:none;"/>
+      <input type="file" id="tp-reg-input" accept=".xlsx,.xls" style="display:none;"/>
+
+      <div class="stepper" id="wizard-stepper"></div>
+
+      <div class="wizard-card" id="wizard-matching-summary-wrap" style="display:none;">
+        <div id="wizard-matching-summary" style="font-size:12px;margin-bottom:14px;"></div>
+        <div id="tp-reg-summary" style="margin-bottom:14px;"></div>
+        <div id="import-preview"></div>
+        <div id="import-results" style="display:none;margin-top:14px;">
+          <div class="ph-sub" style="margin-bottom:8px;">DCR IMPORT LOG</div>
+          <div class="import-log" id="import-log"></div>
+        </div>
+        <div id="tp-reg-log" class="import-log" style="display:none;margin-top:14px;"></div>
+        <div id="tp-reg-status" style="margin-top:8px;font-size:12px;color:var(--green);"></div>
+      </div>
+
+      <div class="tabs">
+        <div class="tab active" data-tab="notice" onclick="bulkTab('notice', this)"><i class="fa-solid fa-envelope-open-text"></i> Issue Notice</div>
+        <div class="tab" data-tab="all" onclick="bulkTab('all', this)"><i class="fa-solid fa-layer-group"></i> Bulk Notice</div>
+        <div class="tab" data-tab="paste" onclick="bulkTab('paste', this)"><i class="fa-solid fa-paste"></i> Paste GSTINs</div>
+        <div class="tab" data-tab="bankatt" onclick="bulkTab('bankatt', this)"><i class="fa-solid fa-building-columns"></i> Bank Attachment</div>
+        <div class="tab" data-tab="thirdparty" onclick="bulkTab('thirdparty', this)"><i class="fa-solid fa-user-group"></i> Third-Party Notice</div>
+        <div class="tab" data-tab="property" onclick="bulkTab('property', this)"><i class="fa-solid fa-house-lock"></i> Property Attachment</div>
+      </div>
+
+      <!-- Issue Notice — wizard -->
+      <div class="bulk-tab-panel" id="bulk-tab-notice">
+
+        <div class="wizard-card">
+          <div class="wizard-card-head">
+            <div class="wizard-num">1</div>
+            <div><div class="wizard-card-title">Search GSTIN</div><div class="wizard-card-sub">Enter GSTIN to find taxpayer. Legal and trade name will be auto populated.</div></div>
+          </div>
+          <div class="form-grid">
+            <div class="fg full" style="display:flex;flex-direction:row;gap:8px;align-items:flex-end;">
+              <div style="flex:1;position:relative;">
+                <label>GSTIN *</label>
+                <input type="text" id="wiz-gstin-input" style="text-transform:uppercase;padding-right:32px;" placeholder="Enter GSTIN" onkeydown="if(event.key==='Enter')wizSearchGSTIN();"/>
+                <button type="button" class="input-clear-btn" title="Clear" onclick="wizClearGSTIN()"><i class="fa-solid fa-xmark"></i></button>
+              </div>
+              <button class="btn btn-blue" onclick="wizSearchGSTIN()"><i class="fa-solid fa-magnifying-glass"></i> Search</button>
+            </div>
+          </div>
+          <div id="wiz-gstin-hint" style="margin-top:6px;font-size:12px;color:var(--warning);"></div>
+          <div id="wiz-taxpayer-details" class="taxpayer-details-bar" style="display:none;"></div>
+        </div>
+
+        <div class="wizard-card" id="wiz-demand-section" style="display:none;">
+          <div class="wizard-card-head">
+            <div class="wizard-num">2</div>
+            <div><div class="wizard-card-title">Demands to Include in Notice</div><div class="wizard-card-sub">Only eligible demands are listed. Select which ones to include.</div></div>
+            <div class="wizard-card-head-right">
+              <span class="pill pill-green" id="wiz-head-count">0 of 0 selected</span>
+              <div style="margin-top:6px;"><div class="wchr-label">Total Selected Arrear (₹)</div><div class="wchr-val" id="wiz-head-total">₹0</div></div>
+            </div>
+          </div>
+
+          <div class="quick-filter-bar" id="wiz-quick-filter-bar">
+            <button type="button" class="qf-chip active" data-qf="all" onclick="quickFilterAll()">All Demands <span class="qf-count" id="qf-count-all">0</span></button>
+            <button type="button" class="qf-chip" data-qf="intimation" onclick="quickFilterIntimation()">Intimation &lt; 90 Days <span class="qf-count" id="qf-count-intimation">0</span></button>
+            <button type="button" class="qf-chip" data-qf="urgent" onclick="quickFilterUrgent()">Urgent &ge; 90 Days <span class="qf-count" id="qf-count-urgent">0</span></button>
+            <button type="button" class="qf-chip" data-qf="section62" onclick="toggleSection62Included()" title="Section 62 (best-judgment) demands are excluded by default — click to include them">Include Section 62 <span class="qf-count" id="qf-count-section62">0</span></button>
+            <div class="qf-spacer"></div>
+            <button type="button" class="btn btn-outline btn-sm filters-btn" onclick="openWizFilterDrawer()"><i class="fa-solid fa-sliders"></i> Advanced Filters<span class="filters-badge" id="wiz-filters-badge" style="display:none;">0</span></button>
+          </div>
+
+          <div id="wiz-active-filter-tags" class="active-filter-tags" style="display:none;"></div>
+
+          <div id="wiz-demand-table-wrap"></div>
+        </div>
+
+        <!-- Advanced Filters — right-side drawer -->
+        <div class="filter-drawer-overlay" id="wiz-filter-drawer-overlay" onclick="cancelWizFilterDrawer()"></div>
+        <div class="filter-drawer" id="wiz-filter-drawer">
+          <div class="filter-drawer-head">
+            <div class="filter-drawer-title"><i class="fa-solid fa-sliders"></i> Advanced Filters</div>
+            <button class="mclose" onclick="cancelWizFilterDrawer()">&times;</button>
+          </div>
+          <div class="filter-drawer-body">
+            <label class="wizard-col-label">Notice Type</label>
+            <div class="notice-type-cards">
+              <div class="notice-type-card type-intimation" data-type="intimation" onclick="selectWizNoticeType('intimation', this)"><i class="fa-solid fa-envelope"></i><div class="ntc-text"><div class="ntc-title">Intimation Notice</div><div class="ntc-sub">&lt; 90 days</div></div></div>
+              <div class="notice-type-card type-urgent" data-type="urgent" onclick="selectWizNoticeType('urgent', this)"><i class="fa-solid fa-triangle-exclamation"></i><div class="ntc-text"><div class="ntc-title">Urgent Notice</div><div class="ntc-sub">&ge; 90 days</div></div></div>
+              <div class="notice-type-card type-both selected" data-type="both" onclick="selectWizNoticeType('both', this)"><i class="fa-solid fa-layer-group"></i><div class="ntc-text"><div class="ntc-title">Both Notices</div><div class="ntc-sub">Generate both notices where applicable</div><div class="ntc-sub2">&lt; 90 days &rarr; Intimation &nbsp;|&nbsp; &ge; 90 days &rarr; Urgent</div></div></div>
+            </div>
+
+            <label class="wizard-col-label" style="margin-top:22px;">Section Filter</label>
+            <div class="filter-cards">
+              <div class="filter-card selected" data-mode="exclude" onclick="selectWizSectionFilter('exclude', this)"><div class="fc-radio"></div><div><div class="fc-title">Exclude Section 62 (default)</div><div class="fc-sub">Section 62 (best-judgment) demands are not treated as arrears</div></div></div>
+              <div class="filter-card" data-mode="all" onclick="selectWizSectionFilter('all', this)"><div class="fc-radio"></div><div><div class="fc-title">Include All Sections</div><div class="fc-sub">Include Section 62 demands as well, if the officer wants to pursue them</div></div></div>
+            </div>
+
+            <label class="wizard-col-label" style="margin-top:22px;">Other Filters</label>
+            <div class="wizard-filters-panel">
+              <div class="fg"><label>Demand Type</label>
+                <select class="fsel" id="wiz-demand-type">
+                  <option>All</option><option>Tax</option><option>Interest</option><option>Penalty</option><option>Other</option>
+                </select>
+              </div>
+              <div class="wizard-filters-panel-row">
+                <div class="fg"><label>Order Date From</label><input type="date" id="wiz-order-date-from"/></div>
+                <div class="fg"><label>Order Date To</label><input type="date" id="wiz-order-date-to"/></div>
+              </div>
+              <div class="wizard-filters-panel-row">
+                <div class="fg"><label>Tax Period From</label><input type="text" id="wiz-tax-period-from" placeholder="e.g. 01/2025"/></div>
+                <div class="fg"><label>Tax Period To</label><input type="text" id="wiz-tax-period-to" placeholder="e.g. 03/2025"/></div>
+              </div>
+            </div>
+          </div>
+          <div class="filter-drawer-foot">
+            <button class="btn btn-outline" onclick="wizResetDrawerFilters()"><i class="fa-solid fa-rotate-left"></i> Reset Filters</button>
+            <button class="btn btn-red" onclick="wizApplyFilters()"><i class="fa-solid fa-check"></i> Apply Filters</button>
+          </div>
+        </div>
+
+        <div class="wizard-action-bar">
+          <div class="wab-left">
+            <div class="selection-summary" id="wiz-bar-summary">0 of 0 selected</div>
+            <div class="selection-summary">Total Selected Arrear (₹)<span class="selection-total" id="wiz-bar-total">₹0</span></div>
+          </div>
+          <div class="wab-center">
+            <button class="btn btn-outline" onclick="previewWizardNotice()"><i class="fa-solid fa-eye"></i> Preview Notice</button>
+            <button class="btn btn-red" onclick="wizGenerateNotice()"><i class="fa-solid fa-paper-plane"></i> Generate Notice</button>
+            <button class="btn btn-outline" onclick="wizClearAllFilters()"><i class="fa-solid fa-rotate-left"></i> Reset</button>
+          </div>
+          <div class="wab-note">
+            <i class="fa-solid fa-circle-info"></i>
+            <span>Only eligible and selected demands will be included in the notice.</span>
+          </div>
+        </div>
+
+        <div style="margin-top:10px;display:flex;gap:8px;">
+          <button class="btn btn-outline btn-sm" onclick="document.getElementById('dcr-file-input').click()"><i class="fa-solid fa-upload"></i> Upload DCR</button>
+          <button class="btn btn-outline btn-sm" onclick="document.getElementById('tp-reg-input').click()"><i class="fa-solid fa-upload"></i> Upload Taxpayer Register</button>
+        </div>
+      </div>
+
+      <!-- Bulk Notice -->
+      <div class="bulk-tab-panel" id="bulk-tab-all" style="display:none;">
+        <div class="table-wrap" style="padding:18px;">
+          <div class="quick-filter-bar" id="bulk-all-quick-filter-bar">
+            <button type="button" class="qf-chip active" data-qf="all" onclick="bulkQuickFilter('all','all')">All Demands <span class="qf-count" id="bulk-all-qf-count-all">0</span></button>
+            <button type="button" class="qf-chip" data-qf="intimation" onclick="bulkQuickFilter('all','intimation')">Intimation &lt; 90 Days <span class="qf-count" id="bulk-all-qf-count-intimation">0</span></button>
+            <button type="button" class="qf-chip" data-qf="urgent" onclick="bulkQuickFilter('all','urgent')">Urgent &ge; 90 Days <span class="qf-count" id="bulk-all-qf-count-urgent">0</span></button>
+            <button type="button" class="qf-chip" data-qf="section62" onclick="bulkToggleSection62('all')" title="Section 62 (best-judgment) demands are excluded by default — click to include them">Include Section 62 <span class="qf-count" id="bulk-all-qf-count-section62">0</span></button>
+            <div class="qf-spacer"></div>
+            <button type="button" class="btn btn-outline btn-sm filters-btn" onclick="toggleBulkAdvancedFilters('all')"><i class="fa-solid fa-sliders"></i> Advanced Filters</button>
+          </div>
+          <div id="bulk-all-active-filter-tags" class="active-filter-tags" style="display:none;"></div>
+          <div id="bulk-all-advanced" style="display:none;background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:12px 14px;margin-bottom:14px;">
+            <div style="display:flex;gap:14px;flex-wrap:wrap;">
+              <div class="fg"><label>Order Date From</label><input type="date" id="bulk-all-od-from" onchange="updateBulkAllCount()"/></div>
+              <div class="fg"><label>Order Date To</label><input type="date" id="bulk-all-od-to" onchange="updateBulkAllCount()"/></div>
+              <div class="fg"><label>Tax Period From</label><input type="text" id="bulk-all-tp-from" placeholder="e.g. 01/2025" onchange="updateBulkAllCount()"/></div>
+              <div class="fg"><label>Tax Period To</label><input type="text" id="bulk-all-tp-to" placeholder="e.g. 03/2025" onchange="updateBulkAllCount()"/></div>
+              <button type="button" class="btn btn-outline btn-sm" style="align-self:flex-end;" onclick="clearBulkAdvancedFilters('all')"><i class="fa-solid fa-rotate-left"></i> Reset</button>
+            </div>
+          </div>
+          <div style="font-size:13px;color:var(--ink2);margin-bottom:6px;">Matching taxpayers (notice-eligible): <strong id="bulk-all-count" style="font-family:var(--mono);color:var(--blue);">0</strong></div>
+          <div id="bulk-all-funnel" style="font-size:11px;color:var(--ink3);font-family:var(--mono);margin-bottom:14px;"></div>
+          <button class="btn btn-red" onclick="generateBulkAll()"><i class="fa-solid fa-layer-group"></i> Generate Bulk Notices</button>
+          <div id="bulk-all-results"></div>
+        </div>
+      </div>
+
+      <!-- Paste GSTINs -->
+      <div class="bulk-tab-panel" id="bulk-tab-paste" style="display:none;">
+        <div class="table-wrap" style="padding:18px;">
+          <div class="fg full" style="margin-bottom:12px;">
+            <label>Paste GSTINs (one per line, or comma/semicolon separated)</label>
+            <textarea id="bulk-paste-gstins" rows="5" placeholder="33AAAAA0000A1Z5&#10;33BBBBB0000B1Z6"></textarea>
+          </div>
+          <div class="quick-filter-bar" id="bulk-paste-quick-filter-bar">
+            <button type="button" class="qf-chip active" data-qf="all" onclick="bulkQuickFilter('paste','all')">All Demands <span class="qf-count" id="bulk-paste-qf-count-all">0</span></button>
+            <button type="button" class="qf-chip" data-qf="intimation" onclick="bulkQuickFilter('paste','intimation')">Intimation &lt; 90 Days <span class="qf-count" id="bulk-paste-qf-count-intimation">0</span></button>
+            <button type="button" class="qf-chip" data-qf="urgent" onclick="bulkQuickFilter('paste','urgent')">Urgent &ge; 90 Days <span class="qf-count" id="bulk-paste-qf-count-urgent">0</span></button>
+            <button type="button" class="qf-chip" data-qf="section62" onclick="bulkToggleSection62('paste')" title="Section 62 (best-judgment) demands are excluded by default — click to include them">Include Section 62 <span class="qf-count" id="bulk-paste-qf-count-section62">0</span></button>
+            <div class="qf-spacer"></div>
+            <button type="button" class="btn btn-outline btn-sm filters-btn" onclick="toggleBulkAdvancedFilters('paste')"><i class="fa-solid fa-sliders"></i> Advanced Filters</button>
+          </div>
+          <div id="bulk-paste-active-filter-tags" class="active-filter-tags" style="display:none;"></div>
+          <div id="bulk-paste-advanced" style="display:none;background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:12px 14px;margin-bottom:14px;">
+            <div style="display:flex;gap:14px;flex-wrap:wrap;">
+              <div class="fg"><label>Order Date From</label><input type="date" id="bulk-paste-od-from" onchange="updateBulkFilterTags('paste')"/></div>
+              <div class="fg"><label>Order Date To</label><input type="date" id="bulk-paste-od-to" onchange="updateBulkFilterTags('paste')"/></div>
+              <div class="fg"><label>Tax Period From</label><input type="text" id="bulk-paste-tp-from" placeholder="e.g. 01/2025" onchange="updateBulkFilterTags('paste')"/></div>
+              <div class="fg"><label>Tax Period To</label><input type="text" id="bulk-paste-tp-to" placeholder="e.g. 03/2025" onchange="updateBulkFilterTags('paste')"/></div>
+              <button type="button" class="btn btn-outline btn-sm" style="align-self:flex-end;" onclick="clearBulkAdvancedFilters('paste')"><i class="fa-solid fa-rotate-left"></i> Reset</button>
+            </div>
+          </div>
+          <button class="btn btn-red" onclick="generateBulkPaste()"><i class="fa-solid fa-paste"></i> Generate Notices</button>
+          <div id="bulk-paste-results"></div>
+        </div>
+      </div>
+
+      <!-- Bank Attachment -->
+      <div class="bulk-tab-panel" id="bulk-tab-bankatt" style="display:none;">
+        <div class="wizard-card">
+          <div class="wizard-card-head">
+            <div class="wizard-num" style="background:var(--gold);">1</div>
+            <div><div class="wizard-card-title">Search Taxpayer</div><div class="wizard-card-sub">Only taxpayers with demands &ge; 90 days old are eligible — Section 79(1)(a)</div></div>
+          </div>
+          <div class="form-grid">
+            <div class="fg full" style="position:relative;">
+              <label>GSTIN or Taxpayer Name</label>
+              <input type="text" id="ba-tp-search" oninput="baSearchTaxpayer(this.value)" placeholder="Only taxpayers with demands ≥ 90 days shown..."/>
+              <div id="ba-tp-results" class="gs-results" style="position:absolute;top:100%;"></div>
+              <input type="hidden" id="ba-gstin"/>
+            </div>
+          </div>
+          <div id="ba-demands-preview" style="margin-top:12px;"></div>
+        </div>
+
+        <div class="wizard-card">
+          <div class="wizard-card-head">
+            <div class="wizard-num" style="background:var(--gold);">2</div>
+            <div><div class="wizard-card-title">Bank Details</div><div class="wizard-card-sub">Look up bank/branch automatically from IFSC, or enter manually</div></div>
+            <div class="wizard-card-head-right"><div class="wchr-label">Total Attached Amount</div><div class="wchr-val" id="ba-amount-display" style="color:var(--gold);">₹0</div></div>
+          </div>
+          <div class="form-grid">
+            <div class="fg"><label>IFSC Code</label>
+              <div style="display:flex;gap:6px;"><input type="text" id="ba-ifsc" style="text-transform:uppercase;"/><button class="btn btn-outline btn-sm" onclick="autoFillFromIFSC()" type="button"><i class="fa-solid fa-magnifying-glass"></i></button></div>
+            </div>
+            <input type="hidden" id="ba-amount"/>
+            <div class="fg"><label>Bank Name</label><input type="text" id="ba-bank-name"/></div>
+            <div class="fg"><label>Branch</label><input type="text" id="ba-branch"/></div>
+            <div class="fg full"><label>Branch Address</label><input type="text" id="ba-branch-addr"/></div>
+            <div class="fg"><label>Account No.</label><input type="text" id="ba-accno"/></div>
+            <div class="fg"><label>Account Type</label><select id="ba-acctype"><option>Current</option><option>Savings</option><option>CC/OD</option></select></div>
+            <div class="fg"><label>PAN (if known)</label><input type="text" id="ba-pan"/></div>
+            <div class="fg"><label>Attaching Officer</label><input type="text" id="ba-officer"/></div>
+            <div class="fg"><label>Date</label><input type="date" id="ba-date"/></div>
+          </div>
+          <div id="ba-bank-status" style="margin-top:8px;font-size:12px;"></div>
+          <button class="btn btn-orange" style="margin-top:14px;" onclick="saveBankAtt()"><i class="fa-solid fa-floppy-disk"></i> Save Bank Attachment</button>
+        </div>
+
+        <div class="ph-sub" style="margin-bottom:8px;">ACTIVE &amp; RELEASED ATTACHMENTS</div>
+        <div id="bank-atts-list"></div>
+      </div>
+
+      <!-- Third-Party Notice -->
+      <div class="bulk-tab-panel" id="bulk-tab-thirdparty" style="display:none;">
+        <div class="table-wrap" style="padding:18px;margin-bottom:18px;">
+          <div class="ph-sub" style="margin-bottom:12px;">FORM GST DRC-13 — Notice to a Third Person, Section 79(1)(c)</div>
+          <div class="form-grid">
+            <div class="fg full" style="position:relative;">
+              <label>Defaulter Taxpayer (GSTIN or Name)</label>
+              <input type="text" id="tp-defaulter-search" oninput="tpSearchDefaulter(this.value)" placeholder="Search defaulter..."/>
+              <div id="tp-defaulter-results" class="gs-results" style="position:absolute;top:100%;"></div>
+              <input type="hidden" id="tp-defaulter-gstin"/>
+            </div>
+          </div>
+          <div id="tp-defaulter-demands" style="margin-top:10px;"></div>
+
+          <hr class="sdiv"/>
+          <div class="form-grid">
+            <div class="fg"><label>Third Party (Debtor) Legal Name *</label><input type="text" id="tp-debtor-legal"/></div>
+            <div class="fg"><label>Trade Name</label><input type="text" id="tp-debtor-trade"/></div>
+            <div class="fg"><label>GSTIN (if registered)</label><input type="text" id="tp-debtor-gstin"/></div>
+            <div class="fg"><label>Mobile</label><input type="text" id="tp-debtor-mobile"/></div>
+            <div class="fg"><label>Email</label><input type="text" id="tp-debtor-email"/></div>
+            <div class="fg"><label>Notice Date</label><input type="date" id="tp-date"/></div>
+            <div class="fg full"><label>Address</label><textarea id="tp-debtor-addr" rows="2"></textarea></div>
+          </div>
+          <button class="btn btn-red" style="margin-top:14px;" onclick="tpSaveAndDownload()"><i class="fa-solid fa-file-word"></i> Save &amp; Download DRC-13</button>
+        </div>
+        <div class="ph-sub" style="margin-bottom:8px;">THIRD-PARTY NOTICES ISSUED</div>
+        <div class="table-wrap" id="third-party-list"></div>
+      </div>
+
+      <!-- Property Attachment -->
+      <div class="bulk-tab-panel" id="bulk-tab-property" style="display:none;">
+        <div class="table-wrap" style="padding:18px;margin-bottom:18px;">
+          <div class="ph-sub" style="margin-bottom:12px;">ATTACHMENT OF PROPERTY — Section 79(1)(d)</div>
+          <div class="form-grid">
+            <div class="fg full" style="position:relative;">
+              <label>Defaulter Taxpayer (GSTIN or Name)</label>
+              <input type="text" id="pa-defaulter-search" oninput="paSearchDefaulter(this.value)" placeholder="Search defaulter..."/>
+              <div id="pa-defaulter-results" class="gs-results" style="position:absolute;top:100%;"></div>
+              <input type="hidden" id="pa-defaulter-gstin"/>
+            </div>
+          </div>
+          <div id="pa-defaulter-demands" style="margin-top:10px;"></div>
+
+          <hr class="sdiv"/>
+          <div class="form-grid">
+            <div class="fg full"><label>Property Description *</label><input type="text" id="pa-property-description" placeholder="e.g. Commercial building, Survey No. 145, ..."/></div>
+            <div class="fg"><label>Location / Survey No.</label><input type="text" id="pa-property-location"/></div>
+            <div class="fg"><label>Estimated Value (₹)</label><input type="number" id="pa-property-value"/></div>
+            <div class="fg"><label>Attaching Officer</label><input type="text" id="pa-officer"/></div>
+            <div class="fg"><label>Date</label><input type="date" id="pa-date"/></div>
+          </div>
+          <button class="btn btn-red" style="margin-top:14px;" onclick="paSaveAndDownload()"><i class="fa-solid fa-file-word"></i> Save &amp; Download Order</button>
+        </div>
+        <div class="ph-sub" style="margin-bottom:8px;">PROPERTY ATTACHMENTS RECORDED</div>
+        <div class="table-wrap" id="property-list"></div>
+      </div>
+
+      <!-- Bulk Notice / Paste GSTINs — selection action bar (shown once notices are generated) -->
+      <div class="wizard-action-bar" id="bulk-action-bar" style="display:none;">
+        <div class="wab-left">
+          <div class="selection-summary" id="bulk-bar-summary">0 of 0 selected</div>
+          <div class="selection-summary">Selected Arrear (₹)<span class="selection-total" id="bulk-bar-total">₹0</span></div>
+        </div>
+        <div class="wab-center">
+          <button class="btn btn-outline" onclick="previewSelectedBulkNotices()"><i class="fa-solid fa-eye"></i> Preview Notice</button>
+          <button class="btn btn-red" onclick="generateSelectedBulkNotices()"><i class="fa-solid fa-paper-plane"></i> Generate Notice</button>
+        </div>
+        <div class="wab-note">
+          <i class="fa-solid fa-circle-info"></i>
+          <span>Only the checked taxpayers will be saved and downloaded.</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== NOTICE HISTORY ===== -->
+    <div class="page" id="page-history">
+      <div class="ph">
+        <div><div class="ph-title"><i class="fa-solid fa-clock-rotate-left"></i>Notice History</div><div class="ph-sub">All arrear notices issued from this system</div></div>
+      </div>
+
+      <div class="table-wrap" style="padding:14px 16px;margin-bottom:16px;">
+        <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;">
+          <div class="fg" style="flex:1;min-width:220px;"><label>Search GSTIN / Taxpayer</label><input type="text" id="hist-filter-gstin" oninput="histFilterChanged()" placeholder="Filter by GSTIN or name..."/></div>
+          <div class="fg"><label>Notice Type</label><select class="fsel" id="hist-filter-type" onchange="renderNoticeHistoryPage()"><option value="">All</option><option value="intimation">Intimation</option><option value="urgent">Urgent</option></select></div>
+        </div>
+      </div>
+
+      <div class="table-wrap" id="notice-history-table-wrap"></div>
+    </div>
+
+    <!-- ===== RECOVERY PROFILE ===== -->
+    <div class="page" id="page-taxpayers">
+      <div class="ph">
+        <div><div class="ph-title"><i class="fa-solid fa-user-shield"></i>Recovery Profile</div><div class="ph-sub">Full recovery history for a single GSTIN</div></div>
+      </div>
+
+      <div class="table-wrap" style="padding:18px;margin-bottom:18px;">
+        <div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;">
+          <div class="fg" style="flex:1;min-width:260px;"><label>GSTIN</label><input type="text" id="trp-gstin-input" style="text-transform:uppercase;" placeholder="Enter 15-character GSTIN" onkeydown="if(event.key==='Enter')loadRecoveryProfile();"/></div>
+          <button class="btn btn-red" onclick="loadRecoveryProfile()"><i class="fa-solid fa-magnifying-glass"></i> Search</button>
+        </div>
+        <div id="trp-search-hint" style="margin-top:8px;font-size:12px;"></div>
+      </div>
+
+      <div id="trp-empty" class="empty" style="display:none;">
+        <div class="empty-icon"><i class="fa-solid fa-user-shield" style="font-size:40px;color:var(--blue);opacity:0.4;"></i></div>
+        <div class="empty-title">Taxpayer Not Found</div>
+        <div class="empty-sub" id="trp-empty-msg"></div>
+      </div>
+
+      <div id="trp-profile" style="display:none;">
+        <div id="trp-header"></div>
+        <div id="trp-stats" style="margin-bottom:18px;"></div>
+        <div class="ph-sub" style="margin-bottom:8px;">DEMAND CASES</div>
+        <div class="table-wrap" id="trp-cases" style="margin-bottom:18px;"></div>
+        <div class="ph-sub" style="margin-bottom:8px;">RECOVERY TIMELINE</div>
+        <div class="table-wrap" style="padding:14px 18px;" id="trp-timeline"></div>
+      </div>
+    </div>
+
+    <!-- ===== DOWNLOADS ===== -->
+    <div class="page" id="page-downloads">
+      <div class="ph">
+        <div><div class="ph-title"><i class="fa-solid fa-download"></i>Downloads</div><div class="ph-sub">Re-download any notice, bank release order, third-party notice or property attachment order</div></div>
+      </div>
+      <div class="table-wrap" id="downloads-table-wrap"></div>
+    </div>
+
+    <!-- ===== SETTINGS ===== -->
+    <div class="page" id="page-settings">
+      <div class="ph">
+        <div><div class="ph-title"><i class="fa-solid fa-gear"></i>Settings</div><div class="ph-sub">Office details used on all generated notices</div></div>
+      </div>
+
+      <div class="dash-grid" style="grid-template-columns:1fr 1fr;">
+        <div class="table-wrap" style="padding:18px;">
+          <div class="form-grid">
+            <div class="fg full"><label>Division</label><input type="text" id="cfg-division"/></div>
+            <div class="fg full"><label>Circle</label><input type="text" id="cfg-circle"/></div>
+            <div class="fg full"><label>Address Line 1</label><input type="text" id="cfg-addr1"/></div>
+            <div class="fg full"><label>Address Line 2</label><input type="text" id="cfg-addr2"/></div>
+            <div class="fg full"><label>Designation</label><input type="text" id="cfg-desig"/></div>
+            <div class="fg full"><label>City</label><input type="text" id="cfg-city"/></div>
+          </div>
+          <div style="display:flex;gap:8px;margin-top:16px;align-items:center;">
+            <button class="btn btn-red" onclick="saveSettings()"><i class="fa-solid fa-floppy-disk"></i> Save Settings</button>
+            <button class="btn btn-outline" onclick="loadDefaultSettings()"><i class="fa-solid fa-rotate-left"></i> Reset to Default</button>
+            <span id="settings-status" style="font-size:12px;color:var(--green);"></span>
+          </div>
+        </div>
+        <div class="table-wrap" style="padding:18px;">
+          <div class="ph-sub" style="margin-bottom:10px;">NOTICE HEADER/FOOTER PREVIEW</div>
+          <pre id="settings-preview" style="white-space:pre-wrap;font-family:var(--mono);font-size:12px;color:var(--ink2);line-height:1.6;"></pre>
+        </div>
+      </div>
+    </div>
+
+    <div id="app-footer">GST Recovery Management System — data is stored locally in this browser only</div>
+    </main>
+  </div>
+</div>
+
+<!-- ===== Bank Attachment Release Modal ===== -->
+<div class="overlay" id="release-overlay">
+  <div class="modal">
+    <div class="mhead">
+      <div><div class="mtitle">Release Bank Attachment</div><div class="msub">Select the reason for release</div></div>
+      <button class="mclose" onclick="closeReleaseModal()">&times;</button>
+    </div>
+    <div class="mbody" id="release-modal-body"></div>
+    <div class="mfoot">
+      <button class="btn btn-outline" onclick="closeReleaseModal()">Cancel</button>
+      <button class="btn btn-red" onclick="confirmRelease()">Confirm Release</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== Help & Support Modal ===== -->
+<div class="overlay" id="help-overlay">
+  <div class="modal">
+    <div class="mhead">
+      <div><div class="mtitle">Help &amp; Support</div><div class="msub">GST Recovery Management System</div></div>
+      <button class="mclose" onclick="closeHelpSupport()">&times;</button>
+    </div>
+    <div class="mbody" id="help-modal-body"></div>
+    <div class="mfoot">
+      <button class="btn btn-red" onclick="closeHelpSupport()">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== Bulk Notice — Demands Included in Notice (editor) ===== -->
+<div class="overlay" id="bulk-demand-editor-overlay">
+  <div class="modal modal-lg">
+    <div class="mhead">
+      <div><div class="mtitle" id="bde-title">Demands Included in Notice</div><div class="msub" id="bde-sub"></div></div>
+      <button class="mclose" onclick="closeBulkDemandEditor()">&times;</button>
+    </div>
+    <div class="mbody">
+      <div class="quick-filter-bar" id="bde-quick-filter-bar" style="margin-top:0;">
+        <button type="button" class="qf-chip active" data-qf="all" onclick="bdeQuickFilter('all')">All Demands <span class="qf-count" id="bde-count-all">0</span></button>
+        <button type="button" class="qf-chip" data-qf="intimation" onclick="bdeQuickFilter('intimation')">Intimation &lt; 90 Days <span class="qf-count" id="bde-count-intimation">0</span></button>
+        <button type="button" class="qf-chip" data-qf="urgent" onclick="bdeQuickFilter('urgent')">Urgent &ge; 90 Days <span class="qf-count" id="bde-count-urgent">0</span></button>
+        <button type="button" class="qf-chip" data-qf="section62" onclick="bdeToggleSection62()" title="Section 62 (best-judgment) demands are excluded by default — click to include them">Include Section 62 <span class="qf-count" id="bde-count-section62">0</span></button>
+      </div>
+      <div id="bde-table-wrap"></div>
+    </div>
+    <div class="mfoot" style="justify-content:space-between;align-items:center;">
+      <div class="selection-summary" id="bde-summary">0 of 0 selected</div>
+      <div style="display:flex;gap:8px;">
+        <button class="btn btn-outline" onclick="closeBulkDemandEditor()">Cancel</button>
+        <button class="btn btn-red" onclick="applyBulkDemandEditor()"><i class="fa-solid fa-check"></i> Apply</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="js/lib-loader.js"></script>
+<script src="js/utils.js"></script>
+<script src="js/state.js"></script>
+<script src="js/business-rules.js"></script>
+<script src="js/import-dcr.js"></script>
+<script src="js/import-taxpayer-register.js"></script>
+<script src="js/reports.js"></script>
+<script src="js/docx-export.js"></script>
+<script src="js/pdf-export.js"></script>
+<script src="js/notices.js"></script>
+<script src="js/bank-attachment.js"></script>
+<script src="js/third-party-notice.js"></script>
+<script src="js/property-attachment.js"></script>
+<script src="js/recovery-profile.js"></script>
+<script src="js/settings.js"></script>
+<script src="js/wizard.js"></script>
+<script src="js/notice-history.js"></script>
+<script src="js/downloads.js"></script>
+<script src="js/dashboard.js"></script>
+<script src="js/nav.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
