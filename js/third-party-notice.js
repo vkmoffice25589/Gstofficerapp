@@ -58,7 +58,7 @@ function tpBuildNotice() {
     debtorMobile: document.getElementById('tp-debtor-mobile').value.trim(),
     debtorEmail: document.getElementById('tp-debtor-email').value.trim(),
     debtorAddr: document.getElementById('tp-debtor-addr').value.trim(),
-    cases: cases, totalAmt: totalAmt, date: document.getElementById('tp-date').value || todayISO(),
+    cases: caseSnapshots(cases), totalAmt: totalAmt, date: document.getElementById('tp-date').value || todayISO(),
     createdAt: new Date().toISOString()
   };
 }

@@ -7,94 +7,90 @@ var _wizNoticeType = 'both';   // 'intimation' | 'urgent' | 'both'
    "Include Section 62" toggle or the Advanced Filters drawer. */
 var _wizSection62 = 'exclude'; // 'all' | 'exclude'
 
-/* ===== Step 1-4 stepper ===== */
+/* ===== Upload panels (DCR + Taxpayer Register) ===== */
 
 function renderWizardStepper() {
-  var el = document.getElementById('wizard-stepper');
-  if (!el) return;
-
   var hasDCR = AppState.cases.length > 0;
   var hasReg = hasRegisterData();
-  var validGstins = new Set(AppState.cases.filter(isValidCase).map(function (c) { return c.gstin; }));
-  var matched = Array.from(validGstins).filter(function (g) { return !!AppState.addressCache[g]; }).length;
+  var bothReady = hasDCR && hasReg;
 
-  el.innerHTML =
-    stepCard(1, 'step-card-dcr', 'clickable' + (hasDCR ? ' done' : ''), 'Upload DCR', '(Demand & Collection Register)',
-      hasDCR
-        ? '<div class="step-file"><i class="fa-solid fa-file-excel" style="color:var(--green);"></i> ' + xe(AppState.lastImportFileName || 'DCR file') + '</div><div class="step-status ok"><i class="fa-solid fa-circle-check"></i> Uploaded Successfully</div>'
-        : '<div class="step-status pending">Pending — click to upload</div>')
-    + stepArrow()
-    + stepCard(2, 'step-card-tpreg', 'clickable' + (hasReg ? ' done' : ''), 'Upload Taxpayer Register', '(Taxpayer Register)',
-      hasReg
-        ? '<div class="step-file"><i class="fa-solid fa-file-excel" style="color:var(--green);"></i> ' + xe(AppState.lastRegisterImportFileName || 'Register file') + '</div><div class="step-status ok"><i class="fa-solid fa-circle-check"></i> Uploaded Successfully</div>'
-        : '<div class="step-status pending">Pending — click to upload</div>')
-    + stepArrow()
-    + stepCard(3, null, hasDCR ? 'done' : '', 'Match & Validate', '(Match GSTIN/TIN and validate)',
-      hasDCR
-        ? '<div class="step-file">' + matched + ' of ' + validGstins.size + ' GSTINs matched</div><div class="step-link" onclick="toggleMatchingSummary()">View Matching Summary <i class="fa-solid fa-arrow-right"></i></div>'
-        : '<div class="step-status pending">—</div>')
-    + stepArrow()
-    + stepCard(4, null, hasDCR ? 'ready' : '', 'Ready to Generate', '(Choose action and proceed)',
-      hasDCR
-        ? '<div class="step-status ok">You can now generate notices or initiate recovery actions.</div>'
-        : '<div class="step-status pending">Upload DCR to begin</div>');
+  if (typeof renderDCRSection === 'function') renderDCRSection();
+  if (typeof renderTpRegSection === 'function') renderTpRegSection();
 
-  var summary = document.getElementById('wizard-matching-summary');
-  if (summary) {
-    summary.innerHTML = validGstins.size
-      ? ('<strong>' + matched + '</strong> of <strong>' + validGstins.size + '</strong> taxpayer GSTINs found in the Taxpayer Register. '
-        + (validGstins.size - matched) + ' unmatched (address/registration status unknown for these).')
-      : 'No DCR data imported yet.';
+  var genBtn = document.getElementById('wiz-generate-notice-btn');
+  if (genBtn) genBtn.disabled = !bothReady;
+
+  var banner = document.getElementById('wiz-ready-banner');
+  if (banner) banner.style.display = bothReady ? 'flex' : 'none';
+
+  if (bothReady && !_wizBothUploadedNotified) {
+    _wizBothUploadedNotified = true;
+    showToast('✅ Both files uploaded successfully. Ready to issue notice.');
+  } else if (!bothReady) {
+    _wizBothUploadedNotified = false;
   }
 }
 
-function stepCard(num, id, extraClass, title, sub, body) {
-  return '<div class="step-card ' + extraClass + '"' + (id ? ' id="' + id + '"' : '') + '>'
-    + '<div class="step-num">' + (extraClass.indexOf('done') !== -1 ? '<i class="fa-solid fa-check"></i>' : num) + '</div>'
-    + '<div class="step-body"><div class="step-title">' + num + '. ' + title + '</div><div class="step-sub">' + sub + '</div>' + body + '</div>'
-    + '</div>';
-}
-function stepArrow() { return '<div class="step-arrow" style="align-self:center;color:var(--border-bright);"><i class="fa-solid fa-arrow-right"></i></div>'; }
-
-/* Event delegation on the static #wizard-stepper container — the step cards
-   themselves are re-rendered by renderWizardStepper(), so listeners must live
-   on their unchanging parent rather than on the cards directly. */
-function wizWireStepperUploads() {
-  var stepper = document.getElementById('wizard-stepper');
-  if (!stepper) return;
-
-  stepper.addEventListener('click', function (e) {
-    if (e.target.closest('#step-card-dcr')) document.getElementById('dcr-file-input').click();
-    else if (e.target.closest('#step-card-tpreg')) document.getElementById('tp-reg-input').click();
-  });
-
-  ['dragover', 'dragenter'].forEach(function (evt) {
-    stepper.addEventListener(evt, function (e) {
-      var card = e.target.closest('#step-card-dcr, #step-card-tpreg');
-      if (!card) return;
-      e.preventDefault();
-      card.classList.add('dragover');
-    });
-  });
-  ['dragleave', 'drop'].forEach(function (evt) {
-    stepper.addEventListener(evt, function (e) {
-      var card = e.target.closest('#step-card-dcr, #step-card-tpreg');
-      if (!card) return;
-      e.preventDefault();
-      card.classList.remove('dragover');
-    });
-  });
-  stepper.addEventListener('drop', function (e) {
-    if (!e.dataTransfer.files.length) return;
-    if (e.target.closest('#step-card-dcr')) handleDCRFiles(e.dataTransfer.files);
-    else if (e.target.closest('#step-card-tpreg')) handleTaxpayerRegisterFile(e.dataTransfer.files[0]);
-  });
+/* Still used as a quick-link target from the "Upload Taxpayer Register"
+   shortcut button on the Issue Notice tab (see index.html). */
+function wizChevronGoToTaxpayerRegister() {
+  var section = document.getElementById('wizard-tpreg-section');
+  if (section) section.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
-function toggleMatchingSummary() {
-  var el = document.getElementById('wizard-matching-summary-wrap');
-  if (el) el.style.display = el.style.display === 'block' ? 'none' : 'block';
+/* DCR/Taxpayer Register upload now lives on its own page (#page-dataupload).
+   Once both are ready, "proceed" means leaving that page and landing on
+   Generate Arrear Notice, which will render the tabs section itself. */
+function wizProceedToNoticeGeneration() {
+  if (!AppState.cases.length || !hasRegisterData()) return;
+  nav('bulknotice');
 }
+
+/* Generate Arrear Notice's own page renderer — shows the enforcement tabs
+   if DCR + Taxpayer Register are both ready, otherwise shows an inline
+   empty-state (in case the popup gets dismissed) plus a popup prompting the
+   officer to go upload them, so it's never a silent dead end. */
+function renderBulkNoticePage() {
+  var hasDCR = AppState.cases.length > 0;
+  var hasReg = hasRegisterData();
+  var bothReady = hasDCR && hasReg;
+
+  var tabsSection = document.getElementById('bulknotice-tabs-section');
+  var notReady = document.getElementById('bulknotice-not-ready');
+  if (tabsSection) tabsSection.style.display = bothReady ? 'block' : 'none';
+  if (notReady) notReady.style.display = bothReady ? 'none' : 'block';
+
+  if (!bothReady) {
+    var msg = document.getElementById('bulknotice-not-ready-msg');
+    if (msg) {
+      msg.textContent = (!hasDCR && !hasReg) ? 'Upload both DCR and the Taxpayer Register to start generating notices and taking recovery action.'
+        : !hasDCR ? 'Upload the DCR — the Taxpayer Register is already in.'
+        : 'Upload the Taxpayer Register — the DCR is already in.';
+    }
+    openDataUploadPrompt(hasDCR, hasReg);
+  }
+}
+
+function openDataUploadPrompt(hasDCR, hasReg) {
+  var status = document.getElementById('dataupload-prompt-status');
+  if (status) {
+    status.innerHTML =
+      '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">' + (hasDCR ? '<i class="fa-solid fa-circle-check" style="color:var(--green);"></i>' : '<i class="fa-regular fa-circle" style="color:var(--ink3);"></i>') + ' DCR</div>'
+      + '<div style="display:flex;align-items:center;gap:8px;">' + (hasReg ? '<i class="fa-solid fa-circle-check" style="color:var(--green);"></i>' : '<i class="fa-regular fa-circle" style="color:var(--ink3);"></i>') + ' Taxpayer Register</div>';
+  }
+  var overlay = document.getElementById('dataupload-prompt-overlay');
+  if (overlay) overlay.classList.add('show');
+}
+function closeDataUploadPrompt() {
+  var overlay = document.getElementById('dataupload-prompt-overlay');
+  if (overlay) overlay.classList.remove('show');
+}
+
+/* Tracks whether the "both files uploaded" popup has already fired for the
+   current pair of uploads, so it shows once per DCR+Register combination
+   rather than on every stepper re-render. */
+var _wizBothUploadedNotified = false;
+
 
 /* ===== Section 1: Search GSTIN ===== */
 
@@ -539,7 +535,7 @@ function wizBuildNotices() {
     seq++;
     var pendAmt = list.reduce(function (s, c) { return s + (Number(c.pend_total) || 0); }, 0);
     out.push({
-      id: uid('notice'), gstin: _wizGSTIN, legalName: c0.legalName, cases: list, pendAmt: pendAmt,
+      id: uid('notice'), gstin: _wizGSTIN, legalName: c0.legalName, cases: caseSnapshots(list), pendAmt: pendAmt,
       type: kind === 'urgent' ? 'demand' : 'reminder', noticeKind: kind,
       num: 'NOT/' + new Date().getFullYear() + '/' + String(seq).padStart(4, '0'),
       date: todayISO(), replyDate: kind === 'urgent' ? '' : addDaysISO(todayISO(), 30),
@@ -551,6 +547,7 @@ function wizBuildNotices() {
 }
 
 function wizGenerateNotice() {
+  if (!AppState.cases.length || !hasRegisterData()) { showToast('⚠️ Upload DCR and Taxpayer Register before generating a notice'); return; }
   var noticesToSave = wizBuildNotices();
   if (!noticesToSave.length) return;
   noticesToSave.forEach(function (n) { AppState.notices.push(n); });

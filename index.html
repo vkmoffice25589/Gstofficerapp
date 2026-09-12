@@ -10,6 +10,7 @@
 <link rel="stylesheet" href="css/base.css"/>
 <link rel="stylesheet" href="css/dashboard.css"/>
 <link rel="stylesheet" href="css/wizard.css"/>
+<link rel="stylesheet" href="css/arrear-register.css"/>
 </head>
 <body>
 
@@ -26,10 +27,16 @@
     <div class="sb-section">Overview</div>
     <div class="sb-item active" onclick="nav('dashboard')" data-page="dashboard"><span class="sb-icon"><i class="fa-solid fa-gauge-high"></i></span> Dashboard</div>
 
+    <div class="sb-section">Data</div>
+    <div class="sb-item" onclick="nav('dataupload')" data-page="dataupload"><span class="sb-icon"><i class="fa-solid fa-cloud-arrow-up"></i></span> DCR / Taxpayer Register</div>
+
     <div class="sb-section">Enforcement</div>
     <div class="sb-item" onclick="nav('bulknotice')" data-page="bulknotice"><span class="sb-icon"><i class="fa-solid fa-bolt"></i></span> Generate Arrear Notice</div>
     <div class="sb-item" onclick="nav('history')" data-page="history"><span class="sb-icon"><i class="fa-solid fa-clock-rotate-left"></i></span> Notice History</div>
     <div class="sb-item" onclick="nav('cases')" data-page="cases"><span class="sb-icon"><i class="fa-solid fa-chart-bar"></i></span> Reports <span class="sb-badge" id="sb-cases">0</span></div>
+
+    <div class="sb-section">Case Management</div>
+    <div class="sb-item" onclick="nav('arrearactions')" data-page="arrearactions"><span class="sb-icon"><i class="fa-solid fa-folder-tree"></i></span> Arrear Action Register</div>
 
     <div class="sb-section">Records</div>
     <div class="sb-item" onclick="nav('taxpayers')" data-page="taxpayers"><span class="sb-icon"><i class="fa-solid fa-user-shield"></i></span> Recovery Profile</div>
@@ -118,34 +125,49 @@
       <div class="table-wrap" id="report-table-wrap"></div>
     </div>
 
-    <!-- ===== ARREAR NOTICE ===== -->
-    <div class="page" id="page-bulknotice">
+    <!-- ===== DATA UPLOAD (DCR + Taxpayer Register) ===== -->
+    <div class="page" id="page-dataupload">
       <div class="ph">
-        <div><div class="ph-title"><i class="fa-solid fa-bolt"></i>Generate Arrear Notice</div><div class="ph-sub">Upload DCR and Taxpayer Register to generate arrear notice or initiate recovery actions.</div></div>
+        <div><div class="ph-title"><i class="fa-solid fa-cloud-arrow-up"></i>DCR / Taxpayer Register Upload</div><div class="ph-sub">Upload these once (and refresh whenever new data is available) — every other page reads from what's uploaded here.</div></div>
       </div>
 
       <input type="file" id="dcr-file-input" accept=".xlsx,.xls" multiple style="display:none;"/>
-      <input type="file" id="tp-reg-input" accept=".xlsx,.xls" style="display:none;"/>
 
-      <div class="stepper" id="wizard-stepper"></div>
-
-      <div class="wizard-card" id="wizard-matching-summary-wrap" style="display:none;">
-        <div id="wizard-matching-summary" style="font-size:12px;margin-bottom:14px;"></div>
-        <div id="tp-reg-summary" style="margin-bottom:14px;"></div>
-        <div id="import-preview"></div>
-        <div id="import-results" style="display:none;margin-top:14px;">
-          <div class="ph-sub" style="margin-bottom:8px;">DCR IMPORT LOG</div>
-          <div class="import-log" id="import-log"></div>
-        </div>
-        <div id="tp-reg-log" class="import-log" style="display:none;margin-top:14px;"></div>
-        <div id="tp-reg-status" style="margin-top:8px;font-size:12px;color:var(--green);"></div>
+      <div class="dataupload-grid">
+        <div id="wizard-dcr-section"></div>
+        <div id="wizard-tpreg-section"></div>
       </div>
 
+      <div class="wizard-ready-banner" id="wiz-ready-banner" style="display:none;">
+        <div class="wrb-icon"><i class="fa-solid fa-circle-check"></i></div>
+        <div class="wrb-text">
+          <div class="wrb-title">Both required documents are uploaded successfully.</div>
+          <div class="wrb-sub">You can now proceed to issue arrear notices.</div>
+        </div>
+        <button type="button" class="btn btn-red wrb-btn" id="wiz-proceed-btn" onclick="wizProceedToNoticeGeneration()">Go to Generate Arrear Notice <i class="fa-solid fa-arrow-right"></i></button>
+      </div>
+    </div>
+
+    <!-- ===== ARREAR NOTICE ===== -->
+    <div class="page" id="page-bulknotice">
+      <div class="ph">
+        <div><div class="ph-title"><i class="fa-solid fa-bolt"></i>Generate Arrear Notice</div><div class="ph-sub">Issue notices and take recovery action against uploaded arrear cases.</div></div>
+      </div>
+
+      <div class="empty" id="bulknotice-not-ready" style="display:none;">
+        <div class="empty-icon"><i class="fa-solid fa-cloud-arrow-up" style="font-size:40px;color:var(--blue);opacity:0.4;"></i></div>
+        <div class="empty-title">DCR / Taxpayer Register Not Uploaded</div>
+        <div class="empty-sub" id="bulknotice-not-ready-msg">Upload both to start generating notices and taking recovery action.</div>
+        <button class="btn btn-red" style="margin-top:14px;" onclick="nav('dataupload')"><i class="fa-solid fa-upload"></i> Go to Data Upload</button>
+      </div>
+
+      <div id="bulknotice-tabs-section" style="display:none;">
       <div class="tabs">
         <div class="tab active" data-tab="notice" onclick="bulkTab('notice', this)"><i class="fa-solid fa-envelope-open-text"></i> Issue Notice</div>
         <div class="tab" data-tab="all" onclick="bulkTab('all', this)"><i class="fa-solid fa-layer-group"></i> Bulk Notice</div>
         <div class="tab" data-tab="paste" onclick="bulkTab('paste', this)"><i class="fa-solid fa-paste"></i> Paste GSTINs</div>
         <div class="tab" data-tab="bankatt" onclick="bulkTab('bankatt', this)"><i class="fa-solid fa-building-columns"></i> Bank Attachment</div>
+        <div class="tab" data-tab="bankrelease" onclick="bulkTab('bankrelease', this)"><i class="fa-solid fa-lock-open"></i> Release Attachment</div>
         <div class="tab" data-tab="thirdparty" onclick="bulkTab('thirdparty', this)"><i class="fa-solid fa-user-group"></i> Third-Party Notice</div>
         <div class="tab" data-tab="property" onclick="bulkTab('property', this)"><i class="fa-solid fa-house-lock"></i> Property Attachment</div>
       </div>
@@ -247,7 +269,7 @@
           </div>
           <div class="wab-center">
             <button class="btn btn-outline" onclick="previewWizardNotice()"><i class="fa-solid fa-eye"></i> Preview Notice</button>
-            <button class="btn btn-red" onclick="wizGenerateNotice()"><i class="fa-solid fa-paper-plane"></i> Generate Notice</button>
+            <button class="btn btn-red" id="wiz-generate-notice-btn" onclick="wizGenerateNotice()"><i class="fa-solid fa-paper-plane"></i> Generate Notice</button>
             <button class="btn btn-outline" onclick="wizClearAllFilters()"><i class="fa-solid fa-rotate-left"></i> Reset</button>
           </div>
           <div class="wab-note">
@@ -256,9 +278,9 @@
           </div>
         </div>
 
-        <div style="margin-top:10px;display:flex;gap:8px;">
-          <button class="btn btn-outline btn-sm" onclick="document.getElementById('dcr-file-input').click()"><i class="fa-solid fa-upload"></i> Upload DCR</button>
-          <button class="btn btn-outline btn-sm" onclick="document.getElementById('tp-reg-input').click()"><i class="fa-solid fa-upload"></i> Upload Taxpayer Register</button>
+        <div class="wiz-upload-actions">
+          <button class="btn btn-outline" onclick="document.getElementById('dcr-file-input').click()"><i class="fa-solid fa-upload"></i> Upload DCR</button>
+          <button class="btn btn-outline" onclick="nav('dataupload');wizChevronGoToTaxpayerRegister();"><i class="fa-solid fa-upload"></i> Upload Taxpayer Register</button>
         </div>
       </div>
 
@@ -359,11 +381,50 @@
             <div class="fg"><label>Date</label><input type="date" id="ba-date"/></div>
           </div>
           <div id="ba-bank-status" style="margin-top:8px;font-size:12px;"></div>
-          <button class="btn btn-orange" style="margin-top:14px;" onclick="saveBankAtt()"><i class="fa-solid fa-floppy-disk"></i> Save Bank Attachment</button>
+          <button class="btn btn-orange" style="margin-top:14px;" onclick="generateBankAttachment()"><i class="fa-solid fa-file-export"></i> Generate Bank Attachment</button>
+          <div style="font-size:11px;color:var(--ink3);margin-top:6px;"><i class="fa-solid fa-circle-info"></i> Saves this attachment and downloads the Letter to Bank and Form DRC-13, each as Word and PDF.</div>
         </div>
 
-        <div class="ph-sub" style="margin-bottom:8px;">ACTIVE &amp; RELEASED ATTACHMENTS</div>
+        <div class="ph-sub" style="margin-bottom:8px;">ACTIVE ATTACHMENTS</div>
         <div id="bank-atts-list"></div>
+      </div>
+
+      <!-- Release Attachment -->
+      <div class="bulk-tab-panel" id="bulk-tab-bankrelease" style="display:none;">
+        <div class="wizard-card">
+          <div class="wizard-card-head">
+            <div class="wizard-num" style="background:#0F766E;">1</div>
+            <div><div class="wizard-card-title">Search Active Bank Attachments</div><div class="wizard-card-sub">Find an attachment by GSTIN, trader name, or bank name — only active (not yet released) attachments are shown.</div></div>
+          </div>
+          <div class="form-grid">
+            <div class="fg full" style="position:relative;">
+              <label>GSTIN, Trader Name, or Bank</label>
+              <input type="text" id="br-search" oninput="brSearchAttachment(this.value)" placeholder="Search active attachments..."/>
+              <div id="br-search-results" class="gs-results" style="position:absolute;top:100%;"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="wizard-card" id="br-form-card" style="display:none;">
+          <div class="wizard-card-head">
+            <div class="wizard-num" style="background:#0F766E;">2</div>
+            <div><div class="wizard-card-title" id="br-selected-name">—</div><div class="wizard-card-sub" id="br-selected-sub">—</div></div>
+          </div>
+          <div class="info-grid" id="br-selected-info" style="margin-bottom:16px;"></div>
+
+          <div class="form-grid">
+            <div class="fg"><label>Release Reason</label><select id="br-reason" class="fsel" onchange="brReasonChanged()"></select></div>
+            <div class="fg"><label>Release Date</label><input type="date" id="br-release-date"/></div>
+            <div class="fg"><label>Taxpayer's Petition Date</label><input type="date" id="br-petition-date"/></div>
+            <div class="fg full"><label>Taxpayer Address (for the letter &amp; "Copy to")</label><input type="text" id="br-addr"/></div>
+            <div class="fg full"><label>Case Details (what the taxpayer submitted, orders complied with, deposits made, etc.)</label><textarea id="br-narrative" rows="4"></textarea></div>
+          </div>
+          <button class="btn btn-orange" style="margin-top:14px;" onclick="brGenerateRelease()"><i class="fa-solid fa-unlock"></i> Generate Release Order</button>
+          <div style="font-size:11px;color:var(--ink3);margin-top:6px;"><i class="fa-solid fa-circle-info"></i> Releases the attachment and downloads the Release Order as Word and PDF.</div>
+        </div>
+
+        <div class="ph-sub" style="margin-bottom:8px;">RELEASED ATTACHMENTS</div>
+        <div id="br-released-list"></div>
       </div>
 
       <!-- Third-Party Notice -->
@@ -439,6 +500,7 @@
           <span>Only the checked taxpayers will be saved and downloaded.</span>
         </div>
       </div>
+      </div>
     </div>
 
     <!-- ===== NOTICE HISTORY ===== -->
@@ -487,6 +549,64 @@
       </div>
     </div>
 
+    <!-- ===== ARREAR ACTION REGISTER ===== -->
+    <div class="page" id="page-arrearactions">
+      <div class="ph">
+        <div><div class="ph-title"><i class="fa-solid fa-folder-tree"></i>Arrear Action Register</div><div class="ph-sub">Every arrear taxpayer, auto-listed from the DCR — Notice, Bank Attachment, Third Party &amp; Property pulled live from their own modules</div></div>
+      </div>
+
+      <div class="ar-kpi-grid" id="ar-kpi-grid"></div>
+
+      <div class="ar-filter-bar">
+        <div class="fg"><label>Status</label><select class="fsel" id="ar-status-filter">
+          <option value="">All</option>
+          <option value="fully">Fully Recovered</option>
+          <option value="partly">Partly Recovered</option>
+          <option value="pending">Pending</option>
+        </select></div>
+        <div class="fg"><label>Action Type</label><select class="fsel" id="ar-action-filter">
+          <option value="">All</option>
+          <option value="notice">Notice Issued</option>
+          <option value="bank">Bank Action</option>
+          <option value="thirdparty">Third Party</option>
+          <option value="property">Property Action</option>
+          <option value="followup">Follow-up</option>
+          <option value="none">No Action</option>
+        </select></div>
+        <div class="fg"><label>From Date</label><input type="date" id="ar-from-date"/></div>
+        <div class="fg"><label>To Date</label><input type="date" id="ar-to-date"/></div>
+        <div class="fg" style="flex:1;min-width:220px;"><label>Search</label><div class="search-wrap"><i class="fa-solid fa-magnifying-glass"></i><input type="text" id="ar-filter" oninput="renderArrearActionList()" placeholder="Search GSTIN / Trader..."/></div></div>
+        <div class="fg ar-filter-btn-fg"><button class="btn btn-blue" onclick="arApplyFilters()">Apply</button></div>
+        <div class="fg ar-filter-btn-fg"><button class="btn btn-outline" onclick="arResetFilters()">Reset</button></div>
+      </div>
+
+      <div class="table-wrap ar-cases-card">
+        <div class="ar-list-head-bar">
+          <div class="ar-list-title">Cases (<span id="ar-list-count">0</span>)</div>
+          <button class="btn btn-outline btn-sm" onclick="arExportCSV()"><i class="fa-solid fa-download"></i> Export</button>
+        </div>
+        <div id="ar-table-wrap"></div>
+        <div class="ar-pagination-bar" id="ar-pagination-bar"></div>
+      </div>
+
+      <div class="ar-bottom-grid">
+        <div class="table-wrap ar-upcoming-card">
+          <div class="ar-panel-title"><i class="fa-solid fa-bell"></i> Upcoming Follow-ups (<span id="ar-upcoming-count">0</span>)</div>
+          <div id="ar-upcoming-wrap"></div>
+        </div>
+        <div class="table-wrap ar-summary-card">
+          <div class="ar-panel-title"><i class="fa-solid fa-chart-simple"></i> Action Summary</div>
+          <div class="ar-summary-chart" id="ar-summary-chart"></div>
+        </div>
+      </div>
+
+      <!-- Case Detail Drawer -->
+      <div class="ar-drawer-backdrop" id="ar-drawer-backdrop" onclick="arCloseDrawer()"></div>
+      <div class="ar-drawer" id="ar-drawer">
+        <div id="ar-drawer-content"></div>
+      </div>
+    </div>
+
     <!-- ===== DOWNLOADS ===== -->
     <div class="page" id="page-downloads">
       <div class="ph">
@@ -510,6 +630,7 @@
             <div class="fg full"><label>Address Line 2</label><input type="text" id="cfg-addr2"/></div>
             <div class="fg full"><label>Designation</label><input type="text" id="cfg-desig"/></div>
             <div class="fg full"><label>City</label><input type="text" id="cfg-city"/></div>
+            <div class="fg full"><label>Officer Name</label><input type="text" id="cfg-officer-name" placeholder="e.g. Tmt.S.Anandhajothi — printed as \"Name of Proper Officer\" on signed documents"/></div>
           </div>
           <div style="display:flex;gap:8px;margin-top:16px;align-items:center;">
             <button class="btn btn-red" onclick="saveSettings()"><i class="fa-solid fa-floppy-disk"></i> Save Settings</button>
@@ -529,17 +650,65 @@
   </div>
 </div>
 
-<!-- ===== Bank Attachment Release Modal ===== -->
-<div class="overlay" id="release-overlay">
+
+<!-- ===== Data Upload Required Modal ===== -->
+<div class="overlay" id="dataupload-prompt-overlay">
   <div class="modal">
     <div class="mhead">
-      <div><div class="mtitle">Release Bank Attachment</div><div class="msub">Select the reason for release</div></div>
-      <button class="mclose" onclick="closeReleaseModal()">&times;</button>
+      <div><div class="mtitle"><i class="fa-solid fa-cloud-arrow-up" style="color:var(--blue);margin-right:6px;"></i>Upload Required</div><div class="msub">DCR and Taxpayer Register must be uploaded before you can generate notices or take recovery action.</div></div>
+      <button class="mclose" onclick="closeDataUploadPrompt()">&times;</button>
     </div>
-    <div class="mbody" id="release-modal-body"></div>
+    <div class="mbody">
+      <div id="dataupload-prompt-status" style="font-size:13px;line-height:1.9;"></div>
+    </div>
     <div class="mfoot">
-      <button class="btn btn-outline" onclick="closeReleaseModal()">Cancel</button>
-      <button class="btn btn-red" onclick="confirmRelease()">Confirm Release</button>
+      <button class="btn btn-outline" onclick="closeDataUploadPrompt()">Not Now</button>
+      <button class="btn btn-red" onclick="closeDataUploadPrompt();nav('dataupload');"><i class="fa-solid fa-upload"></i> Go to Data Upload</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== DCR Guidelines Modal ===== -->
+<div class="overlay" id="dcr-guidelines-overlay">
+  <div class="modal">
+    <div class="mhead">
+      <div><div class="mtitle"><i class="fa-solid fa-circle-info" style="color:var(--blue);margin-right:6px;"></i>DCR Upload Guidelines</div><div class="msub">Demand &amp; Collection Register</div></div>
+      <button class="mclose" onclick="closeDcrGuidelines()">&times;</button>
+    </div>
+    <div class="mbody">
+      <ul style="margin:0 0 0 18px;font-size:13px;line-height:1.9;color:var(--ink2);">
+        <li>Upload quarterly DCR files (Excel format only)</li>
+        <li>Multiple quarters and financial years can be uploaded together</li>
+        <li>Newly uploaded DCR will be reconciled with the previously consolidated DCR</li>
+        <li>New demands will be added</li>
+        <li>Closed / eliminated / appeal / HC matters will be updated</li>
+        <li>A reconciliation report will be generated after upload</li>
+      </ul>
+    </div>
+    <div class="mfoot">
+      <button class="btn btn-outline" onclick="closeDcrGuidelines()">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== Taxpayer Register Guidelines Modal ===== -->
+<div class="overlay" id="tpreg-guidelines-overlay">
+  <div class="modal">
+    <div class="mhead">
+      <div><div class="mtitle"><i class="fa-solid fa-circle-info" style="color:var(--blue);margin-right:6px;"></i>Taxpayer Register Upload Guidelines</div><div class="msub">State &amp; Centre Combined Taxpayer List</div></div>
+      <button class="mclose" onclick="closeTpRegGuidelines()">&times;</button>
+    </div>
+    <div class="mbody">
+      <ul style="margin:0 0 0 18px;font-size:13px;line-height:1.9;color:var(--ink2);">
+        <li>Download the MIS_REG_03 "List of Active/Cancelled/Suspended Taxpayer" reports from the GST portal, unmodified</li>
+        <li>Upload each list into its matching zone — Active, Cancelled or Suspended</li>
+        <li>Registration status is auto-detected from each file's own title, so files can't be mixed up between zones</li>
+        <li>Re-uploading a list for the same status replaces that data — GSTINs are matched and updated, not duplicated</li>
+        <li>Taxpayer Register data drives the Active/Cancelled/Suspended collectibility classification used in Reports and Notices</li>
+      </ul>
+    </div>
+    <div class="mfoot">
+      <button class="btn btn-outline" onclick="closeTpRegGuidelines()">Close</button>
     </div>
   </div>
 </div>
@@ -584,8 +753,17 @@
   </div>
 </div>
 
+<!-- ===== Storage-full warning (persistent until dismissed/resolved) ===== -->
+<div id="save-banner">
+  <i class="fa-solid fa-triangle-exclamation"></i>
+  <span id="save-banner-text">Storage full — your latest changes may not be saved.</span>
+  <button type="button" class="btn btn-sm" style="background:#fff;color:var(--navy-text);" onclick="Storage.backup()">Export Backup</button>
+  <button type="button" class="mclose" style="color:#fff;" onclick="document.getElementById('save-banner').classList.remove('show')">&times;</button>
+</div>
+
 <script src="js/lib-loader.js"></script>
 <script src="js/utils.js"></script>
+<script src="js/idb.js"></script>
 <script src="js/state.js"></script>
 <script src="js/business-rules.js"></script>
 <script src="js/import-dcr.js"></script>
@@ -598,6 +776,7 @@
 <script src="js/third-party-notice.js"></script>
 <script src="js/property-attachment.js"></script>
 <script src="js/recovery-profile.js"></script>
+<script src="js/arrear-action-register.js"></script>
 <script src="js/settings.js"></script>
 <script src="js/wizard.js"></script>
 <script src="js/notice-history.js"></script>

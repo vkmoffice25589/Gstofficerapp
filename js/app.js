@@ -59,27 +59,28 @@ function wireModalCloseOnBackdrop() {
 }
 
 document.addEventListener('DOMContentLoaded', function () {
-  Storage.load();
+  /* Storage.load() is async now (IndexedDB) — everything that assumes
+     AppState is already populated (nav('dashboard') first of all) has to
+     wait for it, so the whole bootstrap sequence lives inside .then(). */
+  Storage.load().then(function () {
+    wireImportPage();
+    wireGlobalSearch();
+    wireModalCloseOnBackdrop();
 
-  wireImportPage();
-  wireTaxpayerRegisterPage();
-  wizWireStepperUploads();
-  wireGlobalSearch();
-  wireModalCloseOnBackdrop();
+    var today = todayISO();
+    ['ba-date', 'tp-date', 'pa-date'].forEach(function (id) {
+      var el = document.getElementById(id);
+      if (el && !el.value) el.value = today;
+    });
 
-  var today = todayISO();
-  ['ba-date', 'tp-date', 'pa-date'].forEach(function (id) {
-    var el = document.getElementById(id);
-    if (el && !el.value) el.value = today;
+    nav('dashboard');
+
+    window.LibsReady.then(function () {
+      if (document.getElementById('page-dashboard').classList.contains('active')) renderDashboard();
+    });
+
+    setInterval(function () { Storage.save(); }, 30000);
+
+    window.addEventListener('beforeunload', function () { Storage.save(); });
   });
-
-  nav('dashboard');
-
-  window.LibsReady.then(function () {
-    if (document.getElementById('page-dashboard').classList.contains('active')) renderDashboard();
-  });
-
-  setInterval(function () { Storage.save(); }, 30000);
-
-  window.addEventListener('beforeunload', function () { Storage.save(); });
 });

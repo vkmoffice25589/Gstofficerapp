@@ -1,0 +1,288 @@
+/* ===== Arrear Action Register — design system =====
+   CSS-ONLY presentation layer (no markup/behavior changes). One consistent
+   visual language for the whole page, built on a few disciplined rules
+   instead of decorating each element separately:
+
+   1. ONE accent colour (#2563EB), used only where it means something
+      interactive or a live link — not sprinkled across static chrome.
+   2. Hierarchy comes from type weight/size/colour, not from boxes,
+      gradients or heavy borders. Most surfaces are flat white or a single
+      quiet neutral tint (#F8FAFC).
+   3. Status colour is reserved for the ONE signal that matters per row
+      (the Status pill). The four per-type action cells use a small
+      coloured dot + text instead of four more solid badges — same
+      information, far less visual noise repeated down a long table.
+   4. Every rule is scoped under #page-arrearactions (or a page-unique
+      .ar-* class), so nothing here changes any other page's .table-wrap,
+      .pill, .btn, .gstin-cell, .amount-cell, .ph, or .info-item. */
+
+#page-arrearactions {
+  --ar-ink: #0F172A; --ar-ink-2: #475569; --ar-ink-3: #94A3B8;
+  --ar-border: #E5E9F0; --ar-border-soft: #EEF1F5;
+  --ar-surface-2: #F8FAFC;
+  --ar-accent: #2563EB; --ar-accent-hover: #1D4ED8; --ar-accent-dim: #EFF6FF;
+  --ar-radius: 10px; --ar-radius-sm: 8px;
+}
+
+/* ---- Page header ---- */
+#page-arrearactions.page > .ph { margin-bottom: 22px; }
+#page-arrearactions .ph-title {
+  font-size: 21px; font-weight: 700; color: var(--ar-ink); letter-spacing: -0.2px;
+  font-family: 'Inter', -apple-system, system-ui, sans-serif;
+}
+#page-arrearactions .ph-title i {
+  display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 34px; border-radius: var(--ar-radius-sm);
+  background: var(--ar-accent); color: #fff; font-size: 14px; margin-right: 11px; vertical-align: middle;
+}
+#page-arrearactions .ph-sub { font-size: 13px; color: var(--ar-ink-2); margin-top: 5px; max-width: 780px; line-height: 1.5; }
+
+/* ---- KPI strip — quiet tiles, the number is the hero ----
+   Flexbox, not grid: a grid's columns are shared across every row, so 7
+   tiles (5 + 2) left the last row's 2 tiles stranded under columns 1-2
+   with dead space where columns 3-5 would've been. Flex-wrap lets each
+   row grow its own tiles to fill the width independently. */
+.ar-kpi-grid { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 20px; }
+.ar-kpi-tile {
+  background: #fff; border: 1px solid var(--ar-border); border-radius: var(--ar-radius);
+  padding: 15px 17px; display: flex; align-items: center; gap: 12px; transition: border-color 0.15s ease;
+  flex: 1 1 155px;
+}
+.ar-kpi-tile:hover { border-color: #CBD5E1; }
+.ar-kpi-icon { width: 38px; height: 38px; border-radius: var(--ar-radius-sm); display: flex; align-items: center; justify-content: center; font-size: 15px; flex-shrink: 0; }
+.ar-kpi-icon.kpi-blue   { background: #EAF1FE; color: #2563EB; }
+.ar-kpi-icon.kpi-red    { background: #FDECEC; color: #DC2626; }
+.ar-kpi-icon.kpi-gold   { background: #FDF3E2; color: #B45309; }
+.ar-kpi-icon.kpi-purple { background: #F1EBFC; color: #7C3AED; }
+.ar-kpi-icon.kpi-green  { background: #E7F8EF; color: #16A34A; }
+.ar-kpi-icon.kpi-gray   { background: var(--ar-surface-2); color: var(--ar-ink-3); }
+.ar-kpi-icon.kpi-teal   { background: #E3FAF5; color: #0F766E; }
+.ar-kpi-icon.kpi-amber  { background: #FFEDD5; color: #C2410C; }
+.ar-kpi-val { font-size: 18px; font-weight: 700; font-family: var(--mono); color: var(--ar-ink); line-height: 1.15; letter-spacing: -0.2px; }
+.ar-kpi-tile.ar-kpi-hero .ar-kpi-val { font-size: 20px; color: #C2410C; }
+.ar-kpi-label { font-size: 10px; color: var(--ar-ink-3); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 3px; }
+
+/* ---- Filter bar ---- */
+.ar-filter-bar {
+  display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-end; background: #fff; border: 1px solid var(--ar-border);
+  border-radius: var(--ar-radius); padding: 14px 16px; margin-bottom: 18px;
+}
+.ar-filter-bar .fg { margin: 0; min-width: 0; flex: 0 1 118px; }
+.ar-filter-bar .fg:has(#ar-filter) { flex: 1 1 170px; }
+.ar-filter-bar .fg label { font-size: 10px; color: var(--ar-ink-3); font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px; margin-bottom: 5px; display: block; white-space: nowrap; }
+.ar-filter-bar .fsel, .ar-filter-bar input { width: 100%; box-sizing: border-box; height: 36px; border-radius: var(--ar-radius-sm); border: 1px solid var(--ar-border); font-size: 12.5px; padding-left: 9px; padding-right: 6px; color: var(--ar-ink); }
+.ar-filter-bar .fsel:focus, .ar-filter-bar input:focus { border-color: var(--ar-accent); outline: none; box-shadow: 0 0 0 3px var(--ar-accent-dim); }
+.ar-filter-bar .search-wrap { height: 36px; border-radius: var(--ar-radius-sm); }
+.ar-filter-btn-fg { min-width: 0; flex: 0 0 auto; }
+#page-arrearactions .ar-filter-bar .btn { height: 36px; border-radius: var(--ar-radius-sm); padding: 0 16px; font-size: 12.5px; font-weight: 600; white-space: nowrap; }
+#page-arrearactions .ar-filter-bar .btn-blue { background: var(--ar-accent); border: none; }
+#page-arrearactions .ar-filter-bar .btn-blue:hover { background: var(--ar-accent-hover); }
+#page-arrearactions .ar-filter-bar .btn-outline { border: 1px solid var(--ar-border); color: var(--ar-ink-2); }
+#page-arrearactions .ar-filter-bar .btn-outline:hover { background: var(--ar-surface-2); }
+
+/* ================= Case list card ================= */
+#page-arrearactions .ar-cases-card {
+  border-radius: var(--ar-radius); border: 1px solid var(--ar-border); overflow: hidden;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03);
+}
+#page-arrearactions .ar-cases-card .ar-list-head-bar {
+  display: flex; justify-content: space-between; align-items: center; padding: 16px 18px;
+  border-bottom: 1px solid var(--ar-border); flex-wrap: wrap; gap: 10px; background: #fff;
+}
+#page-arrearactions .ar-cases-card .ar-list-title { font-weight: 700; font-size: 16px; color: var(--ar-ink); letter-spacing: -0.15px; font-family: 'Inter', -apple-system, system-ui, sans-serif; }
+#page-arrearactions .ar-cases-card .btn-outline {
+  border-radius: var(--ar-radius-sm); height: 34px; font-size: 12.5px; font-weight: 600; border: 1px solid var(--ar-border); color: var(--ar-ink-2); background: #fff;
+}
+#page-arrearactions .ar-cases-card .btn-outline:hover { background: var(--ar-surface-2); border-color: #CBD5E1; color: var(--ar-ink); }
+
+#page-arrearactions .ar-cases-card table { font-family: 'Inter', -apple-system, system-ui, sans-serif; }
+#page-arrearactions .ar-cases-card table thead tr { background: var(--ar-surface-2); }
+#page-arrearactions .ar-cases-card table th {
+  font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--ar-ink-2);
+  padding: 12px 16px; border-bottom: 1px solid var(--ar-border); background: var(--ar-surface-2); white-space: nowrap;
+}
+/* top-align, not middle: the Action Status cell stacks 4 rows and is far
+   taller than the other cells, so middle-aligning them left GSTIN/Trader
+   Name/Total Arrear floating in the vertical centre of the row instead of
+   sitting level with "Notice" (the top of that stack). */
+#page-arrearactions .ar-cases-card table td { padding: 14px 16px; font-size: 13px; border-bottom: 1px solid var(--ar-border-soft); color: #1E293B; vertical-align: top; }
+#page-arrearactions .ar-cases-card table tr:last-child td { border-bottom: none; }
+#page-arrearactions .ar-cases-card table tr:hover td { background: var(--ar-surface-2); }
+#page-arrearactions .ar-cases-card .ar-case-row { cursor: pointer; transition: background 0.1s; }
+
+#page-arrearactions .ar-cases-card .gstin-cell { color: var(--ar-accent); font-weight: 600; background: none; text-decoration: none; }
+#page-arrearactions .ar-cases-card .gstin-cell:hover { text-decoration: underline; }
+#page-arrearactions .ar-cases-card .amount-cell { font-size: 13.5px; font-weight: 700; color: var(--ar-ink); font-family: var(--mono); font-variant-numeric: tabular-nums; }
+
+/* Slim, tidy scrollbar so a wide table never feels like raw Excel */
+.table-scroll { scrollbar-width: thin; scrollbar-color: #CBD5E1 transparent; }
+.table-scroll::-webkit-scrollbar { height: 8px; }
+.table-scroll::-webkit-scrollbar-track { background: transparent; }
+.table-scroll::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 999px; }
+.table-scroll::-webkit-scrollbar-thumb:hover { background: #94A3B8; }
+
+/* ---- Status column: the ONE bold pill per row — this is the signal that matters ---- */
+#page-arrearactions .ar-cases-card table td > .pill {
+  font-size: 11px; font-weight: 600; padding: 3px 10px; border-radius: 999px;
+}
+#page-arrearactions .ar-cases-card table td > .pill-red    { background: #FDECEC; color: #DC2626; }
+#page-arrearactions .ar-cases-card table td > .pill-orange { background: #FDF3E2; color: #B45309; }
+#page-arrearactions .ar-cases-card table td > .pill-gold   { background: #FDF3E2; color: #B45309; }
+#page-arrearactions .ar-cases-card table td > .pill-green  { background: #E7F8EF; color: #15803D; }
+#page-arrearactions .ar-cases-card table td > .pill-blue   { background: #EAF1FE; color: #1D4ED8; }
+#page-arrearactions .ar-cases-card table td > .pill-purple { background: #F1EBFC; color: #7C3AED; }
+#page-arrearactions .ar-cases-card table td > .pill-teal   { background: #E3FAF5; color: #0F766E; }
+#page-arrearactions .ar-cases-card table td > .pill-gray   { background: var(--ar-surface-2); color: var(--ar-ink-2); }
+
+/* ---- Action Status column: one stacked block, 4 rows (Notice/Bank/Third
+   Party/Property), replacing what used to be 4 separate table columns.
+   Each row = a coloured status dot + label + status/date (or "Not
+   Started" in muted grey) on the left, the same +/📋 buttons on the
+   right — so an officer reads one cell top-to-bottom instead of scanning
+   across the table, and immediately sees which stage a case is at. */
+#page-arrearactions .ar-cases-card .ar-status-grid { display: flex; flex-direction: column; gap: 7px; min-width: 220px; }
+#page-arrearactions .ar-cases-card .ar-status-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+#page-arrearactions .ar-cases-card .ar-status-info { display: flex; align-items: center; gap: 7px; min-width: 0; }
+#page-arrearactions .ar-cases-card .ar-status-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; background: #CBD5E1; box-shadow: none; }
+#page-arrearactions .ar-cases-card .ar-status-dot.dot-none   { background: #fff; border: 1.5px solid #CBD5E1; }
+#page-arrearactions .ar-cases-card .ar-status-dot.dot-red    { background: #DC2626; }
+#page-arrearactions .ar-cases-card .ar-status-dot.dot-orange { background: #B45309; }
+#page-arrearactions .ar-cases-card .ar-status-dot.dot-gold   { background: #B45309; }
+#page-arrearactions .ar-cases-card .ar-status-dot.dot-green  { background: #16A34A; }
+#page-arrearactions .ar-cases-card .ar-status-dot.dot-blue   { background: #1D4ED8; }
+#page-arrearactions .ar-cases-card .ar-status-dot.dot-purple { background: #7C3AED; }
+#page-arrearactions .ar-cases-card .ar-status-dot.dot-teal   { background: #0F766E; }
+#page-arrearactions .ar-cases-card .ar-status-dot.dot-gray   { background: #94A3B8; }
+#page-arrearactions .ar-cases-card .ar-status-label { font-size: 11.5px; font-weight: 600; color: var(--ar-ink-2); width: 62px; flex-shrink: 0; }
+#page-arrearactions .ar-cases-card .ar-status-value { font-size: 11.5px; color: var(--ar-ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#page-arrearactions .ar-cases-card .ar-status-value.ar-status-muted { color: var(--ar-ink-3); font-style: italic; }
+#page-arrearactions .ar-cases-card .ar-status-sep { color: var(--ar-ink-3); }
+#page-arrearactions .ar-cases-card .ar-cell-empty { color: #CBD5E1; font-size: 13px; }
+
+/* Quiet ghost icon buttons — visible but low-weight so they don't compete
+   with the data; the primary "+" tints accent only on hover/interaction. */
+#page-arrearactions .ar-cases-card .ar-cell-btns { display: flex; gap: 4px; flex-shrink: 0; }
+#page-arrearactions .ar-cases-card .ar-status-row .ar-mini-btn { width: 22px; height: 22px; font-size: 9.5px; }
+#page-arrearactions .ar-cases-card .ar-mini-btn {
+  width: 26px; height: 26px; border-radius: 7px; cursor: pointer; display: inline-flex; align-items: center;
+  justify-content: center; font-size: 10.5px; transition: background 0.12s, color 0.12s, border-color 0.12s;
+  border: 1px solid var(--ar-border); background: #fff; color: var(--ar-ink-3);
+}
+#page-arrearactions .ar-cases-card .ar-mini-btn[title="Record missing info"]:hover { background: var(--ar-accent-dim); border-color: #BFDBFE; color: var(--ar-accent); }
+#page-arrearactions .ar-cases-card .ar-mini-btn[title="View history"]:hover { background: var(--ar-surface-2); border-color: #CBD5E1; color: var(--ar-ink-2); }
+
+/* ---- Pagination (case list card footer) ---- */
+#page-arrearactions .ar-cases-card .ar-pagination-bar { display: flex; align-items: center; justify-content: space-between; padding: 12px 18px; border-top: 1px solid var(--ar-border); flex-wrap: wrap; gap: 10px; background: var(--ar-surface-2); }
+#page-arrearactions .ar-cases-card .ar-pagination-note { font-size: 12px; color: var(--ar-ink-2); }
+#page-arrearactions .ar-cases-card .ar-pagination { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
+#page-arrearactions .ar-cases-card .ar-page-btn { min-width: 30px; height: 30px; padding: 0 9px; border: 1px solid var(--ar-border); background: #fff; border-radius: 7px; font-size: 12px; font-weight: 500; color: var(--ar-ink-2); cursor: pointer; transition: all 0.12s; }
+#page-arrearactions .ar-cases-card .ar-page-btn:hover:not(:disabled) { border-color: #CBD5E1; color: var(--ar-ink); background: var(--ar-surface-2); }
+#page-arrearactions .ar-cases-card .ar-page-btn.active { background: var(--ar-accent); color: #fff; border-color: var(--ar-accent); font-weight: 600; }
+#page-arrearactions .ar-cases-card .ar-page-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+#page-arrearactions .ar-cases-card .ar-page-ellipsis { padding: 0 4px; color: var(--ar-ink-3); font-size: 12px; }
+
+/* ---- Bottom grid: Upcoming Follow-ups + Action Summary ---- */
+.ar-bottom-grid { display: grid; grid-template-columns: 1.35fr 1fr; gap: 16px; margin-top: 18px; }
+@media (max-width: 1000px) { .ar-bottom-grid { grid-template-columns: 1fr; } }
+#page-arrearactions .ar-panel-title { font-weight: 700; font-size: 13.5px; padding: 14px 18px; border-bottom: 1px solid var(--ar-border); display: flex; align-items: center; gap: 9px; color: var(--ar-ink); background: #fff; }
+#page-arrearactions .ar-panel-title i { color: var(--ar-accent); font-size: 12.5px; }
+.ar-upcoming-card table td, .ar-upcoming-card table th { font-size: 12px; }
+
+.ar-summary-chart { display: flex; align-items: flex-end; gap: 20px; padding: 22px 18px 16px; height: 190px; }
+.ar-summary-bar-wrap { display: flex; flex-direction: column; align-items: center; flex: 1; height: 100%; justify-content: flex-end; }
+.ar-summary-bar-val { font-weight: 700; font-size: 12.5px; margin-bottom: 7px; color: var(--ar-ink); font-family: var(--mono); }
+.ar-summary-bar { width: 100%; max-width: 40px; border-radius: 5px 5px 2px 2px; min-height: 4px; }
+.ar-summary-bar-label { font-size: 10.5px; color: var(--ar-ink-3); margin-top: 9px; font-weight: 600; text-align: center; }
+
+/* ================= Case detail drawer ================= */
+.ar-drawer-backdrop {
+  position: fixed; inset: 0; background: rgba(15, 23, 42, 0.4); z-index: 590;
+  opacity: 0; pointer-events: none; transition: opacity 0.2s ease;
+}
+.ar-drawer-backdrop.show { opacity: 1; pointer-events: auto; }
+.ar-drawer {
+  position: fixed; top: 0; right: 0; bottom: 0; width: 560px; max-width: 94vw; background: #fff;
+  box-shadow: -8px 0 30px rgba(15, 23, 42, 0.12); z-index: 600; overflow-y: auto; padding: 26px 24px 40px;
+  transform: translateX(100%); transition: transform 0.26s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.ar-drawer.show { transform: translateX(0); }
+.ar-drawer-close {
+  position: absolute; top: 20px; right: 20px; width: 30px; height: 30px; border: 1px solid var(--ar-border, #E5E9F0);
+  background: #fff; border-radius: 50%; cursor: pointer; color: #94A3B8; font-size: 11px; transition: all 0.12s;
+}
+.ar-drawer-close:hover { color: #DC2626; border-color: #FCA5A5; background: #FEF2F2; }
+
+.ar-detail-name { font-size: 19px; font-weight: 700; color: #0F172A; padding-right: 42px; letter-spacing: -0.2px; }
+.ar-detail-stats { display: grid; gap: 10px; margin: 15px 0; }
+#page-arrearactions .ar-drawer .info-item { border-radius: 8px; background: #F8FAFC; border: 1px solid #EEF1F5; }
+#page-arrearactions .ar-drawer .info-label { font-size: 10px; letter-spacing: 0.4px; }
+#page-arrearactions .ar-drawer .info-val { font-size: 14.5px; }
+
+.ar-case-badge { display: inline-flex; align-items: center; gap: 5px; padding: 5px 12px; border-radius: 999px; font-size: 11px; font-weight: 600; cursor: pointer; border: 1px solid transparent; transition: all 0.12s; }
+.ar-case-badge.open { background: #EAF1FE; color: #2563EB; }
+.ar-case-badge.closed { background: #F1F5F9; color: #64748B; }
+.ar-case-badge:hover { filter: brightness(0.97); }
+
+/* ---- Drawer tabs — segmented control ---- */
+.ar-tabs { display: flex; gap: 3px; background: #F1F5F9; border-radius: 10px; padding: 3px; margin-bottom: 18px; }
+.ar-tab-btn {
+  flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 8px 12px;
+  font-size: 12.5px; font-weight: 600; color: #64748B; background: none; border: none; border-radius: 8px;
+  cursor: pointer; white-space: nowrap; transition: all 0.15s;
+}
+.ar-tab-btn:hover { color: #0F172A; }
+.ar-tab-btn.active { color: #2563EB; background: #fff; font-weight: 700; box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08); }
+
+/* ---- Unified action-history timeline — flat solid dots, no gradients ---- */
+.ar-timeline { position: relative; }
+.ar-tl-item { display: flex; gap: 13px; position: relative; padding-bottom: 20px; }
+.ar-tl-item:last-child { padding-bottom: 0; }
+.ar-tl-item::before { content: ''; position: absolute; left: 15px; top: 34px; bottom: -20px; width: 2px; background: #EEF1F5; }
+.ar-tl-item:last-child::before { display: none; }
+.ar-tl-dot { flex-shrink: 0; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; color: #fff; z-index: 1; }
+.ar-tl-notice     .ar-tl-dot { background: #DC2626; }
+.ar-tl-bank        .ar-tl-dot { background: #B45309; }
+.ar-tl-thirdparty .ar-tl-dot { background: #7C3AED; }
+.ar-tl-property    .ar-tl-dot { background: #2563EB; }
+.ar-tl-recovery    .ar-tl-dot { background: #16A34A; }
+.ar-tl-followup   .ar-tl-dot { background: #0F766E; }
+.ar-tl-remark      .ar-tl-dot { background: #64748B; }
+
+.ar-tl-body { flex: 1; background: #F8FAFC; border: 1px solid #EEF1F5; border-radius: 10px; padding: 12px 14px; min-width: 0; }
+.ar-tl-top { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; }
+.ar-tl-title { font-weight: 600; font-size: 13px; color: #0F172A; }
+.ar-tl-date { font-size: 11px; color: #94A3B8; font-family: var(--mono); white-space: nowrap; }
+.ar-tl-amount { font-family: var(--mono); font-weight: 700; color: #0F172A; margin-top: 6px; font-size: 13px; font-variant-numeric: tabular-nums; }
+.ar-tl-ref { font-size: 12px; color: #475569; margin-top: 4px; }
+.ar-tl-remarks { font-size: 12px; color: #94A3B8; font-style: italic; margin-top: 4px; }
+.ar-tl-module { font-size: 10px; color: #CBD5E1; margin-top: 7px; text-transform: uppercase; letter-spacing: 0.4px; font-weight: 600; }
+.ar-tl-next {
+  display: inline-flex; align-items: center; gap: 5px; margin-top: 8px; background: #FEF3C7;
+  color: #B45309; border: 1px solid #FDE68A; border-radius: 999px; padding: 3px 10px;
+  font-size: 10.5px; font-weight: 600;
+}
+.ar-tl-actions { display: flex; gap: 6px; margin-top: 8px; }
+.ar-tl-actions button { width: 24px; height: 24px; border: 1px solid #E5E9F0; background: #fff; border-radius: 6px; color: #94A3B8; cursor: pointer; font-size: 10px; transition: all 0.12s; }
+.ar-tl-actions button:hover { color: #2563EB; border-color: #BFDBFE; background: #EFF6FF; }
+
+/* ---- Quick-add inline form + timeline-filter chip ---- */
+.ar-inline-form { background: #F8FAFC; border: 1px solid #EEF1F5; border-radius: 10px; padding: 15px 16px; margin-bottom: 15px; }
+.ar-inline-form-title { font-size: 12px; font-weight: 700; color: #0F172A; margin-bottom: 10px; }
+.ar-due-chip { display: inline-flex; align-items: center; gap: 6px; background: #FEF3C7; color: #B45309; border: 1px solid #FDE68A; border-radius: 999px; padding: 5px 12px; font-size: 11px; font-weight: 600; cursor: pointer; }
+
+/* ---- Small icon buttons (legacy — kept in case referenced elsewhere) ---- */
+.reg-icon-btn, .reg-del-btn {
+  flex-shrink: 0; width: 26px; height: 26px; border: 1px solid var(--border); background: var(--surface);
+  border-radius: var(--radius-sm); color: var(--ink3); cursor: pointer; display: inline-flex; align-items: center;
+  justify-content: center; font-size: 11px;
+}
+.reg-icon-btn:hover { border-color: var(--primary-blue); color: var(--primary-blue); }
+.reg-del-btn:hover { border-color: var(--danger); color: var(--danger); }
+
+/* ---- Extra pill colours this module needs beyond base.css ---- */
+.pill-teal { background: #E3FAF5; color: #0F766E; }
+.pill-dark { background: #E2E8F0; color: #0F172A; }
+
+@media (max-width: 680px) {
+  .ar-drawer { width: 100%; max-width: 100%; padding: 22px 18px 32px; }
+  .ar-filter-bar .fg { min-width: 100%; }
+}

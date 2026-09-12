@@ -116,7 +116,7 @@ async function autoFillFromIFSC() {
   }
 }
 
-function saveBankAtt() {
+function generateBankAttachment() {
   if (!_baSelectedGSTIN || !_baSelectedCases.length) { showToast('⚠️ Select a taxpayer with demands ≥ 90 days first'); return; }
   var bankName = document.getElementById('ba-bank-name').value.trim();
   var ifsc = document.getElementById('ba-ifsc').value.trim();
@@ -126,7 +126,7 @@ function saveBankAtt() {
   var totalAmt = _baSelectedCases.reduce(function (s, c) { return s + (Number(c.pend_total) || 0); }, 0);
 
   var b = {
-    id: uid('bank'), gstin: _baSelectedGSTIN, legalName: c0.legalName, cases: _baSelectedCases, totalAmt: totalAmt,
+    id: uid('bank'), gstin: _baSelectedGSTIN, legalName: c0.legalName, cases: caseSnapshots(_baSelectedCases), totalAmt: totalAmt,
     bankName: bankName, branch: document.getElementById('ba-branch').value.trim(),
     branchAddr: document.getElementById('ba-branch-addr').value.trim(), ifsc: ifsc,
     accno: document.getElementById('ba-accno').value.trim(), accType: document.getElementById('ba-acctype').value,
@@ -140,11 +140,24 @@ function saveBankAtt() {
 
   AppState.bankAtts.push(b);
   persist();
-  showToast('✅ Bank attachment ' + b.ref + ' saved');
+  showToast('✅ Bank attachment ' + b.ref + ' saved — generating documents...');
   resetBankForm();
   renderBankAtts();
   updateSidebar();
   if (typeof renderDashboard === 'function' && document.getElementById('page-dashboard').classList.contains('active')) renderDashboard();
+  downloadBankAttDocs(b);
+}
+
+/* Generates and downloads both documents (Letter to Bank + Form DRC-13),
+   each as Word and PDF — four files — from the saved record's data, the
+   same "regenerate fresh from saved fields, never persist the file itself"
+   pattern every other document type in this app already follows. */
+function downloadBankAttDocs(b) {
+  var cfg = getSettings();
+  buildBankLetterDocx(b, cfg).then(function (blob) { downloadBlob(blob, b.ref.replace(/\//g, '_') + '_Letter.docx'); });
+  generateBankLetterPDF(b, cfg);
+  buildBankDrc13Docx(b, cfg).then(function (blob) { downloadBlob(blob, b.ref.replace(/\//g, '_') + '_DRC13.docx'); });
+  generateBankDrc13PDF(b, cfg);
 }
 
 function resetBankForm() {
@@ -168,16 +181,17 @@ function setBankAmount(text) {
 function renderBankAtts() {
   var wrap = document.getElementById('bank-atts-list');
   if (!wrap) return;
-  if (!AppState.bankAtts.length) {
-    wrap.innerHTML = '<div class="empty"><div class="empty-icon"><i class="fa-solid fa-building-columns" style="font-size:40px;color:var(--blue);opacity:0.4;"></i></div><div class="empty-title">No Bank Attachments</div><div class="empty-sub">Attachments you create will appear here</div></div>';
+  var active = AppState.bankAtts.filter(function (b) { return !b.released; });
+  if (!active.length) {
+    wrap.innerHTML = '<div class="empty"><div class="empty-icon"><i class="fa-solid fa-building-columns" style="font-size:40px;color:var(--blue);opacity:0.4;"></i></div><div class="empty-title">No Active Bank Attachments</div><div class="empty-sub">Attachments you create will appear here until released — see the Release Attachment tab for released ones</div></div>';
     return;
   }
-  var list = AppState.bankAtts.slice().sort(function (a, b) { return new Date(b.createdAt) - new Date(a.createdAt); });
+  var list = active.slice().sort(function (a, b) { return new Date(b.createdAt) - new Date(a.createdAt); });
   wrap.innerHTML = list.map(function (b) {
-    return '<div class="ba-card' + (b.released ? ' released' : '') + '">'
+    return '<div class="ba-card">'
       + '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap;">'
       + '<div><div style="font-weight:700;font-size:13px;">' + xe(b.legalName) + '</div><div class="gstin-cell">' + xe(b.gstin) + '</div></div>'
-      + (b.released ? '<span class="pill pill-gray">Released ' + fmtDate(b.releasedDate) + '</span>' : '<span class="pill pill-red">Active</span>')
+      + '<span class="pill pill-red">Active</span>'
       + '</div>'
       + '<div class="info-grid" style="margin-top:10px;">'
       + '<div class="info-item"><div class="info-label">Bank</div><div class="info-val" style="font-size:12px;">' + xe(b.bankName) + '</div></div>'
@@ -185,35 +199,166 @@ function renderBankAtts() {
       + '<div class="info-item"><div class="info-label">Account No.</div><div class="info-val" style="font-size:12px;">' + xe(b.accno || '—') + '</div></div>'
       + '<div class="info-item"><div class="info-label">Attached Amount</div><div class="info-val" style="color:var(--red);">' + fmt(b.totalAmt) + '</div></div>'
       + '</div>'
-      + '<div style="display:flex;gap:8px;margin-top:12px;">'
-      + (!b.released ? '<button class="btn btn-orange btn-xs" onclick="openReleaseModal(\'' + b.id + '\')"><i class="fa-solid fa-unlock"></i> Release</button>' : '')
+      + '<div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;align-items:center;">'
+      + '<span style="font-size:11px;color:var(--ink3);">Letter to Bank:</span>'
+      + '<button class="btn btn-outline btn-xs" onclick="baDownloadLetter(\'' + b.id + '\',\'docx\')"><i class="fa-solid fa-file-word"></i> Word</button>'
+      + '<button class="btn btn-outline btn-xs" onclick="baDownloadLetter(\'' + b.id + '\',\'pdf\')"><i class="fa-solid fa-file-pdf"></i> PDF</button>'
+      + '<span style="font-size:11px;color:var(--ink3);margin-left:6px;">DRC-13:</span>'
+      + '<button class="btn btn-outline btn-xs" onclick="baDownloadDrc13(\'' + b.id + '\',\'docx\')"><i class="fa-solid fa-file-word"></i> Word</button>'
+      + '<button class="btn btn-outline btn-xs" onclick="baDownloadDrc13(\'' + b.id + '\',\'pdf\')"><i class="fa-solid fa-file-pdf"></i> PDF</button>'
+      + '<button class="btn btn-orange btn-xs" onclick="baGoToRelease(\'' + b.id + '\')"><i class="fa-solid fa-unlock"></i> Release</button>'
       + '</div></div>';
   }).join('');
 }
 
-var RELEASE_REASONS = ['Demand Paid', 'First Appeal Filed', 'WP Filed & Stay Obtained', 'Revision - Demand Nullified'];
-var _releaseTargetId = null;
-
-function openReleaseModal(id) {
-  _releaseTargetId = id;
-  var opts = RELEASE_REASONS.map(function (r, i) {
-    return '<label style="display:flex;align-items:center;gap:8px;padding:8px 0;font-size:12px;"><input type="radio" name="release-reason" value="' + xe(r) + '" ' + (i === 0 ? 'checked' : '') + '> ' + xe(r) + '</label>';
-  }).join('');
-  document.getElementById('release-modal-body').innerHTML = opts;
-  document.getElementById('release-overlay').classList.add('show');
-}
-function closeReleaseModal() { document.getElementById('release-overlay').classList.remove('show'); _releaseTargetId = null; }
-
-function confirmRelease() {
-  var b = AppState.bankAtts.find(function (x) { return x.id === _releaseTargetId; });
+function baDownloadLetter(id, fmt) {
+  var b = AppState.bankAtts.find(function (x) { return x.id === id; });
   if (!b) return;
-  var reasonEl = document.querySelector('input[name="release-reason"]:checked');
-  var reason = reasonEl ? reasonEl.value : RELEASE_REASONS[0];
-  b.released = true; b.releasedDate = todayISO(); b.releasedReason = reason;
+  var cfg = getSettings();
+  if (fmt === 'pdf') generateBankLetterPDF(b, cfg);
+  else buildBankLetterDocx(b, cfg).then(function (blob) { downloadBlob(blob, b.ref.replace(/\//g, '_') + '_Letter.docx'); });
+}
+function baDownloadDrc13(id, fmt) {
+  var b = AppState.bankAtts.find(function (x) { return x.id === id; });
+  if (!b) return;
+  var cfg = getSettings();
+  if (fmt === 'pdf') generateBankDrc13PDF(b, cfg);
+  else buildBankDrc13Docx(b, cfg).then(function (blob) { downloadBlob(blob, b.ref.replace(/\//g, '_') + '_DRC13.docx'); });
+}
+
+/* ===== Release Attachment tab — search across every active bank
+   attachment, then release the selected one with the full Release Order
+   (matching the office's "Bank release Reference" format) generated as
+   Word + PDF. Replaces the old bare reason-only modal, which couldn't
+   capture the case-specific facts (petition date, taxpayer address,
+   narrative) the real release order needs. ===== */
+var RELEASE_REASONS = ['Demand Paid', 'First Appeal Filed', 'WP Filed & Stay Obtained', 'Revision - Demand Nullified'];
+var RELEASE_NARRATIVE_TEMPLATES = {
+  'Demand Paid': 'The taxpayer has since remitted the outstanding demand in full and has furnished proof of payment to this office.',
+  'First Appeal Filed': 'The taxpayer has filed a reply to this office stating that they have filed a First Appeal against the demand along with the requisite pre-deposit, and has furnished proof of the same.',
+  'WP Filed & Stay Obtained': 'The taxpayer has filed a reply to this office stating that they have filed a writ petition before the Honourable High Court and have complied with the conditions ordered therein.',
+  'Revision - Demand Nullified': 'The demand against the taxpayer has been nullified pursuant to a revision order passed by the competent authority, a copy of which has been furnished to this office.'
+};
+var _brSelectedId = null;
+
+function renderBankReleaseTab() {
+  var s = document.getElementById('br-search'); if (s) s.value = '';
+  var r = document.getElementById('br-search-results'); if (r) r.style.display = 'none';
+  var f = document.getElementById('br-form-card'); if (f) f.style.display = 'none';
+  _brSelectedId = null;
+  renderReleasedList();
+}
+
+function brSearchAttachment(query) {
+  var resultsEl = document.getElementById('br-search-results');
+  query = (query || '').trim().toUpperCase();
+  if (query.length < 2) { resultsEl.style.display = 'none'; return; }
+  var matches = AppState.bankAtts.filter(function (b) { return !b.released; }).filter(function (b) {
+    return (b.gstin || '').toUpperCase().indexOf(query) !== -1 || (b.legalName || '').toUpperCase().indexOf(query) !== -1 || (b.bankName || '').toUpperCase().indexOf(query) !== -1;
+  }).slice(0, 12);
+  resultsEl.innerHTML = matches.length
+    ? matches.map(function (b) { return '<div class="gs-item" onclick="brSelectAttachment(\'' + b.id + '\')"><strong>' + xe(b.legalName) + '</strong><br><span style="color:var(--ink3);font-family:var(--mono);font-size:10px;">' + xe(b.gstin) + ' • ' + xe(b.bankName) + '</span></div>'; }).join('')
+    : '<div class="gs-item">No active attachments found</div>';
+  resultsEl.style.display = 'block';
+}
+
+function brSelectAttachment(id) {
+  var b = AppState.bankAtts.find(function (x) { return x.id === id; });
+  if (!b) return;
+  _brSelectedId = id;
+  document.getElementById('br-search').value = b.legalName;
+  document.getElementById('br-search-results').style.display = 'none';
+
+  document.getElementById('br-selected-name').textContent = b.legalName;
+  document.getElementById('br-selected-sub').textContent = b.gstin;
+  document.getElementById('br-selected-info').innerHTML =
+    '<div class="info-item"><div class="info-label">Bank</div><div class="info-val" style="font-size:12px;">' + xe(b.bankName) + '</div></div>'
+    + '<div class="info-item"><div class="info-label">IFSC</div><div class="info-val" style="font-size:12px;">' + xe(b.ifsc) + '</div></div>'
+    + '<div class="info-item"><div class="info-label">Account No.</div><div class="info-val" style="font-size:12px;">' + xe(b.accno || '—') + '</div></div>'
+    + '<div class="info-item"><div class="info-label">Attached Amount</div><div class="info-val" style="color:var(--red);">' + fmt(b.totalAmt) + '</div></div>'
+    + '<div class="info-item"><div class="info-label">Attachment Ref.</div><div class="info-val" style="font-size:12px;">' + xe(b.ref) + '</div></div>'
+    + '<div class="info-item"><div class="info-label">Attached On</div><div class="info-val" style="font-size:12px;">' + fmtDate(b.date) + '</div></div>';
+
+  var reasonSel = document.getElementById('br-reason');
+  reasonSel.innerHTML = RELEASE_REASONS.map(function (r) { return '<option value="' + xe(r) + '">' + xe(r) + '</option>'; }).join('');
+  document.getElementById('br-release-date').value = todayISO();
+  document.getElementById('br-petition-date').value = '';
+  var addr = AppState.addressCache[b.gstin] || AppState.addressCache[(b.gstin || '').toUpperCase()];
+  document.getElementById('br-addr').value = (addr && addr.address) || '';
+  document.getElementById('br-narrative').value = RELEASE_NARRATIVE_TEMPLATES[RELEASE_REASONS[0]];
+
+  document.getElementById('br-form-card').style.display = 'block';
+  document.getElementById('br-form-card').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+function brReasonChanged() {
+  var reason = document.getElementById('br-reason').value;
+  document.getElementById('br-narrative').value = RELEASE_NARRATIVE_TEMPLATES[reason] || '';
+}
+
+function brGenerateRelease() {
+  var b = AppState.bankAtts.find(function (x) { return x.id === _brSelectedId; });
+  if (!b) { showToast('⚠️ Select an attachment first'); return; }
+  var narrative = document.getElementById('br-narrative').value.trim();
+  if (!narrative) { showToast('⚠️ Enter the case details for the release order'); return; }
+
+  b.released = true;
+  b.releasedDate = document.getElementById('br-release-date').value || todayISO();
+  b.releasedReason = document.getElementById('br-reason').value;
+  b.releasedPetitionDate = document.getElementById('br-petition-date').value;
+  b.releasedAddr = document.getElementById('br-addr').value.trim();
+  b.releasedNarrative = narrative;
   persist();
-  closeReleaseModal();
+
+  showToast('✅ Attachment released — generating release order...');
+  var cfg = getSettings();
+  buildBankReleaseDocx(b, cfg).then(function (blob) { downloadBlob(blob, b.ref.replace(/\//g, '_') + '_Release.docx'); });
+  generateBankReleasePDF(b, cfg);
+
+  renderBankReleaseTab();
   renderBankAtts();
+  updateSidebar();
   if (typeof renderDashboard === 'function' && document.getElementById('page-dashboard').classList.contains('active')) renderDashboard();
-  buildBankReleaseDocx(b, reason, getSettings()).then(function (blob) { downloadBlob(blob, b.ref.replace(/\//g, '_') + '_Release.docx'); });
-  showToast('✅ Attachment released');
+}
+
+function renderReleasedList() {
+  var wrap = document.getElementById('br-released-list');
+  if (!wrap) return;
+  var list = AppState.bankAtts.filter(function (b) { return b.released; })
+    .sort(function (a, b) { return new Date(b.releasedDate || 0) - new Date(a.releasedDate || 0); });
+  if (!list.length) {
+    wrap.innerHTML = '<div class="empty"><div class="empty-sub">No attachments released yet.</div></div>';
+    return;
+  }
+  wrap.innerHTML = list.map(function (b) {
+    return '<div class="ba-card released">'
+      + '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap;">'
+      + '<div><div style="font-weight:700;font-size:13px;">' + xe(b.legalName) + '</div><div class="gstin-cell">' + xe(b.gstin) + '</div></div>'
+      + '<span class="pill pill-gray">Released ' + fmtDate(b.releasedDate) + '</span>'
+      + '</div>'
+      + '<div class="info-grid" style="margin-top:10px;">'
+      + '<div class="info-item"><div class="info-label">Bank</div><div class="info-val" style="font-size:12px;">' + xe(b.bankName) + '</div></div>'
+      + '<div class="info-item"><div class="info-label">Reason</div><div class="info-val" style="font-size:12px;">' + xe(b.releasedReason || '—') + '</div></div>'
+      + '</div>'
+      + '<div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;align-items:center;">'
+      + '<button class="btn btn-outline btn-xs" onclick="brDownloadRelease(\'' + b.id + '\',\'docx\')"><i class="fa-solid fa-file-word"></i> Release Order (Word)</button>'
+      + '<button class="btn btn-outline btn-xs" onclick="brDownloadRelease(\'' + b.id + '\',\'pdf\')"><i class="fa-solid fa-file-pdf"></i> PDF</button>'
+      + '</div></div>';
+  }).join('');
+}
+
+function brDownloadRelease(id, fmt) {
+  var b = AppState.bankAtts.find(function (x) { return x.id === id; });
+  if (!b) return;
+  var cfg = getSettings();
+  if (fmt === 'pdf') generateBankReleasePDF(b, cfg);
+  else buildBankReleaseDocx(b, cfg).then(function (blob) { downloadBlob(blob, b.ref.replace(/\//g, '_') + '_Release.docx'); });
+}
+
+/* Jump straight from a card's "Release" button in the Bank Attachment
+   tab into the Release Attachment tab, with that attachment pre-selected. */
+function baGoToRelease(id) {
+  var tabEl = document.querySelector('#page-bulknotice .tab[data-tab="bankrelease"]');
+  bulkTab('bankrelease', tabEl);
+  brSelectAttachment(id);
 }

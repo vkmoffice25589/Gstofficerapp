@@ -16,6 +16,27 @@ function isValidCase(c) {
   return true;
 }
 
+/* Notices/bank attachments/third-party notices/property attachments each
+   embed the specific demands they cover, so a historical document can be
+   reprinted with the exact figures as they stood when it was issued (DCR
+   data changes over time — that's a real, deliberate feature). But every
+   caller only ever reads a handful of fields off those embedded cases
+   (see docx-export.js/pdf-export.js/notices.js demand tables) — not the
+   full ~18-field DCR row (orig_* amounts, demandStatus, recoveryStatus,
+   recoveryId, importedAt, gstin, legalName are all unused there, and
+   gstin/legalName are redundant with the parent record anyway). Storing
+   the full row per demand per document, forever, is what fills up
+   localStorage over time even when the live DCR itself stays small.
+   This trims to exactly what's read back later. */
+function caseSnapshot(c) {
+  return {
+    demandId: c.demandId, taxPeriod: c.taxPeriod, section: c.section,
+    dcr_date: c.dcr_date, demandDate: c.demandDate, fy: c.fy,
+    pend_igst: c.pend_igst, pend_cgst: c.pend_cgst, pend_sgst: c.pend_sgst, pend_cess: c.pend_cess, pend_total: c.pend_total
+  };
+}
+function caseSnapshots(list) { return (list || []).map(caseSnapshot); }
+
 var EXCLUDED_STATUSES = [
   'Appeal Application Submitted - Tribunal',
   'Appeal Filed against Waiver Rejection Order',
@@ -160,10 +181,11 @@ function computeGstinGroups(caseList) {
   var source = (caseList || AppState.cases).filter(isValidCase);
   var byGstin = {};
   source.forEach(function (c) {
-    if (!byGstin[c.gstin]) {
-      byGstin[c.gstin] = { gstin: c.gstin, legalName: c.legalName, total: 0, demands: 0, cases: [], eligibleCases: [], ineligibleCases: [] };
+    var gstin = String(c.gstin || '').trim();
+    if (!byGstin[gstin]) {
+      byGstin[gstin] = { gstin: gstin, legalName: c.legalName, total: 0, demands: 0, cases: [], eligibleCases: [], ineligibleCases: [] };
     }
-    var g = byGstin[c.gstin];
+    var g = byGstin[gstin];
     g.total += Number(c.pend_total) || 0;
     g.demands++;
     g.cases.push(c);

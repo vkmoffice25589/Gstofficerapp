@@ -3,8 +3,10 @@
 var PAGE_RENDERERS = {
   dashboard: function () { renderDashboard(); },
   cases: function () { renderReports(); },
-  bulknotice: function () { renderWizardStepper(); updateBulkAllCount(); renderBankAtts(); renderThirdPartyList(); renderPropertyList(); },
+  dataupload: function () { renderWizardStepper(); },
+  bulknotice: function () { renderBulkNoticePage(); updateBulkAllCount(); renderBankAtts(); renderThirdPartyList(); renderPropertyList(); },
   taxpayers: function () { /* profile loads on search */ },
+  arrearactions: function () { renderArrearActionList(); },
   history: function () { renderNoticeHistoryPage(); },
   downloads: function () { renderDownloadsPage(); },
   settings: function () { initSettingsPage(); }

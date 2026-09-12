@@ -15,30 +15,30 @@ async function buildNoticePdfDoc(notice, cfg) {
   var gstin = notice.gstin || '—';
   var y = 50;
 
-  doc.setFont('helvetica', 'bold'); doc.setFontSize(11);
+  doc.setFont('times', 'bold'); doc.setFontSize(11);
   doc.text('Office of the ' + (cfg.desig || ''), rightX, y, { align: 'right' }); y += 14;
   doc.text(cfg.circle || '', rightX, y, { align: 'right' }); y += 14;
-  doc.setFont('helvetica', 'normal'); doc.setFontSize(9);
+  doc.setFont('times', 'normal'); doc.setFontSize(10);
   doc.text(cfg.addr1 || '', rightX, y, { align: 'right' }); y += 12;
   doc.text(cfg.addr2 || '', rightX, y, { align: 'right' }); y += 22;
 
-  doc.setFont('helvetica', 'normal'); doc.setFontSize(10);
+  doc.setFont('times', 'normal'); doc.setFontSize(10);
   doc.text('Notice No: ' + (notice.num || '—'), marginX, y);
   doc.text('Dated : ' + fmtDateDot(notice.date), rightX, y, { align: 'right' }); y += 24;
 
-  doc.setFont('helvetica', 'bold'); doc.setFontSize(13);
+  doc.setFont('times', 'bold'); doc.setFontSize(13);
   doc.text(isUrgent ? 'URGENT NOTICE' : 'INTIMATION NOTICE', pageW / 2, y, { align: 'center' }); y += 16;
   doc.setFontSize(11);
   doc.text('NON-PAYMENT OF GST ARREARS', pageW / 2, y, { align: 'center' }); y += 20;
 
-  doc.setFont('helvetica', 'normal'); doc.setFontSize(10);
+  doc.setFont('times', 'normal'); doc.setFontSize(10);
   doc.text('To', marginX, y); y += 4;
 
   doc.autoTable({
     startY: y,
     body: [['GSTIN', ': ' + gstin], ['Legal Name of the Business', ': ' + legalName]],
     theme: 'plain',
-    styles: { font: 'helvetica', fontSize: 10, cellPadding: 2 },
+    styles: { font: 'times', fontSize: 10, cellPadding: 2 },
     margin: { left: marginX, right: 50 }
   });
   y = doc.lastAutoTable.finalY + 8;
@@ -54,7 +54,7 @@ async function buildNoticePdfDoc(notice, cfg) {
       [{ content: 'Ref', styles: { fontStyle: 'bold' } }, refText]
     ],
     theme: 'plain',
-    styles: { font: 'helvetica', fontSize: 9, cellPadding: 3 },
+    styles: { font: 'times', fontSize: 10, cellPadding: 3 },
     columnStyles: { 0: { cellWidth: 35 } },
     margin: { left: marginX, right: 50 }
   });
@@ -66,7 +66,7 @@ async function buildNoticePdfDoc(notice, cfg) {
   var opening = 'Tvl.' + legalName + ', registered with the office of the ' + (cfg.desig || '') + ', ' + (cfg.circle || '')
     + ' is hereby informed they are in arrears of Goods and Services Tax as detailed below:';
   var openingLines = doc.splitTextToSize(opening, rightX - marginX);
-  doc.text(openingLines, marginX, y); y += openingLines.length * 12 + 8;
+  doc.text(openingLines, marginX, y); y += openingLines.length * 13 + 8;
 
   var rows = (notice.cases || []).map(function (c) {
     return [c.taxPeriod || '—', c.demandId || '—', fmtDate(c.dcr_date || c.demandDate),
@@ -89,66 +89,66 @@ async function buildNoticePdfDoc(notice, cfg) {
     head: [['ASSESSMENT YEAR', 'DEMAND ID', 'DATE OF DEMAND ORDER', 'IGST', 'CGST', 'SGST', 'CESS', 'TOTAL']],
     body: rows,
     theme: 'grid',
-    styles: { font: 'helvetica', fontSize: 8, cellPadding: 4 },
+    styles: { font: 'times', fontSize: 9.5, cellPadding: 4 },
     headStyles: { fillColor: [31, 78, 121], textColor: 255 },
     columnStyles: { 3: { halign: 'right' }, 4: { halign: 'right' }, 5: { halign: 'right' }, 6: { halign: 'right' }, 7: { halign: 'right' } },
     margin: { left: marginX, right: 50 }
   });
   y = doc.lastAutoTable.finalY + 14;
 
-  doc.setFont('helvetica', 'normal'); doc.setFontSize(8);
+  doc.setFont('times', 'normal'); doc.setFontSize(8);
   doc.text('(AMOUNT IN RS)', rightX, y, { align: 'right' }); y += 16;
 
-  doc.setFont('helvetica', 'bold'); doc.setFontSize(10);
+  doc.setFont('times', 'bold'); doc.setFontSize(10);
   var payableLine = 'Total Amount Payable: Rs. ' + fmt0(sums.total) + ' (Rupees ' + numToWords(sums.total) + ' Only)';
   var payableLines = doc.splitTextToSize(payableLine, rightX - marginX);
   doc.text(payableLines, marginX, y); y += payableLines.length * 13 + 6;
   if (notice.details) {
-    doc.setFont('helvetica', 'normal');
+    doc.setFont('times', 'normal');
     var remarkLines = doc.splitTextToSize('Remarks: ' + notice.details, rightX - marginX);
-    doc.text(remarkLines, marginX, y); y += remarkLines.length * 12 + 8;
+    doc.text(remarkLines, marginX, y); y += remarkLines.length * 13 + 8;
   }
 
-  doc.setFont('helvetica', 'normal'); doc.setFontSize(9);
+  doc.setFont('times', 'normal'); doc.setFontSize(10);
   var leadIn = isUrgent
     ? 'The Taxpayer is informed that the arrears have not been paid even after the expiry of 90 days from the date of the order. If the above amount is not paid immediately on receipt of this notice, recovery action will be initiated to realise the arrears in accordance with the provisions of the GST Act, 2017 by:'
     : 'The taxpayer is hereby informed that arrears are pending. If the arrears remain unpaid after the expiry of 90 days from the date of the order and no appeal has been filed, recovery action will be initiated to realise the dues in accordance with the provisions of the GST Act, 2017, by:';
   var leadInLines = doc.splitTextToSize(leadIn, rightX - marginX);
-  doc.text(leadInLines, marginX, y); y += leadInLines.length * 11 + 6;
+  doc.text(leadInLines, marginX, y); y += leadInLines.length * 13 + 6;
 
   noticeActionList.forEach(function (t) {
     var lines = doc.splitTextToSize('•  ' + t, rightX - marginX);
-    doc.text(lines, marginX, y); y += lines.length * 11 + 2;
+    doc.text(lines, marginX, y); y += lines.length * 13 + 3;
   });
   y += 10;
 
-  doc.setFont('helvetica', 'bold'); doc.text('Payment Gateway:', marginX, y); y += 14;
-  doc.setFont('helvetica', 'normal');
+  doc.setFont('times', 'bold'); doc.text('Payment Gateway:', marginX, y); y += 14;
+  doc.setFont('times', 'normal');
   var payLines = doc.splitTextToSize('The Taxpayer is advised to pay the above said arrears through GSTIN Portal by selecting the option "Payment towards demand".', rightX - marginX);
-  doc.text(payLines, marginX, y); y += payLines.length * 11 + 10;
+  doc.text(payLines, marginX, y); y += payLines.length * 13 + 10;
 
-  doc.setFont('helvetica', 'bold'); doc.text('Note:', marginX, y); y += 14;
-  doc.setFont('helvetica', 'normal');
+  doc.setFont('times', 'bold'); doc.text('Note:', marginX, y); y += 14;
+  doc.setFont('times', 'normal');
   [
     'If the tax has already been paid, you are requested to submit the payment details to this office immediately, otherwise it will be presumed that the balance still exists.',
     'If the case is pending before any appellate forum, you are requested to submit the details to this office immediately.',
     'Other than above no representation, in person or through postal.'
   ].forEach(function (t) {
     var lines = doc.splitTextToSize('•  ' + t, rightX - marginX);
-    doc.text(lines, marginX, y); y += lines.length * 11 + 2;
+    doc.text(lines, marginX, y); y += lines.length * 13 + 3;
   });
   y += 16;
 
   if (y > 720) { doc.addPage(); y = 50; }
 
-  doc.setFont('helvetica', 'normal'); doc.setFontSize(10);
+  doc.setFont('times', 'normal'); doc.setFontSize(10);
   doc.text(cfg.desig || '', rightX, y, { align: 'right' }); y += 14;
   doc.text(cfg.circle || '', rightX, y, { align: 'right' }); y += 14;
   doc.text(cfg.city || '', rightX, y, { align: 'right' }); y += 28;
 
   doc.text('To,', marginX, y); y += 14;
-  doc.setFont('helvetica', 'bold'); doc.text(legalName, marginX, y); y += 14;
-  doc.setFont('helvetica', 'normal');
+  doc.setFont('times', 'bold'); doc.text(legalName, marginX, y); y += 14;
+  doc.setFont('times', 'normal');
   if (notice.address) doc.text(notice.address, marginX, y);
 
   return doc;
@@ -162,4 +162,266 @@ async function generateNoticePDF(notice, cfg) {
 async function buildNoticePdfBlob(notice, cfg) {
   var doc = await buildNoticePdfDoc(notice, cfg);
   return doc.output('blob');
+}
+
+/* ===== Bank Attachment — Covering Letter to Bank (PDF) =====
+   Mirrors buildBankLetterDocx() in docx-export.js so the Word and PDF
+   downloads of the same letter always match. */
+async function buildBankLetterPdfDoc(b, cfg) {
+  await window.LibsReady;
+  var jsPDFCtor = window.jspdf ? window.jspdf.jsPDF : window.jsPDF;
+  var doc = new jsPDFCtor({ unit: 'pt', format: 'a4' });
+  var pageW = doc.internal.pageSize.getWidth();
+  var marginX = 50, rightX = pageW - 50;
+  var tradeName = bankAttTradeName(b);
+  var amountWords = numToWords(b.totalAmt) + ' Only';
+  var y = 50;
+
+  doc.setFont('times', 'bold'); doc.setFontSize(13);
+  doc.text('COMMERCIAL TAXES DEPARTMENT', pageW / 2, y, { align: 'center' }); y += 20;
+
+  doc.autoTable({
+    startY: y,
+    body: [[
+      'From\n' + (cfg.officerName ? cfg.officerName + ',\n' : '') + (cfg.desig || '') + ',\n' + (cfg.circle || '') + '\n' + (cfg.addr1 || '') + ' ' + (cfg.addr2 || ''),
+      'To\nTHE BRANCH MANAGER,\n' + (b.bankName || '—').toUpperCase() + '\nIFSC : ' + (b.ifsc || '—') + (b.branchAddr ? '\n' + b.branchAddr : '')
+    ]],
+    theme: 'plain',
+    styles: { font: 'times', fontSize: 10, cellPadding: 3 },
+    margin: { left: marginX, right: 50 }
+  });
+  y = doc.lastAutoTable.finalY + 6;
+
+  doc.setFont('times', 'normal'); doc.setFontSize(10);
+  doc.text('GSTIN: ' + (b.gstin || '—') + '/' + (b.ref || '—') + '  dated: ' + fmtDate(b.date), marginX, y); y += 20;
+  doc.text('Sir / Madam,', marginX, y); y += 6;
+
+  var subText = 'GST Act, 2017 – ' + (cfg.circle || '') + ' – Tvl. ' + (b.legalName || '—') + ', GSTIN – ' + (b.gstin || '—')
+    + ' – Arrear of Tax Rs. ' + fmt0(b.totalAmt) + ' – Arrears of Tax outstanding against the dealer – Form DRC-13 issued – Regarding.';
+  doc.autoTable({
+    startY: y,
+    body: [
+      [{ content: 'Sub', styles: { fontStyle: 'bold' } }, subText],
+      [{ content: 'Ref', styles: { fontStyle: 'bold' } }, 'This Office DRC-07 issued']
+    ],
+    theme: 'plain',
+    styles: { font: 'times', fontSize: 10, cellPadding: 3 },
+    columnStyles: { 0: { cellWidth: 35 } },
+    margin: { left: marginX, right: 50 }
+  });
+  y = doc.lastAutoTable.finalY + 10;
+
+  doc.setFontSize(10);
+  doc.text('*******', pageW / 2, y, { align: 'center' }); y += 16;
+
+  doc.setFont('times', 'normal'); doc.setFontSize(10);
+  var paras = [
+    'Tvl. ' + (b.legalName || '—') + (tradeName && tradeName !== b.legalName ? ' (' + tradeName + ')' : '') + ', having an Current Account / CC with your Bank, is an assessee on the file of the ' + (cfg.desig || '') + ', ' + (cfg.circle || '') + ' and is in arrears of tax of Rs. ' + fmt0(b.totalAmt) + '/- (Rupees ' + amountWords + ') under the GST Act.',
+    'Under Section 79(1)(c) of the SGST Act, 2017 read with Section 142(7)(a) of the SGST Act, 2017 & Rule 145(1) of the SGST Rules, 2017, you are required to remit to me forthwith the sum of Rs. ' + fmt0(b.totalAmt) + '/- (Rupees ' + amountWords + ') from out of money you hold for or on account of the defaulter. If you do not hold money to that extent now, the amount available may be remitted now and the balance remitted as and when funds become available, as first charge to the Government. If the dealer is having an Overdraft account, you may require to remit the amount. A statutory demand notice in Form DRC-13 is enclosed.',
+    'You are also prohibited from paying any money to the assessee from the Current Account (or) Overdraft Account, till the above notice is withdrawn.',
+    'I request you to give the account balance as on today or on receiving the Form DRC-13, whichever is later.',
+    'The above mentioned demand amount or the amount available in the taxpayer bank account has to be issued as a Demand Draft or Bank Cheque in favour of the undersigned.'
+  ];
+  paras.forEach(function (t) {
+    var lines = doc.splitTextToSize(t, rightX - marginX);
+    doc.text(lines, marginX, y); y += lines.length * 14 + 8;
+  });
+
+  doc.text('Encl: Form DRC-13.', marginX, y); y += 26;
+  if (y > 680) { doc.addPage(); y = 50; }
+
+  doc.text('Date: ' + fmtDate(b.date), marginX, y); y += 14;
+  doc.text('Signature:', marginX, y); y += 28;
+  doc.text('Place : ' + (cfg.city || ''), marginX, y); y += 14;
+  doc.text('Name of Proper Officer: ' + (cfg.officerName || '_______________________'), marginX, y); y += 28;
+  doc.text('Designation: ' + (cfg.desig || ''), marginX, y); y += 14;
+  doc.text('Office Address: ' + (cfg.addr1 || '') + ' ' + (cfg.addr2 || ''), marginX, y);
+
+  return doc;
+}
+
+async function generateBankLetterPDF(b, cfg) {
+  var doc = await buildBankLetterPdfDoc(b, cfg);
+  doc.save((b.ref || 'bank_letter').replace(/[\/\\]/g, '_') + '_Letter.pdf');
+}
+
+/* ===== Bank Attachment — Release Order (PDF) =====
+   Mirrors buildBankReleaseDocx() in docx-export.js. */
+async function buildBankReleasePdfDoc(b, cfg) {
+  await window.LibsReady;
+  var jsPDFCtor = window.jspdf ? window.jspdf.jsPDF : window.jsPDF;
+  var doc = new jsPDFCtor({ unit: 'pt', format: 'a4' });
+  var pageW = doc.internal.pageSize.getWidth();
+  var marginX = 50, rightX = pageW - 50;
+  var isTemporary = RELEASE_TEMPORARY_REASONS.indexOf(b.releasedReason) !== -1;
+  var y = 50;
+
+  doc.setFont('times', 'bold'); doc.setFontSize(13);
+  doc.text('COMMERCIAL TAXES DEPARTMENT', pageW / 2, y, { align: 'center' }); y += 20;
+
+  doc.autoTable({
+    startY: y,
+    body: [[
+      'From\n' + (cfg.officerName ? cfg.officerName + ', ' : '') + (cfg.desig || '') + ',\n' + (cfg.circle || '') + '\n' + (cfg.city || ''),
+      'To\nThe Branch Manager\n' + (b.bankName || '—') + (b.branchAddr ? '\n' + b.branchAddr : '')
+    ]],
+    theme: 'plain',
+    styles: { font: 'times', fontSize: 10, cellPadding: 3 },
+    margin: { left: marginX, right: 50 }
+  });
+  y = doc.lastAutoTable.finalY + 6;
+
+  doc.setFont('times', 'normal'); doc.setFontSize(10);
+  doc.text('GSTIN: ' + (b.gstin || '—') + '/ dated: ' + fmtDate(b.releasedDate || todayISO()), marginX, y); y += 20;
+  doc.text('Sir/Madam,', marginX, y); y += 6;
+
+  var subText = 'GST Act 2017 – Tvl. ' + (b.legalName || '—') + ' - Payment of GST Arrear - Arrears of Tax Recovery Under Section 145(1) – Notice in DRC-13 issued – Attachment ' + (isTemporary ? 'Temporarily Withdrawn' : 'Released') + ' - Regarding.';
+  var refText = 'This office Ref in GSTIN. ' + (b.gstin || '—') + ', dt.' + fmtDate(b.date) + '.'
+    + (b.releasedPetitionDate ? ' The Taxpayer\'s Petition Dated: ' + fmtDate(b.releasedPetitionDate) + '.' : '');
+  doc.autoTable({
+    startY: y,
+    body: [
+      [{ content: 'Sub:-', styles: { fontStyle: 'bold' } }, subText],
+      [{ content: 'Ref:', styles: { fontStyle: 'bold' } }, refText]
+    ],
+    theme: 'plain',
+    styles: { font: 'times', fontSize: 10, cellPadding: 3 },
+    columnStyles: { 0: { cellWidth: 35 } },
+    margin: { left: marginX, right: 50 }
+  });
+  y = doc.lastAutoTable.finalY + 10;
+
+  doc.setFontSize(10);
+  doc.text('*********', pageW / 2, y, { align: 'center' }); y += 16;
+
+  doc.setFont('times', 'normal'); doc.setFontSize(10);
+  var narrative = 'Tvl. ' + (b.legalName || '—') + ' doing business at ' + (b.releasedAddr || '—').replace(/\.+\s*$/, '') + '. ' + (b.releasedNarrative || '');
+  var narrativeLines = doc.splitTextToSize(narrative, rightX - marginX);
+  doc.text(narrativeLines, marginX, y); y += narrativeLines.length * 13 + 8;
+
+  var closing = isTemporary
+    ? 'In view of the above, the Bank Attachment issued by this circle in the reference 1st cited is temporarily withdrawn and all action (lien, freeze, etc.) that has been imposed to withhold the account may be withdrawn.'
+    : 'In view of the above, the Bank Attachment issued by this circle in the reference 1st cited is released and all action (lien, freeze, etc.) that has been imposed to withhold the account may be withdrawn.';
+  var closingLines = doc.splitTextToSize(closing, rightX - marginX);
+  doc.text(closingLines, marginX, y); y += closingLines.length * 13 + 30;
+
+  if (y > 700) { doc.addPage(); y = 50; }
+  doc.setFont('times', 'normal'); doc.setFontSize(10);
+  doc.text(cfg.desig || '', rightX, y, { align: 'right' }); y += 14;
+  doc.text((cfg.circle || '') + '.', rightX, y, { align: 'right' }); y += 30;
+
+  doc.text('Copy to: ', marginX, y); y += 14;
+  doc.text(b.legalName || '—', marginX, y); y += 14;
+  doc.text(b.releasedAddr || '—', marginX, y);
+
+  return doc;
+}
+
+async function generateBankReleasePDF(b, cfg) {
+  var doc = await buildBankReleasePdfDoc(b, cfg);
+  doc.save((b.ref || 'bank_release').replace(/[\/\\]/g, '_') + '_Release.pdf');
+}
+
+/* ===== Bank Attachment — Form GST DRC-13 (PDF) =====
+   Mirrors buildBankDrc13Docx() in docx-export.js. */
+async function buildBankDrc13PdfDoc(b, cfg) {
+  await window.LibsReady;
+  var jsPDFCtor = window.jspdf ? window.jspdf.jsPDF : window.jsPDF;
+  var doc = new jsPDFCtor({ unit: 'pt', format: 'a4' });
+  var pageW = doc.internal.pageSize.getWidth();
+  var marginX = 50, rightX = pageW - 50;
+  var tradeName = bankAttTradeName(b);
+  var amountWords = numToWords(b.totalAmt) + ' Only';
+  var y = 50;
+
+  doc.setFont('times', 'bold'); doc.setFontSize(13);
+  doc.text('FORM GST DRC – 13', pageW / 2, y, { align: 'center' }); y += 16;
+  doc.setFont('times', 'normal'); doc.setFontSize(10);
+  doc.text('[See rule 145(1)]', pageW / 2, y, { align: 'center' }); y += 14;
+  doc.setFont('times', 'bold'); doc.setFontSize(10);
+  doc.text('Notice to a third person under section 79(1)(c)', pageW / 2, y, { align: 'center' }); y += 24;
+
+  doc.setFont('times', 'normal'); doc.setFontSize(10);
+  doc.text('To', marginX, y); y += 14;
+  doc.setFont('times', 'bold');
+  doc.text('THE BRANCH MANAGER,', marginX, y); y += 14;
+  doc.text((b.bankName || '—').toUpperCase(), marginX, y); y += 14;
+  doc.setFont('times', 'normal');
+  doc.text('IFSC : ' + (b.ifsc || '—'), marginX, y); y += 22;
+
+  doc.setFont('times', 'bold');
+  doc.text('Particulars of defaulter:-', marginX, y); y += 14;
+  doc.setFont('times', 'normal');
+  [
+    'A/c No.  ' + (b.accno || '—'),
+    'PAN No.:-  ' + (b.pan || '—'),
+    'GSTIN.  ' + (b.gstin || '—'),
+    'Legal Name - ' + (b.legalName || '—'),
+    'Trade Name- ' + (tradeName || '—'),
+    'Demand order No: '
+  ].forEach(function (t) { doc.text(t, marginX, y); y += 14; });
+  y += 6;
+
+  doc.setFontSize(8);
+  doc.text('(AMOUNT IN RS)', rightX, y, { align: 'right' }); y += 10;
+
+  var rows = (b.cases || []).map(function (c) {
+    return [c.fy || '—', c.demandId || '—', fmtDate(c.dcr_date || c.demandDate), c.section || '—',
+      fmt0(c.pend_igst), fmt0(c.pend_cgst), fmt0(c.pend_sgst), fmt0(c.pend_cess), fmt0(c.pend_total)];
+  });
+  var sums = (b.cases || []).reduce(function (s, c) {
+    s.igst += Number(c.pend_igst) || 0; s.cgst += Number(c.pend_cgst) || 0; s.sgst += Number(c.pend_sgst) || 0;
+    s.cess += Number(c.pend_cess) || 0; s.total += Number(c.pend_total) || 0;
+    return s;
+  }, { igst: 0, cgst: 0, sgst: 0, cess: 0, total: 0 });
+  rows.push([
+    { content: 'TOTAL', styles: { fontStyle: 'bold' } }, '', '', '',
+    { content: fmt0(sums.igst), styles: { fontStyle: 'bold' } }, { content: fmt0(sums.cgst), styles: { fontStyle: 'bold' } },
+    { content: fmt0(sums.sgst), styles: { fontStyle: 'bold' } }, { content: fmt0(sums.cess), styles: { fontStyle: 'bold' } },
+    { content: fmt0(sums.total), styles: { fontStyle: 'bold' } }
+  ]);
+
+  doc.autoTable({
+    startY: y,
+    head: [['ASSESSMENT YEAR', 'DEMAND ID', 'DATE OF DEMAND ORDER', 'SEC', 'IGST', 'CGST', 'SGST', 'CESS', 'TOTAL']],
+    body: rows,
+    theme: 'grid',
+    styles: { font: 'times', fontSize: 9.5, cellPadding: 4 },
+    headStyles: { fillColor: [31, 78, 121], textColor: 255 },
+    columnStyles: { 4: { halign: 'right' }, 5: { halign: 'right' }, 6: { halign: 'right' }, 7: { halign: 'right' }, 8: { halign: 'right' } },
+    margin: { left: marginX, right: 50 }
+  });
+  y = doc.lastAutoTable.finalY + 14;
+
+  doc.setFont('times', 'normal'); doc.setFontSize(10);
+  var paras = [
+    'Whereas a sum of Rs. ' + fmt0(b.totalAmt) + '/- (Rupees ' + amountWords + ') on account of demand, is payable under the provisions of Sec 78 of the GST Act, 2017 by ' + (b.legalName || '—') + ', holding GSTIN: ' + (b.gstin || '—') + '. It is observed that a sum Rs. ' + fmt0(b.totalAmt) + '/- (Rupees ' + amountWords + ') is due or may become due to the said taxable person from you; or',
+    'It is observed that you hold or are likely to hold a sum Rs. ' + fmt0(b.totalAmt) + '/- (Rupees ' + amountWords + ') for or on account of the said person.',
+    'You are hereby directed to pay a sum of Rs. ' + fmt0(b.totalAmt) + '/- (Rupees ' + amountWords + ') to the Government forthwith or upon the money becoming due or being held in compliance of the provisions contained in clause (c)(i) of sub-section (1) of section 79 of the Act.',
+    'Please note that any payment made by you in compliance of this notice will be deemed under section 79 of the Act to have been made under the authority of the said taxable person and the certificate from the government in FORM GST DRC-14 will constitute a good and sufficient discharge of your liability to such person to the extent of the amount specified in the certificate.',
+    'Also, please note that if you discharge any liability to the said taxable person after receipt of this notice, you will be personally liable to the State/Central Government under section 79 of the Act to the extent of the liability discharged, or to the extent of the liability of the taxable person for tax, cess, interest and penalty, whichever is less.',
+    'Please note that, in case you fail to make payment in pursuance of this notice, you shall be deemed to be a defaulter in respect of the amount specified in the notice and consequences of the Act or the rules made thereunder shall follow.',
+    'The above mentioned demand amount or the amount available in the taxpayer bank account has to be issued as a Demand Draft or Bank Cheque in favour of the undersigned.'
+  ];
+  paras.forEach(function (t) {
+    var lines = doc.splitTextToSize(t, rightX - marginX);
+    if (y + lines.length * 14 > 750) { doc.addPage(); y = 50; }
+    doc.text(lines, marginX, y); y += lines.length * 14 + 8;
+  });
+
+  if (y > 680) { doc.addPage(); y = 50; }
+  doc.setFontSize(10);
+  doc.text('Date: ' + fmtDate(b.date), marginX, y); y += 14;
+  doc.text('Signature:', marginX, y); y += 28;
+  doc.text('Place : ' + (cfg.city || ''), marginX, y); y += 14;
+  doc.text('Name of Proper Officer: ' + (cfg.officerName || '_______________________'), marginX, y); y += 28;
+  doc.text('Designation: ' + (cfg.desig || ''), marginX, y); y += 14;
+  doc.text('Office Address: ' + (cfg.addr1 || '') + ' ' + (cfg.addr2 || ''), marginX, y);
+
+  return doc;
+}
+
+async function generateBankDrc13PDF(b, cfg) {
+  var doc = await buildBankDrc13PdfDoc(b, cfg);
+  doc.save((b.ref || 'bank_drc13').replace(/[\/\\]/g, '_') + '_DRC13.pdf');
 }

@@ -10,6 +10,13 @@ function fmt0(n) {
   return (Number(n) || 0).toLocaleString('en-IN', { maximumFractionDigits: 0 });
 }
 
+function fmtFileSize(bytes) {
+  bytes = Number(bytes) || 0;
+  if (bytes < 1024) return bytes + ' B';
+  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(2) + ' KB';
+  return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
+}
+
 /* Parses a DCR date value in any of the formats the real files use — ISO
    (YYYY-MM-DD), slash/dash DD/MM/YYYY (1 or 2 digit day/month), or a raw
    Excel serial-date number/string — into a Date, or null if unparseable.
@@ -52,6 +59,31 @@ function fmtDate(d) {
 
 function todayISO() {
   return new Date().toISOString().split('T')[0];
+}
+
+var MONTH_ABBR = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+/* "02-Sep-2025" — date-only counterpart to fmtDateTime, same fixed format
+   regardless of browser locale. */
+function fmtDateShort(iso) {
+  if (!iso) return '—';
+  var d = new Date(iso);
+  if (isNaN(d)) return String(iso);
+  return String(d.getDate()).padStart(2, '0') + '-' + MONTH_ABBR[d.getMonth()] + '-' + d.getFullYear();
+}
+
+/* "02-Sep-2025 11:45 AM" — used for upload/reconciliation timestamps. Built
+   manually (not toLocaleString) so the format is fixed regardless of the
+   browser's locale. */
+function fmtDateTime(iso) {
+  if (!iso) return '—';
+  var d = new Date(iso);
+  if (isNaN(d)) return String(iso);
+  var h = d.getHours();
+  var ampm = h >= 12 ? 'PM' : 'AM';
+  h = h % 12; if (h === 0) h = 12;
+  var min = String(d.getMinutes()).padStart(2, '0');
+  return fmtDateShort(iso) + ' ' + h + ':' + min + ' ' + ampm;
 }
 
 function numToWords(n) {

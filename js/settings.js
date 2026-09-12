@@ -7,6 +7,7 @@ function fillSettingsForm(s) {
   document.getElementById('cfg-addr2').value = s.addr2 || '';
   document.getElementById('cfg-desig').value = s.desig || '';
   document.getElementById('cfg-city').value = s.city || '';
+  document.getElementById('cfg-officer-name').value = s.officerName || '';
 }
 
 function updateSettingsPreview(s) {
@@ -42,7 +43,8 @@ function saveSettings() {
     addr1: document.getElementById('cfg-addr1').value.trim() || defaultSettings.addr1,
     addr2: document.getElementById('cfg-addr2').value.trim() || defaultSettings.addr2,
     desig: document.getElementById('cfg-desig').value.trim() || defaultSettings.desig,
-    city: document.getElementById('cfg-city').value.trim() || defaultSettings.city
+    city: document.getElementById('cfg-city').value.trim() || defaultSettings.city,
+    officerName: document.getElementById('cfg-officer-name').value.trim()
   };
   saveSettingsObject(s);
   var statusEl = document.getElementById('settings-status');

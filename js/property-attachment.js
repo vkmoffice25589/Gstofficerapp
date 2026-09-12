@@ -52,7 +52,7 @@ function paBuildRecord() {
   var totalAmt = cases.reduce(function (s, c) { return s + (Number(c.pend_total) || 0); }, 0);
 
   return {
-    id: uid('prop'), gstin: _paDefaulterGSTIN, legalName: c0.legalName, cases: cases, totalAmt: totalAmt,
+    id: uid('prop'), gstin: _paDefaulterGSTIN, legalName: c0.legalName, cases: caseSnapshots(cases), totalAmt: totalAmt,
     propertyDescription: desc,
     propertyLocation: document.getElementById('pa-property-location').value.trim(),
     propertyValue: parseFloat(document.getElementById('pa-property-value').value) || 0,

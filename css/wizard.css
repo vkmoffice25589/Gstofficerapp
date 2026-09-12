@@ -2,35 +2,292 @@
    GST RECOVERY REDESIGN — Generate Arrear Notice wizard
    ===================================================================== */
 
-/* ---- Stepper ---- */
-.stepper { display: flex; gap: 10px; margin-bottom: var(--sp-4); align-items: stretch; }
-.step-card {
-  flex: 1; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg);
-  padding: 11px 13px; display: flex; gap: 10px; align-items: flex-start;
-  transition: border-color 0.15s, box-shadow 0.15s; position: relative; box-shadow: none;
+/* ---- Tabs — Generate Arrear Notice ----
+   Chip-style tabs instead of the shared underline-tab look .tab uses
+   elsewhere (Reports etc. keep the old style — this is scoped to
+   #page-bulknotice only). Each tab is its own white/bordered pill; the
+   active tab (Issue Notice by default) gets a light blue fill, blue
+   text/icon and a strong blue bottom edge. The other five keep a plain
+   white background but get a single restrained colour on their icon only
+   — enough to tell them apart at a glance without turning the whole row
+   into a rainbow. */
+#page-bulknotice .tabs {
+  border-bottom: 1px solid var(--border); padding-bottom: 14px; margin-bottom: 26px; gap: 10px;
 }
-.step-card.clickable { cursor: pointer; }
-.step-card.clickable:hover { border-color: var(--primary-blue-border); box-shadow: var(--shadow-sm); }
-.step-card.done { border-color: var(--success-border); }
-.step-card.dragover { border-color: var(--primary-blue); background: var(--primary-blue-dim); }
-.step-num {
-  width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
-  font-weight: 700; font-size: 12px; flex-shrink: 0; background: var(--surface-3); color: var(--ink3);
+#page-bulknotice .tabs .tab {
+  background: transparent; border: 1px solid transparent; border-radius: 10px;
+  padding: 13px 18px; font-size: 14.5px; font-weight: 600; gap: 9px; margin-bottom: 0;
+  color: var(--navy-text); box-shadow: none;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
 }
-.step-card.done .step-num { background: var(--success); color: #fff; }
-.step-card.ready .step-num { background: var(--primary-blue); color: #fff; }
-.step-body { min-width: 0; }
-.step-title { font-size: 12.5px; font-weight: 700; color: var(--navy-text); line-height: 1.3; }
-.step-sub { font-size: 10.5px; color: var(--ink3); margin-top: 1px; }
-.step-status { font-size: 11px; font-weight: 600; margin-top: 6px; }
-.step-status.pending { color: var(--ink3); }
-.step-status.ok { color: var(--success); }
-.step-file { font-size: 11px; color: var(--muted-text); margin-top: 3px; word-break: break-all; }
-.step-link { font-size: 11px; color: var(--primary-blue); cursor: pointer; margin-top: 5px; display: inline-block; font-weight: 600; }
-.step-arrow { align-self: center; color: var(--border-strong); font-size: 14px; flex-shrink: 0; }
+#page-bulknotice .tabs .tab i { font-size: 15px; color: var(--ink3); transition: color 0.15s, filter 0.15s; }
+#page-bulknotice .tabs .tab:hover { background: var(--surface-2); }
+
+/* Per-tab icon accents — restrained, icon only, applied before the
+   .active override below so an active tab's icon always wins blue
+   regardless of which tab it is. Slightly desaturated so the row reads
+   as one cohesive nav strip rather than a set of individually-branded
+   buttons — the active tab (untouched below) stays the one full-strength
+   colour in the row. */
+#page-bulknotice .tabs .tab:not(.active) i { filter: saturate(65%); }
+#page-bulknotice .tabs .tab[data-tab="all"] i        { color: var(--purple); }
+#page-bulknotice .tabs .tab[data-tab="paste"] i      { color: #0F766E; }
+#page-bulknotice .tabs .tab[data-tab="bankatt"] i    { color: var(--gold); }
+#page-bulknotice .tabs .tab[data-tab="bankrelease"] i { color: #0891B2; }
+#page-bulknotice .tabs .tab[data-tab="thirdparty"] i { color: var(--success); }
+#page-bulknotice .tabs .tab[data-tab="property"] i   { color: #E4572E; }
+
+#page-bulknotice .tabs .tab.active {
+  background: var(--primary-blue-dim); color: var(--primary-blue); font-weight: 700;
+  border-color: var(--primary-blue-border); border-bottom: 3px solid var(--primary-blue);
+}
+#page-bulknotice .tabs .tab.active:hover { background: var(--primary-blue-dim); }
+#page-bulknotice .tabs .tab.active i { color: var(--primary-blue); }
+
+/* ---- Search GSTIN / step cards — more breathing room than the compact
+   version .wizard-card uses on the Data Upload page (left untouched
+   there; this override is scoped to #page-bulknotice only). ---- */
+#page-bulknotice .wizard-card { padding: 26px 28px; border-radius: 14px; margin-bottom: 20px; }
+#page-bulknotice .wizard-card-head { gap: 14px; margin-bottom: 18px; }
+#page-bulknotice .wizard-num { width: 34px; height: 34px; font-size: 15px; }
+#page-bulknotice .wizard-card-title { font-size: 19px; }
+#page-bulknotice .wizard-card-sub { font-size: 13.5px; margin-top: 4px; }
+
+#page-bulknotice .wizard-card .fg label { color: var(--navy-text); font-weight: 700; font-size: 12.5px; letter-spacing: 0.2px; }
+#page-bulknotice #wiz-gstin-input { height: 46px; border-radius: 10px; font-size: 14.5px; padding: 10px 34px 10px 14px; }
+#page-bulknotice .wizard-card .btn-blue { height: 46px; border-radius: 10px; padding: 0 22px; font-size: 14px; }
+
+/* ---- Upload DCR / Upload Taxpayer Register — clean outlined pill
+   buttons instead of the compact .btn-sm treatment. ---- */
+.wiz-upload-actions { margin-top: 4px; display: flex; gap: 10px; flex-wrap: wrap; }
+.wiz-upload-actions .btn { height: 44px; padding: 0 20px; border-radius: 10px; font-size: 13.5px; font-weight: 600; }
+
+
+/* ---- Upload cards ---- */
+.upload-cards { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-4); margin-bottom: var(--sp-4); }
+.upload-card {
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg);
+  padding: 16px 18px; cursor: pointer; transition: border-color 0.15s, box-shadow 0.15s;
+}
+.upload-card:hover { border-color: var(--primary-blue-border); box-shadow: var(--shadow-sm); }
+.upload-card.done { border-color: var(--success-border); }
+.upload-card.dragover { border-color: var(--primary-blue); background: var(--primary-blue-dim); }
+.uc-head { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 12px; }
+.uc-icon { font-size: 19px; flex-shrink: 0; margin-top: 1px; }
+.uc-icon-done { color: var(--success); }
+.uc-icon-pending { color: var(--border-strong); }
+.uc-head-text { flex: 1; min-width: 0; }
+.uc-title { font-size: 14px; font-weight: 700; color: var(--navy-text); }
+.uc-sub { font-size: 11.5px; color: var(--muted-text); margin-top: 1px; }
+.uc-pill { font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 999px; flex-shrink: 0; white-space: nowrap; }
+.uc-pill-done { background: var(--success-dim); color: var(--success); }
+.uc-pill-pending { background: var(--surface-3); color: var(--ink3); }
+.uc-file-row { display: flex; align-items: center; gap: 8px; background: var(--surface-2); border-radius: var(--radius-md); padding: 8px 12px; }
+.uc-file-icon { color: var(--success); font-size: 14px; flex-shrink: 0; }
+.uc-file-name { flex: 1; min-width: 0; font-size: 12px; color: var(--navy-text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.uc-file-size { font-size: 11px; color: var(--muted-text); flex-shrink: 0; }
+.uc-file-ok { color: var(--success); font-size: 12px; flex-shrink: 0; }
+.uc-status { font-size: 12px; font-weight: 600; margin-top: 8px; }
+.uc-status.ok { color: var(--success); }
+.uc-dropzone {
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
+  padding: 22px 10px; border: 1.5px dashed var(--border-strong); border-radius: var(--radius-md);
+  color: var(--muted-text); font-size: 12px; text-align: center;
+}
+.uc-dropzone i { font-size: 20px; color: var(--primary-blue); }
+.upload-cards-single { max-width: 560px; margin-bottom: var(--sp-4); }
 
 .wizard-log-wrap { margin-bottom: var(--sp-4); display: none; }
 .wizard-log-wrap.show { display: block; }
+
+/* ---- DCR panel — larger, recurring multi-quarter/year upload + reconciliation ---- */
+.dcr-panel { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 22px 24px; margin-bottom: var(--sp-4); box-shadow: var(--shadow-sm); }
+.dcr-panel-head { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--sp-4); flex-wrap: wrap; padding-bottom: 18px; border-bottom: 1px solid var(--border); margin-bottom: 20px; }
+.dcr-head-left { display: flex; gap: 12px; align-items: flex-start; }
+.dcr-head-icon { font-size: 26px; flex-shrink: 0; margin-top: 2px; }
+.dcr-head-icon.done { color: var(--success); }
+.dcr-head-icon.pending { color: var(--border-strong); }
+.dcr-title { font-size: 17px; font-weight: 700; color: var(--navy-text); }
+.dcr-title-sub { font-size: 13px; font-weight: 500; color: var(--muted-text); margin-left: 4px; }
+.dcr-desc { font-size: 12.5px; color: var(--muted-text); margin-top: 4px; max-width: 560px; line-height: 1.45; }
+.dcr-head-right { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.dcr-last-uploaded { text-align: right; margin-right: 2px; }
+.dlu-label { font-size: 10.5px; color: var(--ink3); text-transform: uppercase; letter-spacing: 0.4px; font-weight: 700; }
+.dlu-val { font-size: 13px; font-weight: 700; color: var(--navy-text); margin-top: 2px; }
+
+.btn-danger-outline { background: var(--surface); color: var(--danger); border-color: var(--danger-border); }
+.btn-danger-outline:hover { background: var(--danger-dim); }
+
+/* Two columns (dropzone | summary) — tuned for the DCR panel's actual width
+   now that it shares the page with the Taxpayer Register panel in a
+   2-column grid, not the full page width this was originally built for.
+   The old 3-column version (dropzone | guidelines | summary) crammed into
+   half the width was the "messy" look — guidelines moved to a modal
+   (View Guidelines button) instead of a squeezed third column. */
+.dcr-upload-row { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-4); margin-bottom: 22px; align-items: stretch; }
+.dcr-col-label { font-size: 12.5px; font-weight: 700; color: var(--navy-text); margin-bottom: 10px; display: flex; align-items: center; gap: 6px; }
+.dcr-col-label i { color: var(--primary-blue); }
+
+.dcr-dropzone {
+  border: 1.5px dashed var(--border-strong); border-radius: var(--radius-md); padding: 26px 16px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
+  text-align: center; color: var(--muted-text); font-size: 13px; transition: border-color 0.15s, background 0.15s; min-height: 150px;
+}
+.dcr-dropzone-icon {
+  width: 46px; height: 46px; border-radius: 50%; background: var(--primary-blue-dim);
+  display: flex; align-items: center; justify-content: center; margin-bottom: 4px;
+}
+.dcr-dropzone-icon i { font-size: 19px; color: var(--primary-blue); }
+.dcr-dropzone-title { font-weight: 600; color: var(--navy-text); font-size: 13px; }
+.dcr-dropzone.dragover { border-color: var(--primary-blue); background: var(--primary-blue-dim); }
+.dcr-dropzone.dragover .dcr-dropzone-icon { background: #fff; }
+.dcr-or { font-size: 11px; color: var(--ink3); }
+.dcr-dropzone-format { font-size: 10.5px; color: var(--ink3); margin-top: 6px; }
+
+.dcr-pending-chips { display: flex; flex-direction: column; gap: 6px; margin-top: 10px; }
+.dcr-chip { display: flex; align-items: center; gap: 8px; background: var(--surface-2); border-radius: var(--radius-sm); padding: 6px 10px; font-size: 11.5px; color: var(--navy-text); }
+.dcr-chip i.fa-file-excel { color: var(--success); }
+.dcr-chip span:nth-child(2) { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dcr-chip-count { color: var(--muted-text); flex-shrink: 0; }
+.dcr-chip-remove { background: none; border: none; color: var(--ink3); cursor: pointer; padding: 2px 4px; flex-shrink: 0; }
+.dcr-chip-remove:hover { color: var(--danger); }
+
+.dcr-upload-summary { background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 16px; display: flex; flex-direction: column; }
+.dcr-upload-summary-empty { justify-content: center; align-items: center; text-align: center; gap: 10px; }
+.dcr-upload-summary-empty i { font-size: 26px; color: var(--primary-blue-border); }
+.dcr-summary-empty-text { font-size: 12px; color: var(--muted-text); max-width: 200px; line-height: 1.4; }
+.dcr-summary-hint { font-size: 11px; color: var(--ink3); margin-top: 10px; line-height: 1.4; }
+
+/* Stat tiles for the summary column — same "colour stripe + label + value"
+   language as the app's .scard KPI tiles elsewhere, so this reads as a
+   real dashboard snapshot rather than a flat list of numbers. The .hero
+   tile (Total Pending / Files Selected) spans the full row and gets a
+   visibly bigger number, since that's the one figure worth noticing at a
+   glance — same idea as the Arrear Action Register's Balance Arrear tile. */
+.dcr-mini-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.dcr-mini-stat {
+  background: #fff; border: 1px solid var(--border); border-radius: var(--radius-sm);
+  padding: 10px 12px; position: relative; overflow: hidden;
+  min-width: 0; /* grid items don't shrink below their content's natural width
+                   by default — without this, a long number (a real-world
+                   pending total can run to 12+ digits) overflows the tile
+                   instead of wrapping, since the track refuses to shrink
+                   past it. */
+}
+.dcr-mini-stat::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; }
+.dcr-mini-stat.hero { grid-column: 1 / -1; padding: 14px 16px; }
+.dms-label { font-size: 10px; font-weight: 700; color: var(--ink3); text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 5px; }
+.dms-val { font-family: var(--font-mono); font-size: 14px; font-weight: 600; color: var(--navy-text); line-height: 1.2; overflow-wrap: break-word; }
+.dcr-mini-stat.hero .dms-val { font-size: 20px; }
+.dms-muted { color: var(--ink3); font-style: italic; font-family: var(--font-ui); font-weight: 500; }
+
+.dcr-mini-stat.red::before { background: var(--danger); }
+.dcr-mini-stat.red .dms-val { color: var(--danger); }
+.dcr-mini-stat.blue::before { background: var(--primary-blue); }
+.dcr-mini-stat.blue .dms-val { color: var(--primary-blue); }
+.dcr-mini-stat.purple::before { background: var(--purple); }
+.dcr-mini-stat.purple .dms-val { color: var(--purple); }
+.dcr-mini-stat.gold::before { background: var(--gold); }
+.dcr-mini-stat.gold .dms-val { color: var(--gold); }
+.dcr-mini-stat.green::before { background: var(--success); }
+.dcr-mini-stat.green .dms-val { color: var(--success); }
+
+@media (max-width: 520px) {
+  .dcr-mini-stats { grid-template-columns: 1fr 1fr; }
+}
+.dcr-reconcile-btn { margin-top: 12px; justify-content: center; width: 100%; }
+
+.dcr-recon-wrap { border-top: 1px solid var(--border); padding-top: 20px; margin-bottom: 22px; }
+.dcr-recon-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; }
+.dcr-recon-tiles { grid-template-columns: repeat(3, 1fr); margin-bottom: 12px; }
+.dcr-recon-tiles .slabel { display: flex; align-items: center; gap: 5px; }
+.dcr-recon-actions { display: flex; }
+.btn-link { background: none; border: none; padding: 0; color: var(--primary-blue); font-size: 12.5px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
+.btn-link:hover { text-decoration: underline; }
+
+.dcr-files-wrap { border-top: 1px solid var(--border); padding-top: 20px; margin-bottom: 18px; }
+.icon-btn-danger {
+  width: 30px; height: 30px; border-radius: var(--radius-sm); border: 1px solid var(--danger-border);
+  background: var(--surface); color: var(--danger); cursor: pointer; display: flex; align-items: center;
+  justify-content: center; font-size: 12.5px; transition: background 0.12s;
+}
+.icon-btn-danger:hover { background: var(--danger-dim); }
+
+.dcr-info-note {
+  display: flex; align-items: center; gap: 8px; background: var(--primary-blue-dim); border: 1px solid var(--primary-blue-border);
+  border-radius: var(--radius-md); padding: 10px 14px; font-size: 12.5px; color: var(--navy-text);
+}
+.dcr-info-note i { color: var(--primary-blue); }
+
+.dcr-export-row { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 18px; }
+.icon-btn-outline {
+  width: 30px; height: 30px; border-radius: var(--radius-sm); border: 1px solid var(--border-strong);
+  background: var(--surface); color: var(--muted-text); cursor: pointer; display: inline-flex; align-items: center;
+  justify-content: center; font-size: 12.5px; transition: background 0.12s, color 0.12s;
+}
+.icon-btn-outline:hover { background: var(--surface-2); color: var(--primary-blue); }
+
+/* ---- Data Upload page — two-column layout: DCR panel | Taxpayer Register panel ---- */
+.dataupload-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-4); align-items: start; }
+@media (max-width: 1100px) { .dataupload-grid { grid-template-columns: 1fr; } }
+
+/* Taxpayer Register panel reuses the DCR panel's card chrome exactly. */
+.tpreg-panel { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 22px 24px; margin-bottom: var(--sp-4); box-shadow: var(--shadow-sm); }
+
+.tpreg-zones { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 18px; }
+.tpreg-zone { border-radius: var(--radius-md); padding: 12px; display: flex; flex-direction: column; }
+.tpreg-zone-label { font-size: 11.5px; font-weight: 700; display: flex; align-items: center; gap: 6px; margin-bottom: 8px; }
+.tpreg-zone-format { font-size: 10.5px; color: var(--ink3); text-align: center; margin-top: 6px; }
+.tpreg-dropzone {
+  border: 1.5px dashed var(--border-strong); border-radius: var(--radius-sm); padding: 16px 8px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
+  text-align: center; font-size: 11.5px; color: var(--muted-text); transition: border-color 0.15s, background 0.15s; min-height: 110px;
+}
+.tpreg-dropzone i.fa-cloud-arrow-up { font-size: 22px; }
+.tpreg-dropzone.dragover { background: rgba(255,255,255,0.6); }
+.tpreg-or { font-size: 10px; color: var(--ink3); }
+.tpreg-choose-btn { color: #fff; border: none; }
+
+.tpreg-zone-green   { background: var(--success-dim); border: 1px solid var(--success-border); }
+.tpreg-zone-green   .tpreg-zone-label, .tpreg-zone-green .tpreg-dropzone i.fa-cloud-arrow-up { color: var(--success); }
+.tpreg-zone-green   .tpreg-choose-btn { background: var(--success); }
+.tpreg-zone-green.dragover, .tpreg-zone-green .tpreg-dropzone.dragover { border-color: var(--success); }
+
+.tpreg-zone-red     { background: var(--danger-dim); border: 1px solid var(--danger-border); }
+.tpreg-zone-red     .tpreg-zone-label, .tpreg-zone-red .tpreg-dropzone i.fa-cloud-arrow-up { color: var(--danger); }
+.tpreg-zone-red     .tpreg-choose-btn { background: var(--danger); }
+.tpreg-zone-red     .tpreg-dropzone.dragover { border-color: var(--danger); }
+
+.tpreg-zone-orange  { background: var(--warning-dim, #FDF1D6); border: 1px solid var(--warning-border, #F5DFA5); }
+.tpreg-zone-orange  .tpreg-zone-label, .tpreg-zone-orange .tpreg-dropzone i.fa-cloud-arrow-up { color: var(--warning, #92640A); }
+.tpreg-zone-orange  .tpreg-choose-btn { background: var(--warning, #92640A); }
+.tpreg-zone-orange  .tpreg-dropzone.dragover { border-color: var(--warning, #92640A); }
+
+@media (max-width: 720px) {
+  .tpreg-zones { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 900px) {
+  .dcr-recon-tiles { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 720px) {
+  .dcr-upload-row { grid-template-columns: 1fr; }
+  .dcr-panel-head { flex-direction: column; }
+  .dcr-head-right { align-items: flex-start; }
+  .dcr-last-uploaded { text-align: left; }
+}
+
+/* ---- Ready-to-generate banner (shown once both uploads succeed) ---- */
+.wizard-ready-banner {
+  display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+  background: var(--primary-blue-dim); border: 1px solid var(--primary-blue-border); border-radius: var(--radius-lg);
+  padding: 16px 20px; margin-bottom: var(--sp-4);
+}
+.wrb-icon { font-size: 26px; color: var(--primary-blue); flex-shrink: 0; }
+.wrb-text { flex: 1; min-width: 220px; }
+.wrb-title { font-size: 14px; font-weight: 700; color: var(--navy-text); }
+.wrb-sub { font-size: 12.5px; color: var(--muted-text); margin-top: 2px; }
+.wrb-btn { flex-shrink: 0; }
 
 /* ---- Section cards ---- */
 .wizard-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 22px; margin-bottom: var(--sp-4); box-shadow: var(--shadow-sm); }
@@ -208,9 +465,11 @@
 .wab-note i { flex-shrink: 0; font-size: 14px; }
 
 @media (max-width: 1280px) {
-  .stepper { flex-wrap: wrap; }
-  .step-card { min-width: 45%; }
   .wizard-three-col, .wizard-two-col { grid-template-columns: 1fr; }
   .tdb-item { border-right: none; border-bottom: 1px solid var(--border); padding: 8px 0; }
   .wab-note { margin-left: 0; max-width: none; }
+}
+
+@media (max-width: 720px) {
+  .upload-cards { grid-template-columns: 1fr; }
 }

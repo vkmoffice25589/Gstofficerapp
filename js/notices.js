@@ -31,6 +31,7 @@ function bulkTab(tab, el) {
   if (tab === 'all') updateBulkAllCount();
   if (tab === 'all' || tab === 'paste') { updateBulkQuickFilterCounts(tab); updateBulkFilterTags(tab); }
   if (tab === 'bankatt') renderBankAtts();
+  if (tab === 'bankrelease') renderBankReleaseTab();
   var bar = document.getElementById('bulk-action-bar');
   if (bar) bar.style.display = (generatedBulkNotices.length && (tab === 'all' || tab === 'paste')) ? 'flex' : 'none';
 }
@@ -204,7 +205,7 @@ function generateBulkPaste() {
 function makeBulkNotice(t, cases, kind, seq) {
   var pendAmt = cases.reduce(function (s, c) { return s + (Number(c.pend_total) || 0); }, 0);
   return {
-    id: uid('notice'), gstin: t.gstin, legalName: t.legalName, cases: cases, pendAmt: pendAmt,
+    id: uid('notice'), gstin: t.gstin, legalName: t.legalName, cases: caseSnapshots(cases), pendAmt: pendAmt,
     type: kind === 'urgent' ? 'demand' : 'reminder', noticeKind: kind,
     num: 'NOT/' + new Date().getFullYear() + '/' + String(seq).padStart(4, '0'),
     date: todayISO(), replyDate: kind === 'urgent' ? '' : addDaysISO(todayISO(), 30),
@@ -706,7 +707,7 @@ function applyBulkDemandEditor() {
   if (!selected.length) { showToast('⚠️ Select at least one demand'); return; }
   var n = generatedBulkNotices[_bdeIdx];
   if (!n) { closeBulkDemandEditor(); return; }
-  n.cases = selected;
+  n.cases = caseSnapshots(selected);
   n.pendAmt = selected.reduce(function (s, c) { return s + (Number(c.pend_total) || 0); }, 0);
   closeBulkDemandEditor();
   renderBulkResults(_bulkResultsElId);
