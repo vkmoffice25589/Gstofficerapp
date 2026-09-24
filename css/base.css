@@ -215,6 +215,8 @@ th.sortable.sort-desc::after { content: '↓'; opacity: 0.8; color: var(--primar
 .gstin-cell { font-family: var(--font-mono); font-size: 13px; color: var(--primary-blue); font-weight: 600; }
 .amount-cell { font-family: var(--font-mono); font-weight: 600; color: var(--navy-text); font-size: 14px; }
 .amount-cell.pending { color: var(--danger); font-weight: 700; font-size: 15px; }
+.amount-cell.clickable { cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
+.amount-cell.clickable:hover { color: var(--primary-blue-dark); text-decoration-color: var(--primary-blue-dark); }
 .demand-id { font-family: var(--font-mono); font-size: 11.5px; color: #0F172A; font-weight: 500; }
 
 /* A count that opens something on click (e.g. "8" demands in a notice row) —

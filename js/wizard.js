@@ -402,7 +402,7 @@ function renderWizardTablePage() {
       + '<td style="text-align:center;">' + xe(c.section) + '</td>'
       + '<td style="text-align:center;">' + dayBadge(age) + '</td>'
       + '<td>' + xe(c.demandStatus) + '</td>'
-      + '<td><div class="amount-cell pending">' + fmt(c.pend_total) + '</div></td>'
+      + '<td><div class="amount-cell pending clickable" onclick="showDemandBreakdown(\'' + xe(c.demandId) + '\')" title="Click for IGST/CGST/SGST/CESS breakdown">' + fmt(c.pend_total) + '</div></td>'
       + '</tr>';
   }).join('');
 
@@ -411,6 +411,28 @@ function renderWizardTablePage() {
     + wizPaginationHTML(cases.length, startIdx, pageCases.length, totalPages);
 
   wizUpdateSelectionSummary();
+}
+
+/* Tax-head breakdown popup for a single demand's Pending Arrear amount —
+   opened from the Issue Notice wizard's demand table. */
+function showDemandBreakdown(demandId) {
+  var c = AppState.cases.find(function (x) { return x.demandId === demandId; });
+  if (!c) return;
+  document.getElementById('dbk-sub').textContent = 'Demand ID: ' + c.demandId + (c.taxPeriod ? '  ·  Tax Period: ' + c.taxPeriod : '');
+  var heads = [['IGST', c.pend_igst], ['CGST', c.pend_cgst], ['SGST', c.pend_sgst], ['CESS', c.pend_cess]];
+  document.getElementById('dbk-body').innerHTML =
+    '<table style="width:100%;border-collapse:collapse;">' + heads.map(function (h) {
+      return '<tr><td style="padding:8px 0;color:var(--muted-text);">' + h[0] + '</td>'
+        + '<td style="padding:8px 0;text-align:right;"><div class="amount-cell">' + fmt(h[1]) + '</div></td></tr>';
+    }).join('')
+    + '<tr><td style="padding:12px 0 0;font-weight:700;border-top:1px solid var(--border);color:var(--navy-text);">Total Pending</td>'
+    + '<td style="padding:12px 0 0;text-align:right;border-top:1px solid var(--border);"><div class="amount-cell pending">' + fmt(c.pend_total) + '</div></td></tr>'
+    + '</table>';
+  document.getElementById('demand-breakdown-overlay').classList.add('show');
+}
+
+function closeDemandBreakdown() {
+  document.getElementById('demand-breakdown-overlay').classList.remove('show');
 }
 
 function wizPaginationHTML(total, startIdx, pageCount, totalPages) {

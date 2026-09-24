@@ -733,6 +733,17 @@
   </div>
 </div>
 
+<!-- ===== Demand — Tax Head Breakdown (IGST/CGST/SGST/CESS) ===== -->
+<div class="overlay" id="demand-breakdown-overlay" onclick="if(event.target===this) closeDemandBreakdown()">
+  <div class="modal" style="width:400px;">
+    <div class="mhead">
+      <div><div class="mtitle">Tax Head Breakdown</div><div class="msub" id="dbk-sub"></div></div>
+      <button class="mclose" onclick="closeDemandBreakdown()">&times;</button>
+    </div>
+    <div class="mbody" id="dbk-body"></div>
+  </div>
+</div>
+
 <!-- ===== Bulk Notice — Demands Included in Notice (editor) ===== -->
 <div class="overlay" id="bulk-demand-editor-overlay">
   <div class="modal modal-lg">
