@@ -119,10 +119,18 @@ function wizSearchGSTIN() {
   var eligibleCases = cases.filter(isValidCase).filter(isNoticeEligible);
   var pendTotal = eligibleCases.reduce(function (s, c) { return s + (Number(c.pend_total) || 0); }, 0);
 
+  // Trade Name comes from the Taxpayer Register, matched by GSTIN — the
+  // register file only ever carries a trade name, not a legal name. Legal
+  // Name always comes from the DCR record itself. When the register has no
+  // trade name for this GSTIN (not uploaded, or no match), fall back to
+  // showing the DCR legal name so the primary name field is never blank.
+  var legalName = cases[0].legalName || '—';
+  var displayName = reg.tradeName || legalName;
+
   detailsBar.style.display = 'flex';
   detailsBar.innerHTML =
-    tdb('Legal Name', xe(cases[0].legalName || '—'))
-    + tdb('Trade Name', xe(reg.tradeName || '—'))
+    tdb('Trade Name', xe(displayName))
+    + tdb('Legal Name', xe(legalName))
     + tdb('Status', reg.regStatus ? (isCollectible(gstin) ? '<span class="pill pill-green">' + xe(reg.regStatus) + '</span>' : '<span class="pill pill-red">' + xe(reg.regStatus) + '</span>') : '<span class="pill pill-gray">Unknown</span>')
     + tdb('Total Pending Arrear (₹)', '<span style="color:var(--red);">' + fmt(pendTotal) + '</span>')
     + tdb('No. of Demands', String(eligibleCases.length))

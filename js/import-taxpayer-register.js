@@ -33,7 +33,8 @@ function expandMergedCells(ws) {
    since the officer asked for "almost all" of it. */
 var TP_REG_COLUMNS = {
   gstin: ['gstin'],
-  name: ['trade name', 'legal name'],
+  legalName: ['legal name'],
+  tradeName: ['trade name'],
   email: ['email'],
   mobile: ['mobile'],
   assignedTo: ['assigned to'],
@@ -117,11 +118,16 @@ function parseTaxpayerRegisterWorkbook(arrayBuffer, fileName) {
     var address = val(row, 'address');
     if (gstin.length !== 15 || !address) continue;
 
-    var name = val(row, 'name');
+    var legalName = val(row, 'legalName');
+    var tradeNameRaw = val(row, 'tradeName');
+    // Blank out a trade name that's just a duplicate of the legal name (common
+    // for sole proprietorships trading under their own name) rather than
+    // showing the same text twice under two labels.
+    var tradeName = (tradeNameRaw && tradeNameRaw.toLowerCase() !== legalName.toLowerCase()) ? tradeNameRaw : '';
     var rowStatus = status || val(row, 'regStatusCol');
 
     parsed.push({
-      gstin: gstin, legalName: name, tradeName: '', address: address, regStatus: rowStatus,
+      gstin: gstin, legalName: legalName, tradeName: tradeName, address: address, regStatus: rowStatus,
       email: val(row, 'email'), mobile: val(row, 'mobile'), assignedTo: val(row, 'assignedTo'),
       regDate: val(row, 'regDate'), taxpayerType: val(row, 'taxpayerType'), constitution: val(row, 'constitution'),
       rule14A: val(row, 'rule14A'), rule14AWithdrawalDate: val(row, 'rule14AWithdrawalDate'), isMigrated: val(row, 'isMigrated'),
@@ -386,7 +392,7 @@ function renderTaxpayerRegisterSummary() {
 /* ===== Export — one workbook, one sheet per status, almost every column
    captured on import (not just the handful the rest of the app reads). ===== */
 var TP_REG_EXPORT_COLUMNS = [
-  ['gstin', 'GSTIN'], ['legalName', 'Trade Name / Legal Name'], ['regStatus', 'Registration Status'],
+  ['gstin', 'GSTIN'], ['legalName', 'Legal Name'], ['tradeName', 'Trade Name'], ['regStatus', 'Registration Status'],
   ['email', 'Email'], ['mobile', 'Mobile No.'], ['assignedTo', 'Assigned To'],
   ['regDate', 'Effective Date of Registration'], ['taxpayerType', 'Type of Taxpayer'], ['constitution', 'Constitution of Business'],
   ['rule14A', 'Registered under Rule 14A'], ['rule14AWithdrawalDate', 'Date of Withdrawal from Rule 14A'], ['isMigrated', 'Is Migrated'],
@@ -421,7 +427,7 @@ function exportTaxpayerRegisterExcel() {
       return TP_REG_EXPORT_COLUMNS.map(function (c) { return v[c[0]] || ''; });
     }));
     var ws = XLSX.utils.aoa_to_sheet(aoa);
-    ws['!cols'] = TP_REG_EXPORT_COLUMNS.map(function (c) { return { wch: c[0] === 'address' ? 45 : (c[0] === 'legalName' ? 32 : 16) }; });
+    ws['!cols'] = TP_REG_EXPORT_COLUMNS.map(function (c) { return { wch: c[0] === 'address' ? 45 : (c[0] === 'legalName' || c[0] === 'tradeName' ? 32 : 16) }; });
     XLSX.utils.book_append_sheet(wb, ws, label);
   });
 
