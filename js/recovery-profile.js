@@ -28,6 +28,7 @@ function loadRecoveryProfile() {
 function renderRecoveryProfile(gstin, cases) {
   var t = cases[0];
   var legalName = t.legalName || gstin;
+  var displayName = taxpayerDisplayName(gstin, legalName);
   var tpNotices = AppState.notices.filter(function (n) { return n.gstin === gstin; });
   var tpBanks = AppState.bankAtts.filter(function (b) { return b.gstin === gstin; });
   var tpThirdParty = AppState.thirdPartyNotices.filter(function (n) { return n.defaulterGstin === gstin; });
@@ -46,8 +47,8 @@ function renderRecoveryProfile(gstin, cases) {
     : (isCollectible(gstin) ? '<span class="pill pill-green">' + xe(regInfo.regStatus) + '</span>' : '<span class="pill pill-red">' + xe(regInfo.regStatus) + '</span>');
 
   document.getElementById('trp-header').innerHTML =
-    '<div class="tp-header"><div class="tp-avatar">' + xe((legalName || '?').charAt(0).toUpperCase()) + '</div>'
-    + '<div><div class="tp-name">' + xe(legalName) + '</div><div class="tp-gstin">' + xe(gstin) + '</div>'
+    '<div class="tp-header"><div class="tp-avatar">' + xe((displayName || '?').charAt(0).toUpperCase()) + '</div>'
+    + '<div><div class="tp-name">' + xe(displayName) + '</div><div class="tp-gstin">' + xe(gstin) + '</div>'
     + '<div style="margin-top:6px;">' + regBadge + ' ' + recoveryPill(t.recoveryStatus) + '</div></div>'
     + '<div class="tp-stats" style="display:flex;gap:6px;"><button class="btn btn-blue btn-sm" onclick="exportRecoveryProfileWord()"><i class="fa-solid fa-file-word"></i> Export Dossier</button>'
     + '<button class="btn btn-outline btn-sm" onclick="exportRecoveryProfilePDF()"><i class="fa-solid fa-file-pdf"></i> PDF</button></div>'
