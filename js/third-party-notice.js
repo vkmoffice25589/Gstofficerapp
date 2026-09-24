@@ -63,6 +63,15 @@ function tpBuildNotice() {
   };
 }
 
+/* PDF copy of the current form — does not re-save the record (that already
+   happens on "Save & Download DRC-13"), so clicking both never duplicates
+   the saved notice. */
+function tpDownloadPDF() {
+  var tp = tpBuildNotice();
+  if (!tp) return;
+  generateThirdPartyPDF(tp, getSettings());
+}
+
 function tpSaveAndDownload() {
   var tp = tpBuildNotice();
   if (!tp) return;

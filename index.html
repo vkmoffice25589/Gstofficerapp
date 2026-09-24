@@ -451,7 +451,10 @@
             <div class="fg"><label>Notice Date</label><input type="date" id="tp-date"/></div>
             <div class="fg full"><label>Address</label><textarea id="tp-debtor-addr" rows="2"></textarea></div>
           </div>
-          <button class="btn btn-red" style="margin-top:14px;" onclick="tpSaveAndDownload()"><i class="fa-solid fa-file-word"></i> Save &amp; Download DRC-13</button>
+          <div style="display:flex;gap:8px;margin-top:14px;">
+            <button class="btn btn-red" onclick="tpSaveAndDownload()"><i class="fa-solid fa-file-word"></i> Save &amp; Download DRC-13</button>
+            <button class="btn btn-outline" onclick="tpDownloadPDF()"><i class="fa-solid fa-file-pdf"></i> PDF</button>
+          </div>
         </div>
         <div class="ph-sub" style="margin-bottom:8px;">THIRD-PARTY NOTICES ISSUED</div>
         <div class="table-wrap" id="third-party-list"></div>
@@ -479,7 +482,10 @@
             <div class="fg"><label>Attaching Officer</label><input type="text" id="pa-officer"/></div>
             <div class="fg"><label>Date</label><input type="date" id="pa-date"/></div>
           </div>
-          <button class="btn btn-red" style="margin-top:14px;" onclick="paSaveAndDownload()"><i class="fa-solid fa-file-word"></i> Save &amp; Download Order</button>
+          <div style="display:flex;gap:8px;margin-top:14px;">
+            <button class="btn btn-red" onclick="paSaveAndDownload()"><i class="fa-solid fa-file-word"></i> Save &amp; Download Order</button>
+            <button class="btn btn-outline" onclick="paDownloadPDF()"><i class="fa-solid fa-file-pdf"></i> PDF</button>
+          </div>
         </div>
         <div class="ph-sub" style="margin-bottom:8px;">PROPERTY ATTACHMENTS RECORDED</div>
         <div class="table-wrap" id="property-list"></div>

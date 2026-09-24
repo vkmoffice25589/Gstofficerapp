@@ -49,7 +49,8 @@ function renderRecoveryProfile(gstin, cases) {
     '<div class="tp-header"><div class="tp-avatar">' + xe((legalName || '?').charAt(0).toUpperCase()) + '</div>'
     + '<div><div class="tp-name">' + xe(legalName) + '</div><div class="tp-gstin">' + xe(gstin) + '</div>'
     + '<div style="margin-top:6px;">' + regBadge + ' ' + recoveryPill(t.recoveryStatus) + '</div></div>'
-    + '<div class="tp-stats"><button class="btn btn-blue btn-sm" onclick="exportRecoveryProfileWord()"><i class="fa-solid fa-file-word"></i> Export Dossier</button></div>'
+    + '<div class="tp-stats" style="display:flex;gap:6px;"><button class="btn btn-blue btn-sm" onclick="exportRecoveryProfileWord()"><i class="fa-solid fa-file-word"></i> Export Dossier</button>'
+    + '<button class="btn btn-outline btn-sm" onclick="exportRecoveryProfilePDF()"><i class="fa-solid fa-file-pdf"></i> PDF</button></div>'
     + '</div>';
 
   document.getElementById('trp-stats').innerHTML =
@@ -91,16 +92,14 @@ function renderRecoveryProfile(gstin, cases) {
     : '<div class="empty-sub">No recovery activity recorded yet.</div>';
 }
 
-function exportRecoveryProfileWord() {
-  if (!_trpCurrentGSTIN) return;
-  var gstin = _trpCurrentGSTIN;
+function recoveryProfileSummary(gstin) {
   var cases = AppState.cases.filter(function (c) { return c.gstin === gstin; });
   var tpNotices = AppState.notices.filter(function (n) { return n.gstin === gstin; });
   var tpBanks = AppState.bankAtts.filter(function (b) { return b.gstin === gstin; });
   var tpRecon = AppState.reconciliationLog.filter(function (r) { return r.gstin === gstin; });
   var tpPay = AppState.paymentRecords.filter(function (p) { return p.gstin === gstin; });
 
-  var summary = {
+  return {
     legalName: cases[0] ? cases[0].legalName : gstin,
     origTotal: cases.reduce(function (s, c) { return s + (Number(c.orig_total) || 0); }, 0),
     pendTotal: cases.reduce(function (s, c) { return s + (Number(c.pend_total) || 0); }, 0),
@@ -110,8 +109,18 @@ function exportRecoveryProfileWord() {
     recoveredTotal: tpPay.reduce(function (s, p) { return s + (Number(p.amount) || 0); }, 0)
       + tpRecon.filter(function (r) { return r.type === 'collection' || r.type === 'partial'; }).reduce(function (s, r) { return s + (Number(r.amount) || 0); }, 0)
   };
+}
 
-  buildRecoveryProfileDocx(gstin, summary, getSettings()).then(function (blob) {
+function exportRecoveryProfileWord() {
+  if (!_trpCurrentGSTIN) return;
+  var gstin = _trpCurrentGSTIN;
+  buildRecoveryProfileDocx(gstin, recoveryProfileSummary(gstin), getSettings()).then(function (blob) {
     downloadBlob(blob, 'RecoveryProfile_' + gstin + '.docx');
   });
+}
+
+function exportRecoveryProfilePDF() {
+  if (!_trpCurrentGSTIN) return;
+  var gstin = _trpCurrentGSTIN;
+  generateRecoveryProfilePDF(gstin, recoveryProfileSummary(gstin), getSettings());
 }

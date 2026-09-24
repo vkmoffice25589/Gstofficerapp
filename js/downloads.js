@@ -15,10 +15,10 @@ function renderDownloadsPage() {
     rows.push({ date: b.releasedDate || b.createdAt, type: 'Bank Release Order', icon: 'fa-unlock', color: 'green', gstin: b.gstin, name: b.legalName, amt: b.totalAmt, action: function () { return buildBankReleaseDocx(b, getSettings()).then(function (blob) { downloadBlob(blob, b.ref.replace(/\//g, '_') + '_Release.docx'); }); }, actionPdf: function () { generateBankReleasePDF(b, getSettings()); } });
   });
   AppState.thirdPartyNotices.forEach(function (t) {
-    rows.push({ date: t.createdAt, type: 'Third-Party Notice (DRC-13)', icon: 'fa-user-group', color: 'purple', gstin: t.defaulterGstin, name: t.legalName, amt: t.totalAmt, action: function () { return buildThirdPartyDocx(t, getSettings()).then(function (blob) { downloadBlob(blob, 'DRC13_' + t.defaulterGstin + '.docx'); }); } });
+    rows.push({ date: t.createdAt, type: 'Third-Party Notice (DRC-13)', icon: 'fa-user-group', color: 'purple', gstin: t.defaulterGstin, name: t.legalName, amt: t.totalAmt, action: function () { return buildThirdPartyDocx(t, getSettings()).then(function (blob) { downloadBlob(blob, 'DRC13_' + t.defaulterGstin + '.docx'); }); }, actionPdf: function () { generateThirdPartyPDF(t, getSettings()); } });
   });
   AppState.propertyAttachments.forEach(function (p) {
-    rows.push({ date: p.createdAt, type: 'Property Attachment Order', icon: 'fa-house-lock', color: 'red', gstin: p.gstin, name: p.legalName, amt: p.totalAmt, action: function () { return buildPropertyAttachmentDocx(p, getSettings()).then(function (blob) { downloadBlob(blob, 'PropertyAttachment_' + p.gstin + '.docx'); }); } });
+    rows.push({ date: p.createdAt, type: 'Property Attachment Order', icon: 'fa-house-lock', color: 'red', gstin: p.gstin, name: p.legalName, amt: p.totalAmt, action: function () { return buildPropertyAttachmentDocx(p, getSettings()).then(function (blob) { downloadBlob(blob, 'PropertyAttachment_' + p.gstin + '.docx'); }); }, actionPdf: function () { generatePropertyAttachmentPDF(p, getSettings()); } });
   });
 
   rows.sort(function (a, b) { return new Date(b.date || 0) - new Date(a.date || 0); });

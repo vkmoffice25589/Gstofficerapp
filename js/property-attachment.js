@@ -62,6 +62,15 @@ function paBuildRecord() {
   };
 }
 
+/* PDF copy of the current form — does not re-save the record (that already
+   happens on "Save & Download Order"), so clicking both never duplicates
+   the saved attachment. */
+function paDownloadPDF() {
+  var pa = paBuildRecord();
+  if (!pa) return;
+  generatePropertyAttachmentPDF(pa, getSettings());
+}
+
 function paSaveAndDownload() {
   var pa = paBuildRecord();
   if (!pa) return;
