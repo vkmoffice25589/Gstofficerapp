@@ -325,8 +325,7 @@ function renderBulkResults(resultsElId) {
     var regStatus = bulkRegStatus(n);
     var statusPill = regStatus === 'Unknown' ? '<span class="pill pill-gray">Unknown</span>'
       : (isCollectible(n.gstin) ? '<span class="pill pill-green">' + xe(regStatus) + '</span>' : '<span class="pill pill-red">' + xe(regStatus) + '</span>');
-    var tradeName = (AppState.addressCache[n.gstin] || {}).tradeName || '';
-    var taxpayerCell = xe(tradeName || n.legalName);
+    var taxpayerCell = xe(taxpayerDisplayName(n.gstin, n.legalName));
     return '<tr><td><input type="checkbox" data-id="' + n.id + '" onchange="bulkToggleCaseCheck(this)"' + checked + '></td><td>' + (i + 1) + '</td>'
       + '<td>' + taxpayerCell + '</td><td class="gstin-cell">' + xe(n.gstin) + '</td>'
       + '<td style="cursor:pointer;" onclick="openBulkDemandEditor(' + idx + ')" title="Click to view/edit the demands included in this notice">' + typePill + '</td>'
@@ -593,7 +592,7 @@ function openBulkDemandEditor(idx) {
   _bdeCases = AppState.cases.filter(function (c) { return c.gstin === n.gstin; }).filter(isValidCase).filter(isNoticeEligible);
   _bdeSelectedIds = new Set(n.cases.map(function (c) { return c.demandId; }));
   document.getElementById('bde-title').textContent = 'Demands Included in Notice — ' + n.num;
-  document.getElementById('bde-sub').textContent = xe(n.legalName) + ' (' + xe(n.gstin) + ')';
+  document.getElementById('bde-sub').textContent = taxpayerDisplayName(n.gstin, n.legalName) + ' (' + n.gstin + ')';
   document.querySelectorAll('#bde-quick-filter-bar .qf-chip').forEach(function (c) { c.classList.toggle('active', c.getAttribute('data-qf') === 'all'); });
   updateBdeQuickFilterCounts();
   renderBdeTable();

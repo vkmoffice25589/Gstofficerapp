@@ -102,6 +102,17 @@ function hasRegisterData() {
   return Object.values(AppState.addressCache).some(function (v) { return v && v.regStatus; });
 }
 
+/* Canonical "what name do we show for this taxpayer" lookup — the Taxpayer
+   Register only ever carries a trade name (matched by GSTIN), never a legal
+   name, so every taxpayer-name display in the app should prefer the
+   register's trade name and fall back to the DCR's legal name, not the
+   other way round. Centralised here instead of each list/table re-deriving
+   its own fallback so a register re-import fixes every screen at once. */
+function taxpayerDisplayName(gstin, legalNameFallback) {
+  var reg = AppState.addressCache[gstin] || AppState.addressCache[(gstin || '').toUpperCase()];
+  return (reg && reg.tradeName) || legalNameFallback || (reg && reg.legalName) || '—';
+}
+
 function isSection62Excluded(c, excludeSec62) {
   return excludeSec62 && String(c.section || '').trim() === '62';
 }

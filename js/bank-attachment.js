@@ -19,7 +19,7 @@ function baSearchTaxpayer(query) {
   }).slice(0, 12);
 
   resultsEl.innerHTML = matches.length
-    ? matches.map(function (c) { return '<div class="gs-item" onclick="fillBankTaxpayer(\'' + c.gstin + '\')"><strong>' + xe(c.legalName) + '</strong><br><span style="color:var(--ink3);font-family:var(--mono);font-size:10px;">' + c.gstin + '</span></div>'; }).join('')
+    ? matches.map(function (c) { return '<div class="gs-item" onclick="fillBankTaxpayer(\'' + c.gstin + '\')"><strong>' + xe(taxpayerDisplayName(c.gstin, c.legalName)) + '</strong><br><span style="color:var(--ink3);font-family:var(--mono);font-size:10px;">' + c.gstin + '</span></div>'; }).join('')
     : '<div class="gs-item">No taxpayers with demands ≥ 90 days found</div>';
   resultsEl.style.display = 'block';
 }
@@ -190,7 +190,7 @@ function renderBankAtts() {
   wrap.innerHTML = list.map(function (b) {
     return '<div class="ba-card">'
       + '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap;">'
-      + '<div><div style="font-weight:700;font-size:13px;">' + xe(b.legalName) + '</div><div class="gstin-cell">' + xe(b.gstin) + '</div></div>'
+      + '<div><div style="font-weight:700;font-size:13px;">' + xe(taxpayerDisplayName(b.gstin, b.legalName)) + '</div><div class="gstin-cell">' + xe(b.gstin) + '</div></div>'
       + '<span class="pill pill-red">Active</span>'
       + '</div>'
       + '<div class="info-grid" style="margin-top:10px;">'
@@ -257,7 +257,7 @@ function brSearchAttachment(query) {
     return (b.gstin || '').toUpperCase().indexOf(query) !== -1 || (b.legalName || '').toUpperCase().indexOf(query) !== -1 || (b.bankName || '').toUpperCase().indexOf(query) !== -1;
   }).slice(0, 12);
   resultsEl.innerHTML = matches.length
-    ? matches.map(function (b) { return '<div class="gs-item" onclick="brSelectAttachment(\'' + b.id + '\')"><strong>' + xe(b.legalName) + '</strong><br><span style="color:var(--ink3);font-family:var(--mono);font-size:10px;">' + xe(b.gstin) + ' • ' + xe(b.bankName) + '</span></div>'; }).join('')
+    ? matches.map(function (b) { return '<div class="gs-item" onclick="brSelectAttachment(\'' + b.id + '\')"><strong>' + xe(taxpayerDisplayName(b.gstin, b.legalName)) + '</strong><br><span style="color:var(--ink3);font-family:var(--mono);font-size:10px;">' + xe(b.gstin) + ' • ' + xe(b.bankName) + '</span></div>'; }).join('')
     : '<div class="gs-item">No active attachments found</div>';
   resultsEl.style.display = 'block';
 }
@@ -333,7 +333,7 @@ function renderReleasedList() {
   wrap.innerHTML = list.map(function (b) {
     return '<div class="ba-card released">'
       + '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap;">'
-      + '<div><div style="font-weight:700;font-size:13px;">' + xe(b.legalName) + '</div><div class="gstin-cell">' + xe(b.gstin) + '</div></div>'
+      + '<div><div style="font-weight:700;font-size:13px;">' + xe(taxpayerDisplayName(b.gstin, b.legalName)) + '</div><div class="gstin-cell">' + xe(b.gstin) + '</div></div>'
       + '<span class="pill pill-gray">Released ' + fmtDate(b.releasedDate) + '</span>'
       + '</div>'
       + '<div class="info-grid" style="margin-top:10px;">'

@@ -208,7 +208,7 @@ function renderDashTopTaxpayers(groups) {
     var status = g.eligibleCases.length > 0 ? recoveryPill('Recoverable') : recoveryPill(g.cases[0].recoveryStatus);
     return '<tr><td style="font-family:var(--mono);color:var(--ink3);">' + (i + 1) + '</td>'
       + '<td><div class="gstin-cell">' + xe(g.gstin) + '</div></td>'
-      + '<td>' + xe(g.legalName) + '</td>'
+      + '<td>' + xe(taxpayerDisplayName(g.gstin, g.legalName)) + '</td>'
       + '<td style="text-align:center;">' + g.demands + '</td>'
       + '<td><div class="amount-cell pending">' + fmt(g.total) + '</div></td>'
       + '<td>' + status + '</td>'

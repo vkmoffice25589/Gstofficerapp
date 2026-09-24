@@ -72,7 +72,7 @@ function renderReports() {
     return '<tr>'
       + '<td style="font-family:var(--mono);font-size:12px;color:var(--ink3);">' + (i + 1) + '</td>'
       + '<td><div class="gstin-cell">' + xe(r.gstin) + '</div></td>'
-      + '<td><div style="font-weight:600;font-size:12px;">' + xe(r.legalName) + '</div>' + excl + '</td>'
+      + '<td><div style="font-weight:600;font-size:12px;">' + xe(taxpayerDisplayName(r.gstin, r.legalName)) + '</div>' + excl + '</td>'
       + '<td style="text-align:center;"><span class="pill pill-blue" style="font-size:10px;">' + r.demands + '</span></td>'
       + '<td><div class="amount-cell pending">' + fmt(dispAmt) + '</div></td>'
       + '<td>' + pill + '</td>'

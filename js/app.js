@@ -17,7 +17,7 @@ function wireGlobalSearch() {
     }).slice(0, 8);
 
     results.innerHTML = matches.length
-      ? matches.map(function (c) { return '<div class="gs-item" onclick="globalSearchGo(\'' + c.gstin + '\')"><strong>' + xe(c.legalName) + '</strong><br><span style="color:var(--ink3);font-family:var(--mono);font-size:10px;">' + c.gstin + '</span></div>'; }).join('')
+      ? matches.map(function (c) { return '<div class="gs-item" onclick="globalSearchGo(\'' + c.gstin + '\')"><strong>' + xe(taxpayerDisplayName(c.gstin, c.legalName)) + '</strong><br><span style="color:var(--ink3);font-family:var(--mono);font-size:10px;">' + c.gstin + '</span></div>'; }).join('')
       : '<div class="gs-item">No matches</div>';
     results.classList.add('show');
   });

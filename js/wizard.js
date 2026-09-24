@@ -125,7 +125,7 @@ function wizSearchGSTIN() {
   // trade name for this GSTIN (not uploaded, or no match), fall back to
   // showing the DCR legal name so the primary name field is never blank.
   var legalName = cases[0].legalName || '—';
-  var displayName = reg.tradeName || legalName;
+  var displayName = taxpayerDisplayName(gstin, legalName);
 
   detailsBar.style.display = 'flex';
   detailsBar.innerHTML =

@@ -33,7 +33,7 @@ function renderNoticeHistoryPage() {
     return '<tr>'
       + '<td class="demand-id">' + xe(n.num) + '</td>'
       + '<td>' + fmtDate(n.date) + '</td>'
-      + '<td>' + xe(n.legalName) + '</td>'
+      + '<td>' + xe(taxpayerDisplayName(n.gstin, n.legalName)) + '</td>'
       + '<td class="gstin-cell">' + xe(n.gstin) + '</td>'
       + '<td>' + (n.noticeKind === 'urgent' ? '<span class="pill pill-red">Urgent</span>' : '<span class="pill pill-orange">Intimation</span>') + '</td>'
       + '<td style="text-align:center;">' + (n.cases || []).length + '</td>'

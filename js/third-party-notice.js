@@ -14,7 +14,7 @@ function tpSearchDefaulter(query) {
     return hit;
   }).slice(0, 12);
   resultsEl.innerHTML = matches.length
-    ? matches.map(function (c) { return '<div class="gs-item" onclick="tpSelectDefaulter(\'' + c.gstin + '\')"><strong>' + xe(c.legalName) + '</strong><br><span style="color:var(--ink3);font-family:var(--mono);font-size:10px;">' + c.gstin + '</span></div>'; }).join('')
+    ? matches.map(function (c) { return '<div class="gs-item" onclick="tpSelectDefaulter(\'' + c.gstin + '\')"><strong>' + xe(taxpayerDisplayName(c.gstin, c.legalName)) + '</strong><br><span style="color:var(--ink3);font-family:var(--mono);font-size:10px;">' + c.gstin + '</span></div>'; }).join('')
     : '<div class="gs-item">No matches</div>';
   resultsEl.style.display = 'block';
 }
@@ -91,7 +91,7 @@ function renderThirdPartyList() {
   var list = AppState.thirdPartyNotices.slice().sort(function (a, b) { return new Date(b.createdAt) - new Date(a.createdAt); });
   wrap.innerHTML = '<div class="table-scroll"><table><thead><tr><th>Date</th><th>Defaulter</th><th>Third Party</th><th>Amount</th></tr></thead><tbody>'
     + list.map(function (t) {
-      return '<tr><td>' + fmtDate(t.date) + '</td><td>' + xe(t.legalName) + '<br><span class="gstin-cell">' + xe(t.defaulterGstin) + '</span></td>'
+      return '<tr><td>' + fmtDate(t.date) + '</td><td>' + xe(taxpayerDisplayName(t.defaulterGstin, t.legalName)) + '<br><span class="gstin-cell">' + xe(t.defaulterGstin) + '</span></td>'
         + '<td>' + xe(t.debtorLegal) + '</td><td><div class="amount-cell pending">' + fmt(t.totalAmt) + '</div></td></tr>';
     }).join('') + '</tbody></table></div>';
 }

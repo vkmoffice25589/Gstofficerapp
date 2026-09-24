@@ -14,7 +14,7 @@ function paSearchDefaulter(query) {
     return hit;
   }).slice(0, 12);
   resultsEl.innerHTML = matches.length
-    ? matches.map(function (c) { return '<div class="gs-item" onclick="paSelectDefaulter(\'' + c.gstin + '\')"><strong>' + xe(c.legalName) + '</strong><br><span style="color:var(--ink3);font-family:var(--mono);font-size:10px;">' + c.gstin + '</span></div>'; }).join('')
+    ? matches.map(function (c) { return '<div class="gs-item" onclick="paSelectDefaulter(\'' + c.gstin + '\')"><strong>' + xe(taxpayerDisplayName(c.gstin, c.legalName)) + '</strong><br><span style="color:var(--ink3);font-family:var(--mono);font-size:10px;">' + c.gstin + '</span></div>'; }).join('')
     : '<div class="gs-item">No matches</div>';
   resultsEl.style.display = 'block';
 }
@@ -90,7 +90,7 @@ function renderPropertyList() {
   var list = AppState.propertyAttachments.slice().sort(function (a, b) { return new Date(b.createdAt) - new Date(a.createdAt); });
   wrap.innerHTML = '<div class="table-scroll"><table><thead><tr><th>Date</th><th>Taxpayer</th><th>Property</th><th>Value</th><th>Demand Amount</th></tr></thead><tbody>'
     + list.map(function (p) {
-      return '<tr><td>' + fmtDate(p.date) + '</td><td>' + xe(p.legalName) + '<br><span class="gstin-cell">' + xe(p.gstin) + '</span></td>'
+      return '<tr><td>' + fmtDate(p.date) + '</td><td>' + xe(taxpayerDisplayName(p.gstin, p.legalName)) + '<br><span class="gstin-cell">' + xe(p.gstin) + '</span></td>'
         + '<td>' + xe(p.propertyDescription) + '</td><td>' + fmt(p.propertyValue) + '</td><td><div class="amount-cell pending">' + fmt(p.totalAmt) + '</div></td></tr>';
     }).join('') + '</tbody></table></div>';
 }
