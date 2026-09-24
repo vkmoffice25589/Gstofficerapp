@@ -130,7 +130,7 @@ function wizSearchGSTIN() {
   detailsBar.style.display = 'flex';
   detailsBar.innerHTML =
     tdb('Trade Name', xe(displayName))
-    + tdb('Legal Name', xe(legalName))
+    + tdb('Legal Name', xe(taxpayerLegalNameCell(gstin, legalName)))
     + tdb('Status', reg.regStatus ? (isCollectible(gstin) ? '<span class="pill pill-green">' + xe(reg.regStatus) + '</span>' : '<span class="pill pill-red">' + xe(reg.regStatus) + '</span>') : '<span class="pill pill-gray">Unknown</span>')
     + tdb('Total Pending Arrear (₹)', '<span style="color:var(--red);">' + fmt(pendTotal) + '</span>')
     + tdb('No. of Demands', String(eligibleCases.length))

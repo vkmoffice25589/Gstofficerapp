@@ -113,6 +113,20 @@ function taxpayerDisplayName(gstin, legalNameFallback) {
   return (reg && reg.tradeName) || legalNameFallback || (reg && reg.legalName) || '—';
 }
 
+/* Companion to taxpayerDisplayName() for screens that show Trade Name and
+   Legal Name side by side (Search GSTIN bar, Arrear Action Register detail
+   drawer). Many sole proprietors trade under their own name, so the
+   register's trade name and the DCR's legal name are often genuinely
+   identical — repeating the exact same text under both labels reads as a
+   bug, so this collapses that case to a plain "Same as Trade Name" note
+   instead of printing the name twice. */
+function taxpayerLegalNameCell(gstin, legalName) {
+  var reg = AppState.addressCache[gstin] || AppState.addressCache[(gstin || '').toUpperCase()];
+  var trade = ((reg && reg.tradeName) || '').trim();
+  if (trade && legalName && trade.toLowerCase() === String(legalName).trim().toLowerCase()) return 'Same as Trade Name';
+  return legalName || '—';
+}
+
 function isSection62Excluded(c, excludeSec62) {
   return excludeSec62 && String(c.section || '').trim() === '62';
 }

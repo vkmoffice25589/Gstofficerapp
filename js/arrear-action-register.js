@@ -587,9 +587,10 @@ function arRenderCaseDetailsTab(wrap) {
   var gstin = _arCurrentGstin;
   var addr = AppState.addressCache[gstin] || {};
   var g = arGetGroup(gstin);
+  var legalName = (g && g.legalName) || addr.legalName || '—';
   wrap.innerHTML = '<div class="info-grid">'
-    + '<div class="info-item"><div class="info-label">Legal Name</div><div class="info-val">' + xe(addr.legalName || (g && g.legalName) || '—') + '</div></div>'
-    + '<div class="info-item"><div class="info-label">Trade Name</div><div class="info-val">' + xe(addr.tradeName || '—') + '</div></div>'
+    + '<div class="info-item"><div class="info-label">Trade Name</div><div class="info-val">' + xe(taxpayerDisplayName(gstin, legalName)) + '</div></div>'
+    + '<div class="info-item"><div class="info-label">Legal Name</div><div class="info-val">' + xe(taxpayerLegalNameCell(gstin, legalName)) + '</div></div>'
     + '<div class="info-item"><div class="info-label">Registration Status</div><div class="info-val">' + xe(addr.regStatus || 'Not available') + '</div></div>'
     + '<div class="info-item"><div class="info-label">DCR Demand Cases</div><div class="info-val">' + (g ? g.demands : 0) + '</div></div>'
     + '</div>';
