@@ -94,15 +94,25 @@ function parseTaxpayerRegisterWorkbook(arrayBuffer, fileName) {
 
   var header = rows[headerRowIdx].map(function (h) { return String(h || '').toLowerCase().trim(); });
   var colIdx = {};
-  Object.keys(TP_REG_COLUMNS).forEach(function (key) {
+  // "tradeName" is resolved first and claims its column so "legalName" can't
+  // match the SAME cell — real portal exports sometimes label the one name
+  // column they actually have "Trade Name/ Legal Name", which contains both
+  // keywords. Without this, legalName and tradeName both point at that one
+  // column, the values compare equal, and the later "blank a trade name
+  // that just duplicates the legal name" step wrongly discards it.
+  var claimedCols = {};
+  var orderedKeys = ['tradeName', 'legalName'].concat(Object.keys(TP_REG_COLUMNS).filter(function (k) { return k !== 'tradeName' && k !== 'legalName'; }));
+  orderedKeys.forEach(function (key) {
     var keywords = TP_REG_COLUMNS[key];
     colIdx[key] = -1;
     for (var k = 0; k < keywords.length; k++) {
       for (var c = 0; c < header.length; c++) {
+        if (claimedCols[c]) continue;
         if (header[c].indexOf(keywords[k]) !== -1) { colIdx[key] = c; break; }
       }
       if (colIdx[key] !== -1) break;
     }
+    if (colIdx[key] !== -1) claimedCols[colIdx[key]] = true;
   });
   if (colIdx.gstin === -1) return { error: fileName + ' — GSTIN column not found' };
   if (colIdx.address === -1) return { error: fileName + ' — Address column not found' };
