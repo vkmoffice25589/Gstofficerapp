@@ -295,11 +295,17 @@
 .wizard-num { width: 22px; height: 22px; border-radius: 50%; background: var(--primary-blue); color: #fff; font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 1px; }
 .wizard-card-title { font-size: 17px; font-weight: 700; color: var(--navy-text); line-height: 1.3; }
 .wizard-card-sub { font-size: 13px; color: var(--muted-text); margin-top: 2px; }
-.wiz-info-btn {
-  border: none; background: none; color: var(--ink3); cursor: pointer; font-size: 14px;
-  padding: 0; margin-left: 4px; vertical-align: middle; line-height: 1;
+.wiz-flag-legend {
+  display: flex; align-items: center; flex-wrap: wrap; gap: 4px; margin: -6px 0 14px;
+  padding: 10px 14px; background: var(--surface-3); border: 1px solid var(--border);
+  border-radius: var(--radius-md); font-size: 13px; color: var(--muted-text);
 }
-.wiz-info-btn:hover { color: var(--primary-blue); }
+.wiz-flag-legend .wiz-excluded-badge { margin: 0; }
+.wiz-flag-legend-link {
+  border: none; background: none; color: var(--primary-blue); cursor: pointer;
+  font-size: 13px; font-weight: 700; padding: 0; margin-left: auto;
+}
+.wiz-flag-legend-link:hover { text-decoration: underline; }
 .wiz-exclusion-guide-body h4 { font-size: 13px; margin: 14px 0 6px; color: var(--navy-text); }
 .wiz-exclusion-guide-body h4:first-child { margin-top: 0; }
 .wiz-exclusion-guide-body ul { margin: 0; padding-left: 20px; font-size: 13px; color: var(--muted-text); }
