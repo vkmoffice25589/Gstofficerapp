@@ -383,6 +383,14 @@
 .day-legend .dot { width: 7px; height: 7px; border-radius: 50%; display: inline-block; margin-right: 5px; }
 .dot.green { background: var(--success); } .dot.orange { background: var(--warning); } .dot.red { background: var(--danger); }
 
+/* Demands parked at a higher forum (appeal/settled/waived/refund) — shown,
+   not hidden, but visually muted and flagged so the officer knows why
+   they're unchecked by default and can still opt to include one. */
+.wiz-row-excluded { background: var(--warning-dim); }
+.wiz-row-excluded:hover td { background: var(--warning-dim); }
+.wiz-row-excluded td { opacity: 0.85; }
+.wiz-excluded-badge { margin-left: 6px; font-size: 10px; vertical-align: middle; }
+
 /* ---- Table pagination footer — numbered page buttons + page-size pill ---- */
 .table-pagination { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--border); flex-wrap: wrap; }
 .tp-pages { display: flex; align-items: center; gap: 4px; }

@@ -163,16 +163,21 @@ function dayBadge(age) {
   return '<span class="day-badge ' + cls + '">' + age + '</span>';
 }
 
-/* The full notice-eligible case list for the searched GSTIN, before any
-   quick/advanced filter is applied — used both as the filter base and to
-   compute the quick-filter chip counts. */
-function wizBaseEligibleCases() {
+/* The full case list for the searched GSTIN, before any quick/advanced
+   filter is applied — used both as the filter base and to compute the
+   quick-filter chip counts. Includes demands parked at a higher forum
+   (appeal/settled/waived/refund) too — they're shown in the table flagged
+   and unchecked by default (see isStatusExcluded()) rather than hidden
+   outright, so the officer can see they exist and override if they have a
+   specific reason to. Zero/negative-pending demands still don't show —
+   there's nothing to notice for those. */
+function wizBaseCasesForNotice() {
   if (!_wizGSTIN) return [];
-  return AppState.cases.filter(function (c) { return c.gstin === _wizGSTIN; }).filter(isValidCase).filter(isNoticeEligible);
+  return AppState.cases.filter(function (c) { return c.gstin === _wizGSTIN; }).filter(isValidCase).filter(function (c) { return (Number(c.pend_total) || 0) > 0; });
 }
 
 function updateQuickFilterCounts() {
-  var raw = wizBaseEligibleCases();
+  var raw = wizBaseCasesForNotice();
   var sec62 = raw.filter(function (c) { return String(c.section || '').trim() === '62'; }).length;
   var base = _wizSection62 === 'all' ? raw : raw.filter(function (c) { return String(c.section || '').trim() !== '62'; });
   var intimation = base.filter(function (c) { return isNoticeTypeMatch(c, 'intimation'); }).length;
@@ -327,7 +332,7 @@ function updateWizFilterBadgeAndTags() {
   if (tagsWrap) {
     if (!tags.length) { tagsWrap.style.display = 'none'; tagsWrap.innerHTML = ''; return; }
     var shown = _wizFilteredCases.length;
-    var total = wizBaseEligibleCases().length;
+    var total = wizBaseCasesForNotice().length;
     tagsWrap.style.display = 'flex';
     tagsWrap.innerHTML = '<span class="filter-summary-count">Showing ' + shown + ' of ' + total + ' demands</span>'
       + tags.map(function (t) { return '<span class="filter-tag">' + xe(t) + '</span>'; }).join('')
@@ -343,7 +348,7 @@ function applyWizardFiltersAndRender() {
   var tpTo = (document.getElementById('wiz-tax-period-to').value || '').trim();
   var demandType = document.getElementById('wiz-demand-type').value;
 
-  var cases = wizBaseEligibleCases();
+  var cases = wizBaseCasesForNotice();
 
   cases = cases.filter(function (c) {
     if (_wizNoticeType === 'both') return true;
@@ -401,7 +406,10 @@ function renderWizardTablePage() {
   var rows = pageCases.map(function (c, i) {
     var age = getDemandAgeDays(c);
     var checked = _wizSelectedDemandIds.has(c.demandId) ? ' checked' : '';
-    return '<tr>'
+    var excluded = isStatusExcluded(c);
+    var statusCell = xe(c.demandStatus)
+      + (excluded ? ' <span class="pill pill-orange wiz-excluded-badge" title="Not notice-eligible by default (higher forum / closed / refund status) — tick the box to include it anyway">Excluded</span>' : '');
+    return '<tr' + (excluded ? ' class="wiz-row-excluded"' : '') + '>'
       + '<td><input type="checkbox" class="wiz-case-chk" data-demand="' + xe(c.demandId) + '" data-amt="' + (Number(c.pend_total) || 0) + '"' + checked + ' onchange="wizToggleCaseCheck(this)"></td>'
       + '<td>' + (startIdx + i + 1) + '</td>'
       + '<td>' + xe(c.taxPeriod) + '</td>'
@@ -409,7 +417,7 @@ function renderWizardTablePage() {
       + '<td>' + fmtDate(c.dcr_date || c.demandDate) + '</td>'
       + '<td style="text-align:center;">' + xe(c.section) + '</td>'
       + '<td style="text-align:center;">' + dayBadge(age) + '</td>'
-      + '<td>' + xe(c.demandStatus) + '</td>'
+      + '<td>' + statusCell + '</td>'
       + '<td><div class="amount-cell pending clickable" onclick="showDemandBreakdown(\'' + xe(c.demandId) + '\')" title="Click for IGST/CGST/SGST/CESS breakdown">' + fmt(c.pend_total) + '</div></td>'
       + '</tr>';
   }).join('');
@@ -505,10 +513,16 @@ function wizToggleCaseCheck(el) {
 }
 
 /* Selects/deselects every demand in the current filtered set — every page,
-   not just the one currently visible. */
+   not just the one currently visible. "Select all" only ever auto-selects
+   notice-eligible demands — a flagged (appeal/settled/refund) demand always
+   needs its own deliberate tick, never gets swept in by "select all", so a
+   rushed bulk selection can't accidentally put a notice on one. Unchecking
+   "select all" still clears everything, including any flagged demand the
+   officer had deliberately ticked. */
 function wizToggleSelectAll(checked) {
   _wizFilteredCases.forEach(function (c) {
-    if (checked) _wizSelectedDemandIds.add(c.demandId); else _wizSelectedDemandIds.delete(c.demandId);
+    if (checked) { if (!isStatusExcluded(c)) _wizSelectedDemandIds.add(c.demandId); }
+    else _wizSelectedDemandIds.delete(c.demandId);
   });
   renderWizardTablePage();
 }
@@ -528,7 +542,10 @@ function wizUpdateSelectionSummary() {
 
   var selectAll = document.getElementById('wiz-select-all');
   if (selectAll) {
-    var allChecked = totalAvailable > 0 && _wizFilteredCases.every(function (c) { return _wizSelectedDemandIds.has(c.demandId); });
+    // "All checked" only counts the eligible (non-flagged) demands — those
+    // are all "select all" ever ticks, so that's what "fully selected" means.
+    var eligibleFiltered = _wizFilteredCases.filter(function (c) { return !isStatusExcluded(c); });
+    var allChecked = eligibleFiltered.length > 0 && eligibleFiltered.every(function (c) { return _wizSelectedDemandIds.has(c.demandId); });
     var someChecked = _wizFilteredCases.some(function (c) { return _wizSelectedDemandIds.has(c.demandId); });
     selectAll.checked = allChecked;
     selectAll.indeterminate = someChecked && !allChecked;

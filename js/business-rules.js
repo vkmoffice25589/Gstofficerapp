@@ -55,23 +55,29 @@ var EXCLUDED_STATUSES = [
   'Refund filed against order'
 ];
 
+/* True when demandStatus is one of the "no longer collectible / parked at a
+   higher forum" statuses — appeal, tribunal, settled, waived, refund, etc.
+   User-validated list (see memory: feedback_notice_exclusion_list_validated) —
+   don't restructure the criteria, only add/remove an entry the user names. */
+function isStatusExcluded(c) {
+  return !!(c.demandStatus && EXCLUDED_STATUSES.some(function (s) {
+    return c.demandStatus.trim().toLowerCase() === s.toLowerCase();
+  }));
+}
+
 /* A case is eligible for a recovery notice only if it has real pending tax
    and isn't parked at a higher forum / closed / refund status. */
 function isNoticeEligible(c) {
   var pend = Number(c.pend_total) || 0;
   if (pend <= 0) return false;
-  if (c.demandStatus && EXCLUDED_STATUSES.some(function (s) {
-    return c.demandStatus.trim().toLowerCase() === s.toLowerCase();
-  })) return false;
+  if (isStatusExcluded(c)) return false;
   return true;
 }
 
 function getExclusionReason(c) {
   var pend = Number(c.pend_total) || 0;
   if (pend <= 0) return pend < 0 ? 'Negative pending' : 'Zero pending';
-  if (c.demandStatus && EXCLUDED_STATUSES.some(function (s) {
-    return c.demandStatus.trim().toLowerCase() === s.toLowerCase();
-  })) return 'Higher forum — ' + c.demandStatus;
+  if (isStatusExcluded(c)) return 'Higher forum — ' + c.demandStatus;
   return null;
 }
 
