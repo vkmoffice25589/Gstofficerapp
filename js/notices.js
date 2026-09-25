@@ -77,8 +77,8 @@ function updateBulkQuickFilterCounts(tab) {
   var st = _bulkFilterState[tab];
   if (!st) return;
   var valid = AppState.cases.filter(isValidCase).filter(isNoticeEligible);
-  var sec62Count = valid.filter(function (c) { return String(c.section || '').trim() === '62'; }).length;
-  var base = st.sec62 === 'all' ? valid : valid.filter(function (c) { return String(c.section || '').trim() !== '62'; });
+  var sec62Count = valid.filter(function (c) { return isSection62(c); }).length;
+  var base = st.sec62 === 'all' ? valid : valid.filter(function (c) { return !isSection62(c); });
   var intimation = base.filter(function (c) { return isNoticeTypeMatch(c, 'intimation'); }).length;
   var urgent = base.filter(function (c) { return isNoticeTypeMatch(c, 'urgent'); }).length;
   var setText = function (id, n) { var el = document.getElementById(id); if (el) el.textContent = n; };
@@ -621,8 +621,8 @@ function bdeToggleSection62() {
 }
 
 function updateBdeQuickFilterCounts() {
-  var sec62Count = _bdeCases.filter(function (c) { return String(c.section || '').trim() === '62'; }).length;
-  var base = _bdeSec62 === 'all' ? _bdeCases : _bdeCases.filter(function (c) { return String(c.section || '').trim() !== '62'; });
+  var sec62Count = _bdeCases.filter(function (c) { return isSection62(c); }).length;
+  var base = _bdeSec62 === 'all' ? _bdeCases : _bdeCases.filter(function (c) { return !isSection62(c); });
   var intimation = base.filter(function (c) { return isNoticeTypeMatch(c, 'intimation'); }).length;
   var urgent = base.filter(function (c) { return isNoticeTypeMatch(c, 'urgent'); }).length;
   var setText = function (id, v) { var el = document.getElementById(id); if (el) el.textContent = v; };
@@ -633,7 +633,7 @@ function updateBdeQuickFilterCounts() {
 }
 
 function bdeFilteredCases() {
-  var base = _bdeSec62 === 'all' ? _bdeCases : _bdeCases.filter(function (c) { return String(c.section || '').trim() !== '62'; });
+  var base = _bdeSec62 === 'all' ? _bdeCases : _bdeCases.filter(function (c) { return !isSection62(c); });
   if (_bdeFilterType === 'all') return base;
   return base.filter(function (c) { return isNoticeTypeMatch(c, _bdeFilterType); });
 }

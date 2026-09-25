@@ -133,8 +133,19 @@ function taxpayerLegalNameCell(gstin, legalName) {
   return legalName || '—';
 }
 
+/* The DCR's Section column can record a Section 62 (best-judgment
+   assessment) demand in different textual forms depending on how the
+   office typed it up — "62", "Section 62", "u/s 62(1)", "Sec. 62", etc.
+   Match the numeral as a standalone token (not part of a longer number
+   like 162 or 621) so every one of those variants is still recognised as
+   Section 62. Single canonical check — every "is this a Section 62
+   demand?" test in the app (wizard.js, notices.js) should call this. */
+function isSection62(c) {
+  return /(^|[^0-9])62([^0-9]|$)/.test(String(c.section || '').trim());
+}
+
 function isSection62Excluded(c, excludeSec62) {
-  return excludeSec62 && String(c.section || '').trim() === '62';
+  return excludeSec62 && isSection62(c);
 }
 
 /* Bulk-notice eligibility map. "Recoverable" is a COMPUTED status — a case is

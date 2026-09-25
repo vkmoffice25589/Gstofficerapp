@@ -186,7 +186,7 @@ function closeWizExclusionGuide() {
    hidden; "select all" and the default pre-check on search both skip these. */
 function wizIsFlagged(c) {
   if (isStatusExcluded(c)) return true;
-  if (String(c.section || '').trim() === '62' && _wizSection62 !== 'all') return true;
+  if (isSection62(c) && _wizSection62 !== 'all') return true;
   return false;
 }
 
@@ -214,7 +214,7 @@ function updateQuickFilterCounts() {
   // count toward All/Intimation/Urgent same as everything else — the
   // Section 62 chip's own count is just "how many are there to bulk-select".
   var base = wizBaseCasesForNotice();
-  var sec62 = base.filter(function (c) { return String(c.section || '').trim() === '62'; }).length;
+  var sec62 = base.filter(function (c) { return isSection62(c); }).length;
   var intimation = base.filter(function (c) { return isNoticeTypeMatch(c, 'intimation'); }).length;
   var urgent = base.filter(function (c) { return isNoticeTypeMatch(c, 'urgent'); }).length;
   var setText = function (id, n) { var el = document.getElementById(id); if (el) el.textContent = n; };
@@ -577,7 +577,7 @@ function wizToggleSelectAll(checked) {
    and flags them again. Called right after _wizSection62 is set, before the
    table re-renders. */
 function wizSyncSection62Selection() {
-  _wizFilteredCases.filter(function (c) { return String(c.section || '').trim() === '62'; }).forEach(function (c) {
+  _wizFilteredCases.filter(function (c) { return isSection62(c); }).forEach(function (c) {
     if (_wizSection62 === 'all') _wizSelectedDemandIds.add(c.demandId);
     else _wizSelectedDemandIds.delete(c.demandId);
   });
