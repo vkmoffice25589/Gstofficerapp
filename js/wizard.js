@@ -137,9 +137,13 @@ function wizSearchGSTIN() {
     + '<div class="tdb-item tdb-action"><button type="button" class="eye-btn" title="View Notice History" onclick="goToNoticeHistory(\'' + gstin + '\')"><i class="fa-solid fa-eye"></i></button></div>';
 
   document.getElementById('wiz-demand-section').style.display = 'block';
-  _wizSelectedDemandIds = new Set();
   _wizPageSize = 10; _wizCurrentPage = 1;
   wizResetDrawerFilters();
+  // Pre-check every notice-eligible demand so the officer usually just has to
+  // hit Generate — flagged demands (excluded status / Section 62) stay unticked.
+  _wizSelectedDemandIds = new Set(
+    wizBaseCasesForNotice().filter(function (c) { return !wizIsFlagged(c); }).map(function (c) { return c.demandId; })
+  );
   updateQuickFilterCounts();
   applyWizardFiltersAndRender();
 }
@@ -156,6 +160,18 @@ function wizClearGSTIN() {
 function tdb(label, val) { return '<div class="tdb-item"><div class="tdb-label">' + label + '</div><div class="tdb-val">' + val + '</div></div>'; }
 
 /* ===== Section 2: Demands table (day-badges) + quick filters + Advanced Filters drawer ===== */
+
+/* A demand needs a deliberate officer decision before it goes in a notice —
+   either a higher-forum status (isStatusExcluded) or a Section 62
+   best-judgment assessment the officer hasn't opted to include (_wizSection62,
+   via the "Include Section 62" chip or the Advanced Filters drawer). Both
+   show in the table flagged and unchecked by default rather than being
+   hidden; "select all" and the default pre-check on search both skip these. */
+function wizIsFlagged(c) {
+  if (isStatusExcluded(c)) return true;
+  if (String(c.section || '').trim() === '62' && _wizSection62 !== 'all') return true;
+  return false;
+}
 
 function dayBadge(age) {
   if (age === null) return '<span class="day-badge d-orange">—</span>';
@@ -177,9 +193,11 @@ function wizBaseCasesForNotice() {
 }
 
 function updateQuickFilterCounts() {
-  var raw = wizBaseCasesForNotice();
-  var sec62 = raw.filter(function (c) { return String(c.section || '').trim() === '62'; }).length;
-  var base = _wizSection62 === 'all' ? raw : raw.filter(function (c) { return String(c.section || '').trim() !== '62'; });
+  // Section 62 demands are always shown now (flagged, not hidden), so they
+  // count toward All/Intimation/Urgent same as everything else — the
+  // Section 62 chip's own count is just "how many are there to bulk-select".
+  var base = wizBaseCasesForNotice();
+  var sec62 = base.filter(function (c) { return String(c.section || '').trim() === '62'; }).length;
   var intimation = base.filter(function (c) { return isNoticeTypeMatch(c, 'intimation'); }).length;
   var urgent = base.filter(function (c) { return isNoticeTypeMatch(c, 'urgent'); }).length;
   var setText = function (id, n) { var el = document.getElementById(id); if (el) el.textContent = n; };
@@ -202,6 +220,7 @@ function updateQuickFilterActiveState() {
 
 function quickFilterAll() {
   wizResetDrawerFilters();
+  wizSyncSection62Selection();
   applyWizardFiltersAndRender();
   updateWizFilterBadgeAndTags();
 }
@@ -222,6 +241,7 @@ function quickFilterUrgent() {
 function toggleSection62Included() {
   _wizSection62 = _wizSection62 === 'all' ? 'exclude' : 'all';
   syncDrawerCardsToState();
+  wizSyncSection62Selection();
   applyWizardFiltersAndRender();
   updateWizFilterBadgeAndTags();
 }
@@ -257,11 +277,13 @@ function wizResetDrawerFilters() {
 
 function wizClearAllFilters() {
   wizResetDrawerFilters();
+  wizSyncSection62Selection();
   applyWizardFiltersAndRender();
   updateWizFilterBadgeAndTags();
 }
 
 function wizApplyFilters() {
+  wizSyncSection62Selection();
   applyWizardFiltersAndRender();
   updateWizFilterBadgeAndTags();
   closeWizFilterDrawer();
@@ -354,7 +376,9 @@ function applyWizardFiltersAndRender() {
     if (_wizNoticeType === 'both') return true;
     return isNoticeTypeMatch(c, _wizNoticeType);
   });
-  if (_wizSection62 === 'exclude') cases = cases.filter(function (c) { return String(c.section || '').trim() !== '62'; });
+  // Section 62 demands are never filtered out of the table — like status-excluded
+  // demands they stay visible, flagged via wizIsFlagged()/the row renderer, and the
+  // officer opts them in per-row or via the "Include Section 62" chip/drawer.
   // Every demand in this system is a Tax demand — Interest/Penalty/Other are
   // real options in the dropdown but honestly match zero rows, since that
   // breakdown doesn't exist in the DCR data.
@@ -406,10 +430,12 @@ function renderWizardTablePage() {
   var rows = pageCases.map(function (c, i) {
     var age = getDemandAgeDays(c);
     var checked = _wizSelectedDemandIds.has(c.demandId) ? ' checked' : '';
-    var excluded = isStatusExcluded(c);
-    var statusCell = xe(c.demandStatus)
-      + (excluded ? ' <span class="pill pill-orange wiz-excluded-badge" title="Not notice-eligible by default (higher forum / closed / refund status) — tick the box to include it anyway">Excluded</span>' : '');
-    return '<tr' + (excluded ? ' class="wiz-row-excluded"' : '') + '>'
+    var flagged = wizIsFlagged(c);
+    var badge = !flagged ? '' : (isStatusExcluded(c)
+      ? ' <span class="pill pill-orange wiz-excluded-badge" title="Not notice-eligible by default (higher forum / closed / refund status) — tick the box to include it anyway">Excluded</span>'
+      : ' <span class="pill pill-gold wiz-excluded-badge" title="Section 62 best-judgment assessment — not treated as a confirmed arrear by default, tick the box (or the Include Section 62 chip) to include it anyway">Section 62</span>');
+    var statusCell = xe(c.demandStatus) + badge;
+    return '<tr' + (flagged ? ' class="wiz-row-excluded"' : '') + '>'
       + '<td><input type="checkbox" class="wiz-case-chk" data-demand="' + xe(c.demandId) + '" data-amt="' + (Number(c.pend_total) || 0) + '"' + checked + ' onchange="wizToggleCaseCheck(this)"></td>'
       + '<td>' + (startIdx + i + 1) + '</td>'
       + '<td>' + xe(c.taxPeriod) + '</td>'
@@ -514,17 +540,30 @@ function wizToggleCaseCheck(el) {
 
 /* Selects/deselects every demand in the current filtered set — every page,
    not just the one currently visible. "Select all" only ever auto-selects
-   notice-eligible demands — a flagged (appeal/settled/refund) demand always
-   needs its own deliberate tick, never gets swept in by "select all", so a
-   rushed bulk selection can't accidentally put a notice on one. Unchecking
-   "select all" still clears everything, including any flagged demand the
-   officer had deliberately ticked. */
+   notice-eligible demands — a flagged demand (higher-forum status or Section
+   62) always needs its own deliberate tick, never gets swept in by "select
+   all", so a rushed bulk selection can't accidentally put a notice on one.
+   Unchecking "select all" still clears everything, including any flagged
+   demand the officer had deliberately ticked. */
 function wizToggleSelectAll(checked) {
   _wizFilteredCases.forEach(function (c) {
-    if (checked) { if (!isStatusExcluded(c)) _wizSelectedDemandIds.add(c.demandId); }
+    if (checked) { if (!wizIsFlagged(c)) _wizSelectedDemandIds.add(c.demandId); }
     else _wizSelectedDemandIds.delete(c.demandId);
   });
   renderWizardTablePage();
+}
+
+/* Keeps the checkboxes in sync whenever _wizSection62 changes (quick chip or
+   Advanced Filters drawer) — switching to "all" auto-ticks every currently
+   visible Section 62 demand (and unflags it, so it behaves like any other
+   eligible demand from then on); switching back to "exclude" un-ticks them
+   and flags them again. Called right after _wizSection62 is set, before the
+   table re-renders. */
+function wizSyncSection62Selection() {
+  _wizFilteredCases.filter(function (c) { return String(c.section || '').trim() === '62'; }).forEach(function (c) {
+    if (_wizSection62 === 'all') _wizSelectedDemandIds.add(c.demandId);
+    else _wizSelectedDemandIds.delete(c.demandId);
+  });
 }
 
 function wizUpdateSelectionSummary() {
@@ -544,7 +583,7 @@ function wizUpdateSelectionSummary() {
   if (selectAll) {
     // "All checked" only counts the eligible (non-flagged) demands — those
     // are all "select all" ever ticks, so that's what "fully selected" means.
-    var eligibleFiltered = _wizFilteredCases.filter(function (c) { return !isStatusExcluded(c); });
+    var eligibleFiltered = _wizFilteredCases.filter(function (c) { return !wizIsFlagged(c); });
     var allChecked = eligibleFiltered.length > 0 && eligibleFiltered.every(function (c) { return _wizSelectedDemandIds.has(c.demandId); });
     var someChecked = _wizFilteredCases.some(function (c) { return _wizSelectedDemandIds.has(c.demandId); });
     selectAll.checked = allChecked;
