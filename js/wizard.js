@@ -159,6 +159,23 @@ function wizClearGSTIN() {
 
 function tdb(label, val) { return '<div class="tdb-item"><div class="tdb-label">' + label + '</div><div class="tdb-val">' + val + '</div></div>'; }
 
+/* Reference popup for the demand table's flag rules — built from the live
+   EXCLUDED_STATUSES list (business-rules.js) so it can never drift out of
+   sync with what the table actually flags. */
+function openWizExclusionGuide() {
+  document.getElementById('wiz-exclusion-guide-body').innerHTML =
+    '<h4>Zero or negative pending amount</h4>'
+    + '<ul><li>Nothing left to recover on that demand.</li></ul>'
+    + '<h4>Higher forum / closed / refund status <span class="pill pill-orange wiz-excluded-badge">Excluded</span></h4>'
+    + '<ul>' + EXCLUDED_STATUSES.map(function (s) { return '<li>' + xe(s) + '</li>'; }).join('') + '</ul>'
+    + '<h4>Section 62 best-judgment assessment <span class="pill pill-gold wiz-excluded-badge">Section 62</span></h4>'
+    + '<ul><li>Not a confirmed arrear until the return is filed or the officer opts in — use the "Include Section 62" chip or Advanced Filters to include it.</li></ul>';
+  document.getElementById('wiz-exclusion-guide-overlay').classList.add('show');
+}
+function closeWizExclusionGuide() {
+  document.getElementById('wiz-exclusion-guide-overlay').classList.remove('show');
+}
+
 /* ===== Section 2: Demands table (day-badges) + quick filters + Advanced Filters drawer ===== */
 
 /* A demand needs a deliberate officer decision before it goes in a notice —

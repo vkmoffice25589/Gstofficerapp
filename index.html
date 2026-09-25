@@ -197,7 +197,7 @@
         <div class="wizard-card" id="wiz-demand-section" style="display:none;">
           <div class="wizard-card-head">
             <div class="wizard-num">2</div>
-            <div><div class="wizard-card-title">Demands to Include in Notice</div><div class="wizard-card-sub">Only eligible demands are listed. Select which ones to include.</div></div>
+            <div><div class="wizard-card-title">Demands to Include in Notice <button type="button" class="wiz-info-btn" onclick="openWizExclusionGuide()" title="Why are some rows flagged?"><i class="fa-solid fa-circle-info"></i></button></div><div class="wizard-card-sub">All demands are shown. Flagged rows (Excluded / Section 62) are unchecked by default — tick to include anyway.</div></div>
             <div class="wizard-card-head-right">
               <span class="pill pill-green" id="wiz-head-count">0 of 0 selected</span>
               <div style="margin-top:6px;"><div class="wchr-label">Total Selected Arrear (₹)</div><div class="wchr-val" id="wiz-head-total">₹0</div></div>
@@ -741,6 +741,16 @@
       <button class="mclose" onclick="closeDemandBreakdown()">&times;</button>
     </div>
     <div class="mbody" id="dbk-body"></div>
+  </div>
+</div>
+
+<div class="overlay" id="wiz-exclusion-guide-overlay" onclick="if(event.target===this) closeWizExclusionGuide()">
+  <div class="modal" style="width:480px;">
+    <div class="mhead">
+      <div><div class="mtitle">Why are some rows flagged?</div><div class="msub">A flagged demand is still shown, but stays unchecked until you tick it yourself</div></div>
+      <button class="mclose" onclick="closeWizExclusionGuide()">&times;</button>
+    </div>
+    <div class="mbody" id="wiz-exclusion-guide-body"></div>
   </div>
 </div>
 
