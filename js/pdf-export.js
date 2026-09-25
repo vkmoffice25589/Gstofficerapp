@@ -4,7 +4,16 @@
    pdfHeading()/pdfTable()/finishPdfDoc() instead of hand-rolling text/page-break
    logic — fix a formatting rule here and it applies to every document. ===== */
 
-var PDF_MARGIN = 50;
+/* Mirrors the DOCX engine's asymmetric margins (wider left for filing/
+   binding). Font stays "times" (a standard PDF font jsPDF ships with) rather
+   than Bookman Old Style — jsPDF can only render a non-standard typeface if
+   its font file is embedded, and Bookman Old Style is a licensed Windows/
+   Office font this app has no rights to redistribute. The DOCX (the document
+   that's actually signed and served) does carry the real "Bookman Old Style"
+   font name and renders correctly wherever that font is installed; the PDF
+   is a secondary/computer-generated copy. */
+var PDF_MARGIN = 54;       // right/top/bottom — 0.75in
+var PDF_MARGIN_LEFT = 63;  // left — 0.875in
 var PDF_TOP = 56;
 var PDF_LINE_HEIGHT = 14;
 var PDF_FONT = 'times';
@@ -22,7 +31,7 @@ async function newA4Doc() {
   doc.setFont(PDF_FONT, 'normal'); doc.setFontSize(PDF_BODY_SIZE);
   return {
     doc: doc, pageW: pageW, pageH: pageH,
-    marginX: PDF_MARGIN, rightX: pageW - PDF_MARGIN,
+    marginX: PDF_MARGIN_LEFT, rightX: pageW - PDF_MARGIN,
     top: PDF_TOP, bottom: pageH - 64 /* leaves room for the footer page-number line */
   };
 }

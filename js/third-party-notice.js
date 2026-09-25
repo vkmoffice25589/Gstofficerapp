@@ -72,9 +72,12 @@ function tpDownloadPDF() {
   generateThirdPartyPDF(tp, getSettings());
 }
 
+var TP_REQUIRED_FIELDS = [['debtorAddr', 'Third Party Address']];
+
 function tpSaveAndDownload() {
   var tp = tpBuildNotice();
   if (!tp) return;
+  if (!confirmMissingFields(tp, TP_REQUIRED_FIELDS, 'This DRC-13 notice')) return;
   AppState.thirdPartyNotices.push(tp);
   persist();
   renderThirdPartyList();

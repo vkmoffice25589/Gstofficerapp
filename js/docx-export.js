@@ -18,29 +18,33 @@ function xmlEsc(s) {
    used during development which don't validate enum values at all. */
 function normJc(align) { return align === 'justify' ? 'both' : align; }
 
-/* ===== Page geometry — A4, consistent margins everywhere =====
-   Twips (1/1440 inch). 0.75in margins all round, with header/footer sitting
-   at 0.33in from the page edge so they never collide with the 0.75in body
-   margin. Every document shares this — there is no per-document page setup. */
+/* ===== Page geometry — A4, matching the office's own signed orders =====
+   Twips (1/1440 inch). Left margin is wider than top/bottom/right (1260 vs
+   1080) — the standard extra allowance for filing/binding on departmental
+   letters — everything else is 0.75in. Header/footer sit at 0.33in from the
+   page edge. Every document shares this — there is no per-document setup. */
 var DOCX_PAGE_W = 11906, DOCX_PAGE_H = 16838;   // A4
-var DOCX_MARGIN = 1080;                          // 0.75in
+var DOCX_MARGIN = 1080;                          // top/bottom/right — 0.75in
+var DOCX_MARGIN_LEFT = 1260;                     // 0.875in — filing/binding allowance
 var DOCX_HF_DIST = 480;                          // 0.33in
-var DOCX_CONTENT_WIDTH = DOCX_PAGE_W - (DOCX_MARGIN * 2); // usable table width
+var DOCX_CONTENT_WIDTH = DOCX_PAGE_W - DOCX_MARGIN_LEFT - DOCX_MARGIN; // usable table width
 
 /* One font, one baseline size, everywhere — no styles.xml-less theme fallback
    (Word's default Calibri) can leak through because every run below carries
-   this explicitly. */
-var DOCX_FONT_NAME = 'Times New Roman';
+   this explicitly. Bookman Old Style matches the office's actual signed
+   notices/orders; it ships with Windows/Office by default so it renders
+   correctly on an officer's machine without needing to embed the font. */
+var DOCX_FONT_NAME = 'Bookman Old Style';
 var DOCX_FONT = '<w:rFonts w:ascii="' + DOCX_FONT_NAME + '" w:hAnsi="' + DOCX_FONT_NAME + '" w:cs="' + DOCX_FONT_NAME + '"/>';
 var DOCX_BODY_SIZE = 12;   // pt
 var DOCX_TABLE_SIZE = 11;  // pt
 
-/* Single line spacing (240 = 1.0) is the formal-letter convention this
-   office's actual notices use — double/1.5-spaced body text reads as a
-   generic web printout, not an official document. Paragraph gap is carried
-   by spacingAfter instead of loose line height. */
-var DOCX_LINE = 240;
-var DOCX_SPACING_AFTER = 180;
+/* 1.15 line spacing (276 = 1.15 x 240) with an 8pt (160 twip) paragraph gap —
+   the office's own house style; single-spacing read as too cramped and
+   1.5/double reads as a generic web printout rather than a typed order. */
+var DOCX_LINE = 276;
+var DOCX_SPACING_AFTER = 160;
+var DOCX_FIRST_LINE_INDENT = 720; // 0.5in — narrative body paragraphs only
 
 function wRunProps(opts) {
   opts = opts || {};
@@ -55,7 +59,9 @@ function wRunProps(opts) {
    keepNext (glue to the paragraph that follows — use on every heading so it
    never gets stranded alone at the bottom of a page), keepLines (don't let
    this paragraph's own wrapped lines split across a page break), runs
-   (mixed bold/plain segments within one paragraph). */
+   (mixed bold/plain segments within one paragraph), firstLineIndent (0.5in
+   indent on the first line only — the office's convention for numbered
+   narrative body paragraphs, not for headings/labels/table cells). */
 function wPara(text, opts) {
   opts = opts || {};
   var align = normJc(opts.align || 'left');
@@ -66,10 +72,11 @@ function wPara(text, opts) {
   var spacing = '<w:spacing w:after="' + spacingAfter + '"' + spacingBefore + ' w:line="' + line + '" w:lineRule="auto"/>';
   var keepNext = opts.keepNext ? '<w:keepNext/>' : '';
   var keepLines = opts.keepLines ? '<w:keepLines/>' : '';
+  var indent = opts.firstLineIndent ? '<w:ind w:firstLine="' + DOCX_FIRST_LINE_INDENT + '"/>' : '';
   var runs = (opts.runs || [{ text: text, bold: opts.bold, italic: opts.italic }]).map(function (run) {
     return '<w:r>' + wRunProps({ bold: run.bold, italic: run.italic, size: size, color: opts.color }) + '<w:t xml:space="preserve">' + xmlEsc(run.text) + '</w:t></w:r>';
   }).join('');
-  return '<w:p><w:pPr>' + keepNext + keepLines + spacing + '<w:jc w:val="' + align + '"/></w:pPr>' + runs + '</w:p>';
+  return '<w:p><w:pPr>' + keepNext + keepLines + indent + spacing + '<w:jc w:val="' + align + '"/></w:pPr>' + runs + '</w:p>';
 }
 
 /* A heading paragraph is just wPara with keepNext baked in — used for every
@@ -268,7 +275,7 @@ async function buildDocxBlob(bodyXml, opts) {
     + '<w:headerReference w:type="default" r:id="rIdHeader"/>'
     + '<w:footerReference w:type="default" r:id="rIdFooter"/>'
     + '<w:pgSz w:w="' + DOCX_PAGE_W + '" w:h="' + DOCX_PAGE_H + '"/>'
-    + '<w:pgMar w:top="' + DOCX_MARGIN + '" w:right="' + DOCX_MARGIN + '" w:bottom="' + DOCX_MARGIN + '" w:left="' + DOCX_MARGIN + '" w:header="' + DOCX_HF_DIST + '" w:footer="' + DOCX_HF_DIST + '" w:gutter="0"/>'
+    + '<w:pgMar w:top="' + DOCX_MARGIN + '" w:right="' + DOCX_MARGIN + '" w:bottom="' + DOCX_MARGIN + '" w:left="' + DOCX_MARGIN_LEFT + '" w:header="' + DOCX_HF_DIST + '" w:footer="' + DOCX_HF_DIST + '" w:gutter="0"/>'
     + '</w:sectPr>'
     + '</w:body></w:document>');
 
@@ -281,6 +288,27 @@ function downloadBlob(blob, filename) {
   a.download = filename;
   a.click();
   setTimeout(function () { URL.revokeObjectURL(a.href); }, 4000);
+}
+
+/* ===== Missing-field check — run before a document is actually generated =====
+   These are legal documents; a blank GSTIN or amount should be a deliberate,
+   visible decision by the officer, not something that silently prints "—"
+   with nobody noticing until the notice is already served. fieldSpecs is an
+   array of [recordKey, humanLabel] pairs. Returns true if it's fine to
+   proceed (nothing missing, or the officer confirmed anyway). */
+function findMissingFields(record, fieldSpecs) {
+  return fieldSpecs.filter(function (f) {
+    var v = record ? record[f[0]] : undefined;
+    if (Array.isArray(v)) return v.length === 0;
+    return v === undefined || v === null || String(v).trim() === '' || String(v).trim() === '—';
+  }).map(function (f) { return f[1]; });
+}
+
+function confirmMissingFields(record, fieldSpecs, docLabel) {
+  var missing = findMissingFields(record, fieldSpecs);
+  if (!missing.length) return true;
+  return confirm('⚠️ ' + docLabel + ' is missing the following:\n\n• ' + missing.join('\n• ')
+    + '\n\nThese will print blank in the document. Generate it anyway?');
 }
 
 function officeHeaderBlock(cfg) {
@@ -416,17 +444,17 @@ function buildNoticeDocx(notice, cfg) {
     + wTable([[{ text: 'Sub', bold: true }, subText], [{ text: 'Ref', bold: true }, refText]], [900, 8806], { noBorder: true, noHeaderShade: true })
     + wPara('*******', { align: 'center', spacingAfter: 120 })
     + wPara('Tvl.' + legalName + ', registered with the office of the ' + (cfg.desig || '') + ', ' + (cfg.circle || '')
-      + ' is hereby informed they are in arrears of Goods and Services Tax as detailed below:', { align: 'justify', spacingAfter: 120, keepNext: true })
+      + ' is hereby informed they are in arrears of Goods and Services Tax as detailed below:', { align: 'justify', firstLineIndent: true, spacingAfter: 120, keepNext: true })
     + wTable(d.rows, [1500, 1600, 1300, 1000, 1000, 1000, 900, 1300])
     + wPara('(AMOUNT IN RS)', { align: 'right', size: 9, spacingAfter: 160 })
     + wPara('Total Amount Payable: ' + fmt(d.total) + ' (Rupees ' + numToWords(d.total) + ' Only)', { bold: true, spacingAfter: 160 })
     + (notice.details ? wPara('Remarks: ' + notice.details, { spacingAfter: 160 }) : '')
     + wPara((isUrgent
       ? 'The Taxpayer is informed that the arrears have not been paid even after the expiry of 90 days from the date of the order. If the above amount is not paid immediately on receipt of this notice, recovery action will be initiated to realise the arrears in accordance with the provisions of the GST Act, 2017 by:'
-      : 'The taxpayer is hereby informed that arrears are pending. If the arrears remain unpaid after the expiry of 90 days from the date of the order and no appeal has been filed, recovery action will be initiated to realise the dues in accordance with the provisions of the GST Act, 2017, by:'), { align: 'justify', spacingAfter: 100, keepNext: true })
+      : 'The taxpayer is hereby informed that arrears are pending. If the arrears remain unpaid after the expiry of 90 days from the date of the order and no appeal has been filed, recovery action will be initiated to realise the dues in accordance with the provisions of the GST Act, 2017, by:'), { align: 'justify', firstLineIndent: true, spacingAfter: 100, keepNext: true })
     + actionList
     + wPara('Payment Gateway:', { bold: true, spacingAfter: 40, keepNext: true })
-    + wPara('The Taxpayer is advised to pay the above said arrears through GSTIN Portal by selecting the option "Payment towards demand".', { align: 'justify', spacingAfter: 160 })
+    + wPara('The Taxpayer is advised to pay the above said arrears through GSTIN Portal by selecting the option "Payment towards demand".', { align: 'justify', firstLineIndent: true, spacingAfter: 160 })
     + wPara('Note:', { bold: true, spacingAfter: 40, keepNext: true })
     + wPara('➤  If the tax has already been paid, you are requested to submit the payment details to this office immediately, otherwise it will be presumed that the balance still exists.', { spacingAfter: 60, keepLines: true })
     + wPara('➤  If the case is pending before any appellate forum, you are requested to submit the details to this office immediately.', { spacingAfter: 60, keepLines: true })
@@ -475,8 +503,8 @@ function buildBankReleaseDocx(b, cfg) {
     + wPara('Sir/Madam,', { spacingAfter: 100, keepNext: true })
     + wTable([[{ text: 'Sub:-', bold: true }, subText], [{ text: 'Ref:', bold: true }, refText]], [900, 8806], { noBorder: true, noHeaderShade: true })
     + wPara('*********', { align: 'center', spacingAfter: 160 })
-    + wPara('Tvl. ' + (b.legalName || '—') + ' doing business at ' + (b.releasedAddr || '—').replace(/\.+\s*$/, '') + '. ' + (b.releasedNarrative || ''), { align: 'justify', spacingAfter: 120 })
-    + wPara(closing, { align: 'justify', spacingAfter: 300 })
+    + wPara('Tvl. ' + (b.legalName || '—') + ' doing business at ' + (b.releasedAddr || '—').replace(/\.+\s*$/, '') + '. ' + (b.releasedNarrative || ''), { align: 'justify', firstLineIndent: true, spacingAfter: 120 })
+    + wPara(closing, { align: 'justify', firstLineIndent: true, spacingAfter: 300 })
     + wSignatureBlock(cfg, { showCity: false, circleSuffix: '.', spacingAfter: 300 })
     + wKeepTogetherBlock(
       wPara('Copy to: ', { spacingAfter: 20 })
@@ -560,11 +588,11 @@ function buildBankLetterDocx(b, cfg) {
     + wPara('Sir / Madam,', { spacingAfter: 100, keepNext: true })
     + wTable([[{ text: 'Sub', bold: true }, subText], [{ text: 'Ref', bold: true }, 'This Office DRC-07 issued']], [900, 8806], { noBorder: true, noHeaderShade: true })
     + wPara('*******', { align: 'center', spacingAfter: 160 })
-    + wPara('Tvl. ' + (b.legalName || '—') + (tradeName && tradeName !== b.legalName ? ' (' + tradeName + ')' : '') + ', having an Current Account / CC with your Bank, is an assessee on the file of the ' + (cfg.desig || '') + ', ' + (cfg.circle || '') + ' and is in arrears of tax of Rs. ' + fmt0(b.totalAmt) + '/- (Rupees ' + amountWords + ') under the GST Act.', { align: 'justify', spacingAfter: 120 })
-    + wPara('Under Section 79(1)(c) of the SGST Act, 2017 read with Section 142(7)(a) of the SGST Act, 2017 & Rule 145(1) of the SGST Rules, 2017, you are required to remit to me forthwith the sum of Rs. ' + fmt0(b.totalAmt) + '/- (Rupees ' + amountWords + ') from out of money you hold for or on account of the defaulter. If you do not hold money to that extent now, the amount available may be remitted now and the balance remitted as and when funds become available, as first charge to the Government. If the dealer is having an Overdraft account, you may require to remit the amount. A statutory demand notice in Form DRC-13 is enclosed.', { align: 'justify', spacingAfter: 120 })
-    + wPara('You are also prohibited from paying any money to the assessee from the Current Account (or) Overdraft Account, till the above notice is withdrawn.', { align: 'justify', spacingAfter: 120 })
-    + wPara('I request you to give the account balance as on today or on receiving the Form DRC-13, whichever is later.', { align: 'justify', spacingAfter: 120 })
-    + wPara('The above mentioned demand amount or the amount available in the taxpayer bank account has to be issued as a Demand Draft or Bank Cheque in favour of the undersigned.', { align: 'justify', spacingAfter: 200, keepNext: true })
+    + wPara('Tvl. ' + (b.legalName || '—') + (tradeName && tradeName !== b.legalName ? ' (' + tradeName + ')' : '') + ', having an Current Account / CC with your Bank, is an assessee on the file of the ' + (cfg.desig || '') + ', ' + (cfg.circle || '') + ' and is in arrears of tax of Rs. ' + fmt0(b.totalAmt) + '/- (Rupees ' + amountWords + ') under the GST Act.', { align: 'justify', firstLineIndent: true, spacingAfter: 120 })
+    + wPara('Under Section 79(1)(c) of the SGST Act, 2017 read with Section 142(7)(a) of the SGST Act, 2017 & Rule 145(1) of the SGST Rules, 2017, you are required to remit to me forthwith the sum of Rs. ' + fmt0(b.totalAmt) + '/- (Rupees ' + amountWords + ') from out of money you hold for or on account of the defaulter. If you do not hold money to that extent now, the amount available may be remitted now and the balance remitted as and when funds become available, as first charge to the Government. If the dealer is having an Overdraft account, you may require to remit the amount. A statutory demand notice in Form DRC-13 is enclosed.', { align: 'justify', firstLineIndent: true, spacingAfter: 120 })
+    + wPara('You are also prohibited from paying any money to the assessee from the Current Account (or) Overdraft Account, till the above notice is withdrawn.', { align: 'justify', firstLineIndent: true, spacingAfter: 120 })
+    + wPara('I request you to give the account balance as on today or on receiving the Form DRC-13, whichever is later.', { align: 'justify', firstLineIndent: true, spacingAfter: 120 })
+    + wPara('The above mentioned demand amount or the amount available in the taxpayer bank account has to be issued as a Demand Draft or Bank Cheque in favour of the undersigned.', { align: 'justify', firstLineIndent: true, spacingAfter: 200, keepNext: true })
     + wPara('Encl: Form DRC-13.', { spacingAfter: 300 })
     + wOfficerClosingBlock(b, cfg);
   return buildDocxBlob(body, { headerText: 'DRC-13 Covering Letter — GSTIN: ' + (b.gstin || '—') });
@@ -598,13 +626,13 @@ function buildBankDrc13Docx(b, cfg) {
     + wKeepTogetherBlock(particulars) + wSpacer(4)
     + wPara('Amount in Rs', { align: 'right', size: 9, spacingAfter: 60 })
     + wTable(d.rows, [1300, 1500, 1300, 700, 1000, 1000, 1000, 900, 1006])
-    + wPara('Whereas a sum of Rs. ' + fmt0(b.totalAmt) + '/- (Rupees ' + amountWords + ') on account of demand, is payable under the provisions of Sec 78 of the GST Act, 2017 by ' + (b.legalName || '—') + ', holding GSTIN: ' + (b.gstin || '—') + '. It is observed that a sum Rs. ' + fmt0(b.totalAmt) + '/- (Rupees ' + amountWords + ') is due or may become due to the said taxable person from you; or', { align: 'justify', spacingAfter: 80 })
-    + wPara('It is observed that you hold or are likely to hold a sum Rs. ' + fmt0(b.totalAmt) + '/- (Rupees ' + amountWords + ') for or on account of the said person.', { align: 'justify', spacingAfter: 80 })
-    + wPara('You are hereby directed to pay a sum of Rs. ' + fmt0(b.totalAmt) + '/- (Rupees ' + amountWords + ') to the Government forthwith or upon the money becoming due or being held in compliance of the provisions contained in clause (c)(i) of sub-section (1) of section 79 of the Act.', { align: 'justify', spacingAfter: 120 })
-    + wPara('Please note that any payment made by you in compliance of this notice will be deemed under section 79 of the Act to have been made under the authority of the said taxable person and the certificate from the government in FORM GST DRC-14 will constitute a good and sufficient discharge of your liability to such person to the extent of the amount specified in the certificate.', { align: 'justify', spacingAfter: 120 })
-    + wPara('Also, please note that if you discharge any liability to the said taxable person after receipt of this notice, you will be personally liable to the State/Central Government under section 79 of the Act to the extent of the liability discharged, or to the extent of the liability of the taxable person for tax, cess, interest and penalty, whichever is less.', { align: 'justify', spacingAfter: 120 })
-    + wPara('Please note that, in case you fail to make payment in pursuance of this notice, you shall be deemed to be a defaulter in respect of the amount specified in the notice and consequences of the Act or the rules made thereunder shall follow.', { align: 'justify', spacingAfter: 120 })
-    + wPara('The above mentioned demand amount or the amount available in the taxpayer bank account has to be issued as a Demand Draft or Bank Cheque in favour of the undersigned.', { align: 'justify', spacingAfter: 300, keepNext: true })
+    + wPara('Whereas a sum of Rs. ' + fmt0(b.totalAmt) + '/- (Rupees ' + amountWords + ') on account of demand, is payable under the provisions of Sec 78 of the GST Act, 2017 by ' + (b.legalName || '—') + ', holding GSTIN: ' + (b.gstin || '—') + '. It is observed that a sum Rs. ' + fmt0(b.totalAmt) + '/- (Rupees ' + amountWords + ') is due or may become due to the said taxable person from you; or', { align: 'justify', firstLineIndent: true, spacingAfter: 80 })
+    + wPara('It is observed that you hold or are likely to hold a sum Rs. ' + fmt0(b.totalAmt) + '/- (Rupees ' + amountWords + ') for or on account of the said person.', { align: 'justify', firstLineIndent: true, spacingAfter: 80 })
+    + wPara('You are hereby directed to pay a sum of Rs. ' + fmt0(b.totalAmt) + '/- (Rupees ' + amountWords + ') to the Government forthwith or upon the money becoming due or being held in compliance of the provisions contained in clause (c)(i) of sub-section (1) of section 79 of the Act.', { align: 'justify', firstLineIndent: true, spacingAfter: 120 })
+    + wPara('Please note that any payment made by you in compliance of this notice will be deemed under section 79 of the Act to have been made under the authority of the said taxable person and the certificate from the government in FORM GST DRC-14 will constitute a good and sufficient discharge of your liability to such person to the extent of the amount specified in the certificate.', { align: 'justify', firstLineIndent: true, spacingAfter: 120 })
+    + wPara('Also, please note that if you discharge any liability to the said taxable person after receipt of this notice, you will be personally liable to the State/Central Government under section 79 of the Act to the extent of the liability discharged, or to the extent of the liability of the taxable person for tax, cess, interest and penalty, whichever is less.', { align: 'justify', firstLineIndent: true, spacingAfter: 120 })
+    + wPara('Please note that, in case you fail to make payment in pursuance of this notice, you shall be deemed to be a defaulter in respect of the amount specified in the notice and consequences of the Act or the rules made thereunder shall follow.', { align: 'justify', firstLineIndent: true, spacingAfter: 120 })
+    + wPara('The above mentioned demand amount or the amount available in the taxpayer bank account has to be issued as a Demand Draft or Bank Cheque in favour of the undersigned.', { align: 'justify', firstLineIndent: true, spacingAfter: 300, keepNext: true })
     + wOfficerClosingBlock(b, cfg);
   return buildDocxBlob(body, { headerText: 'FORM GST DRC-13 — GSTIN: ' + (b.gstin || '—') });
 }
@@ -623,7 +651,7 @@ function buildThirdPartyDocx(tp, cfg) {
     + wHeading('FORM GST DRC-13', { align: 'center', size: 13, spacingAfter: 0 })
     + wHeading('Notice to a Third Person under Section 79(1)(c)', { align: 'center', size: 11, spacingAfter: 160 })
     + toBlock + wSpacer(6)
-    + wPara('Whereas ' + (tp.legalName || tp.defaulterGstin) + ' (GSTIN: ' + (tp.defaulterGstin || '—') + ') has failed to pay the tax dues detailed below, and whereas it appears that you owe / hold money for or on account of the said defaulter, you are hereby required, under Section 79(1)(c) of the GST Act, to pay to the Government the amount due to the defaulter, or up to the amount specified below, whichever is less.', { align: 'justify', spacingAfter: 160, keepNext: true })
+    + wPara('Whereas ' + (tp.legalName || tp.defaulterGstin) + ' (GSTIN: ' + (tp.defaulterGstin || '—') + ') has failed to pay the tax dues detailed below, and whereas it appears that you owe / hold money for or on account of the said defaulter, you are hereby required, under Section 79(1)(c) of the GST Act, to pay to the Government the amount due to the defaulter, or up to the amount specified below, whichever is less.', { align: 'justify', firstLineIndent: true, spacingAfter: 160, keepNext: true })
     + wTable(d.rows, [2200, 2200, 1600, 1800, 2200])
     + wPara('Amount to be paid: ' + fmt(d.total), { bold: true, spacingAfter: 300 })
     + wSignatureBlock(cfg, { showCity: false });
@@ -637,7 +665,7 @@ function buildPropertyAttachmentDocx(pa, cfg) {
     + wHeading('ORDER OF ATTACHMENT OF PROPERTY', { align: 'center', size: 13, spacingAfter: 0 })
     + wHeading('under Section 79(1)(d) of the GST Act', { align: 'center', bold: false, size: 11, spacingAfter: 160 })
     + wPara('Defaulter: ' + (pa.legalName || '—') + '   GSTIN: ' + (pa.gstin || '—'), { bold: true, spacingAfter: 160, keepNext: true })
-    + wPara('Whereas the amounts detailed below remain outstanding and unpaid, and recovery by other modes has not been effective, the movable/immovable property described below, belonging to the above defaulter, is hereby attached in exercise of powers under Section 79(1)(d) of the GST Act, until the outstanding dues are discharged in full.', { align: 'justify', spacingAfter: 160, keepNext: true })
+    + wPara('Whereas the amounts detailed below remain outstanding and unpaid, and recovery by other modes has not been effective, the movable/immovable property described below, belonging to the above defaulter, is hereby attached in exercise of powers under Section 79(1)(d) of the GST Act, until the outstanding dues are discharged in full.', { align: 'justify', firstLineIndent: true, spacingAfter: 160, keepNext: true })
     + wTable(d.rows, [2200, 2200, 1600, 1800, 2200])
     + wKeepTogetherBlock(
       wPara('Property Description: ' + (pa.propertyDescription || '—'), { keepLines: true })

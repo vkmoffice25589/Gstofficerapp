@@ -116,11 +116,15 @@ async function autoFillFromIFSC() {
   }
 }
 
+var BANK_ATT_REQUIRED_FIELDS = [['accno', 'Bank Account No.'], ['pan', 'PAN No.']];
+
 function generateBankAttachment() {
   if (!_baSelectedGSTIN || !_baSelectedCases.length) { showToast('⚠️ Select a taxpayer with demands ≥ 90 days first'); return; }
   var bankName = document.getElementById('ba-bank-name').value.trim();
   var ifsc = document.getElementById('ba-ifsc').value.trim();
   if (!bankName || !ifsc) { showToast('⚠️ Bank name and IFSC are required'); return; }
+  var draftFields = { accno: document.getElementById('ba-accno').value.trim(), pan: document.getElementById('ba-pan').value.trim() };
+  if (!confirmMissingFields(draftFields, BANK_ATT_REQUIRED_FIELDS, 'This bank attachment (Form DRC-13)')) return;
 
   var c0 = _baSelectedCases[0];
   var totalAmt = _baSelectedCases.reduce(function (s, c) { return s + (Number(c.pend_total) || 0); }, 0);

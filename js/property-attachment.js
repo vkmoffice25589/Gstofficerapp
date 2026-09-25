@@ -71,9 +71,13 @@ function paDownloadPDF() {
   generatePropertyAttachmentPDF(pa, getSettings());
 }
 
+var PA_REQUIRED_FIELDS = [['propertyLocation', 'Location / Survey No.']];
+
 function paSaveAndDownload() {
   var pa = paBuildRecord();
   if (!pa) return;
+  if (!confirmMissingFields(pa, PA_REQUIRED_FIELDS, 'This attachment order')) return;
+  if (!pa.propertyValue && !confirm('⚠️ Estimated Value is 0 or blank.\n\nThe order will show "Estimated Value: ₹0". Generate it anyway?')) return;
   AppState.propertyAttachments.push(pa);
   persist();
   renderPropertyList();

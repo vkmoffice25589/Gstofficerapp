@@ -576,10 +576,15 @@ function wizBuildNotices() {
   return out;
 }
 
+var NOTICE_REQUIRED_FIELDS = [['legalName', 'Legal Name'], ['address', 'Taxpayer Address']];
+
 function wizGenerateNotice() {
   if (!AppState.cases.length || !hasRegisterData()) { showToast('⚠️ Upload DCR and Taxpayer Register before generating a notice'); return; }
   var noticesToSave = wizBuildNotices();
   if (!noticesToSave.length) return;
+  for (var i = 0; i < noticesToSave.length; i++) {
+    if (!confirmMissingFields(noticesToSave[i], NOTICE_REQUIRED_FIELDS, 'Notice ' + noticesToSave[i].num)) return;
+  }
   noticesToSave.forEach(function (n) { AppState.notices.push(n); });
   persist();
   updateSidebar();
