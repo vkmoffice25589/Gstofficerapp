@@ -5,13 +5,8 @@
    logic — fix a formatting rule here and it applies to every document. ===== */
 
 /* Mirrors the DOCX engine's asymmetric margins (wider left for filing/
-   binding). Font stays "times" (a standard PDF font jsPDF ships with) rather
-   than Bookman Old Style — jsPDF can only render a non-standard typeface if
-   its font file is embedded, and Bookman Old Style is a licensed Windows/
-   Office font this app has no rights to redistribute. The DOCX (the document
-   that's actually signed and served) does carry the real "Bookman Old Style"
-   font name and renders correctly wherever that font is installed; the PDF
-   is a secondary/computer-generated copy. */
+   binding) and its Times New Roman font ("times" is jsPDF's built-in
+   equivalent), so the Word and PDF downloads of any document look the same. */
 var PDF_MARGIN = 54;       // right/top/bottom — 0.75in
 var PDF_MARGIN_LEFT = 63;  // left — 0.875in
 var PDF_TOP = 56;

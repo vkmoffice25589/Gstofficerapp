@@ -31,10 +31,10 @@ var DOCX_CONTENT_WIDTH = DOCX_PAGE_W - DOCX_MARGIN_LEFT - DOCX_MARGIN; // usable
 
 /* One font, one baseline size, everywhere — no styles.xml-less theme fallback
    (Word's default Calibri) can leak through because every run below carries
-   this explicitly. Bookman Old Style matches the office's actual signed
-   notices/orders; it ships with Windows/Office by default so it renders
-   correctly on an officer's machine without needing to embed the font. */
-var DOCX_FONT_NAME = 'Bookman Old Style';
+   this explicitly. Times New Roman, matching the PDF's font (jsPDF's
+   built-in "times") so the Word and PDF downloads of any document look the
+   same rather than diverging on typeface. */
+var DOCX_FONT_NAME = 'Times New Roman';
 var DOCX_FONT = '<w:rFonts w:ascii="' + DOCX_FONT_NAME + '" w:hAnsi="' + DOCX_FONT_NAME + '" w:cs="' + DOCX_FONT_NAME + '"/>';
 var DOCX_BODY_SIZE = 12;   // pt
 var DOCX_TABLE_SIZE = 11;  // pt
