@@ -126,6 +126,7 @@
         <div class="tab active" data-tab="top100" onclick="reportTab('top100', this)">Top 100 Arrear</div>
         <div class="tab" data-tab="collectible" onclick="reportTab('collectible', this)">Top 100 Collectible</div>
         <div class="tab" data-tab="noncollectible" onclick="reportTab('noncollectible', this)">Top 100 Non-Collectible</div>
+        <div class="tab" data-tab="demandwise" onclick="reportTab('demandwise', this)">Collectible Demands</div>
       </div>
 
       <div id="report-tab-info" style="display:none;margin-bottom:14px;padding:10px 14px;background:var(--orange-dim);border:1px solid var(--orange-border);border-radius:6px;font-size:12px;color:var(--orange);">
@@ -133,6 +134,27 @@
       </div>
 
       <div class="table-wrap" id="report-table-wrap"></div>
+
+      <!-- ===== Collectible Demands — demand-level (not taxpayer-grouped) report.
+           Section 62 and every status in EXCLUDED_STATUSES (higher forum /
+           closed / refund — including First Appeal Admitted/Submitted) are
+           hard-excluded from the base set, same definition of "collectible"
+           as elsewhere in the app, since this report exists purely to show
+           what's actually collectable. Filters narrow the table AND the
+           subtotal together (not a separate selection mechanism). ===== -->
+      <div id="rpt-dw-section" style="display:none;">
+        <div class="rel-filter-bar">
+          <div class="fg" style="flex:1 1 200px;"><label>Search GSTIN / Trade Name</label><input type="text" id="rpt-dw-search" oninput="rptDwSearchChanged()" placeholder="Enter GSTIN or Trade Name..."/></div>
+          <div class="fg"><label>Section</label><select class="fsel" id="rpt-dw-sectionf"><option value="">All</option></select></div>
+          <div class="fg"><label>Reg Status</label><select class="fsel" id="rpt-dw-regstatus"><option value="">All</option><option value="active">Active</option><option value="cancelled">Cancelled</option></select></div>
+          <div class="fg"><label>Order Date From</label><input type="date" id="rpt-dw-from"/></div>
+          <div class="fg"><label>Order Date To</label><input type="date" id="rpt-dw-to"/></div>
+          <div class="fg rel-filter-btn-fg"><button class="btn btn-blue" onclick="rptDwApplyFilters()">Apply Filters</button></div>
+          <div class="fg rel-filter-btn-fg"><button class="btn btn-outline" onclick="rptDwResetFilters()">Reset</button></div>
+        </div>
+        <div class="rel-bulk-bar" id="rpt-dw-subtotal-bar" style="display:flex;justify-content:flex-start;gap:24px;flex-wrap:wrap;"></div>
+        <div class="table-wrap" id="rpt-dw-wrap"></div>
+      </div>
     </div>
 
     <!-- ===== DATA UPLOAD (DCR + Taxpayer Register) ===== -->

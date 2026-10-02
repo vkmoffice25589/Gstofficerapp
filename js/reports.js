@@ -12,7 +12,18 @@ function reportTab(tab, el) {
 function renderReports() {
   var wrap = document.getElementById('report-table-wrap');
   var info = document.getElementById('report-tab-info');
+  var dwSection = document.getElementById('rpt-dw-section');
   if (!wrap) return;
+
+  if (_reportTab === 'demandwise') {
+    wrap.style.display = 'none';
+    if (info) info.style.display = 'none';
+    if (dwSection) dwSection.style.display = 'block';
+    renderDemandWiseReport();
+    return;
+  }
+  wrap.style.display = '';
+  if (dwSection) dwSection.style.display = 'none';
 
   var valid = AppState.cases.filter(isValidCase);
   if (!valid.length) {
@@ -88,3 +99,203 @@ function renderReports() {
     + '<tbody>' + rows + '</tbody>'
     + '</table></div>';
 }
+
+/* ===== Collectible Demands — one row per Demand ID (not grouped by
+   taxpayer). "Collectible" here hard-excludes Section 62 and every
+   EXCLUDED_STATUSES entry (higher forum / closed / refund — this already
+   covers "First Appeal Application Admitted" and "...Submitted"), since
+   the report's whole purpose is to show only what's actually collectable
+   — unlike Issue Notice/Bank Attachment, there's no tick-to-override here.
+   Filters narrow both the table and the subtotal together (no separate
+   checkbox-selection mechanism). ===== */
+var _rptDwFilters = { search: '', section: '', regStatus: '', from: '', to: '' };
+var _rptDwSort = { col: 'total', dir: 'desc' };
+var _rptDwPageSize = 25;
+var _rptDwCurrentPage = 1;
+
+function rptDwBaseCases() {
+  return AppState.cases.filter(isValidCase).filter(function (c) {
+    if ((Number(c.pend_total) || 0) <= 0) return false;
+    if (isStatusExcluded(c)) return false;
+    if (isSection62(c)) return false;
+    return true;
+  });
+}
+
+function rptDwFilteredCases() {
+  var cases = rptDwBaseCases();
+  var f = _rptDwFilters;
+  if (f.search) cases = cases.filter(function (c) {
+    return (c.gstin || '').toUpperCase().indexOf(f.search) !== -1 || taxpayerDisplayName(c.gstin, c.legalName).toUpperCase().indexOf(f.search) !== -1;
+  });
+  if (f.section) cases = cases.filter(function (c) { return String(c.section || '') === f.section; });
+  if (f.regStatus) cases = cases.filter(function (c) {
+    var col = isCollectible(c.gstin);
+    return f.regStatus === 'active' ? col === true : col === false;
+  });
+  /* Compare parsed Date objects on both sides, not raw strings — DCR
+     dates aren't guaranteed to be in the same YYYY-MM-DD format the date
+     input produces, so a naive string compare would silently misfilter. */
+  if (f.from) { var fromD = parseDcrDate(f.from); cases = cases.filter(function (c) { var d = parseDcrDate(c.dcr_date || c.demandDate); return d && fromD && d >= fromD; }); }
+  if (f.to) { var toD = parseDcrDate(f.to); cases = cases.filter(function (c) { var d = parseDcrDate(c.dcr_date || c.demandDate); return d && toD && d <= toD; }); }
+  return cases;
+}
+
+function rptDwSortCases(cases) {
+  var col = _rptDwSort.col, dir = _rptDwSort.dir, mul = dir === 'asc' ? 1 : -1;
+  return cases.slice().sort(function (a, b) {
+    if (col === 'demandId') return mul * String(a.demandId || '').localeCompare(String(b.demandId || ''));
+    if (col === 'orderDate') return mul * ((parseDcrDate(a.dcr_date || a.demandDate) || 0) - (parseDcrDate(b.dcr_date || b.demandDate) || 0));
+    if (col === 'days') return mul * ((getDemandAgeDays(a) || 0) - (getDemandAgeDays(b) || 0));
+    var field = col === 'total' ? 'pend_total' : 'pend_' + col;
+    return mul * ((Number(a[field]) || 0) - (Number(b[field]) || 0));
+  });
+}
+
+function rptDwSortBy(col) {
+  if (_rptDwSort.col === col) _rptDwSort.dir = _rptDwSort.dir === 'asc' ? 'desc' : 'asc';
+  else { _rptDwSort.col = col; _rptDwSort.dir = 'desc'; }
+  _rptDwCurrentPage = 1;
+  renderDemandWiseReport();
+}
+
+function rptDwSortArrow(col) {
+  if (_rptDwSort.col !== col) return '';
+  return _rptDwSort.dir === 'asc' ? ' <i class="fa-solid fa-sort-up"></i>' : ' <i class="fa-solid fa-sort-down"></i>';
+}
+
+function rptDwSubtotal(cases) {
+  return cases.reduce(function (s, c) {
+    s.igst += Number(c.pend_igst) || 0; s.cgst += Number(c.pend_cgst) || 0; s.sgst += Number(c.pend_sgst) || 0;
+    s.cess += Number(c.pend_cess) || 0; s.total += Number(c.pend_total) || 0;
+    return s;
+  }, { igst: 0, cgst: 0, sgst: 0, cess: 0, total: 0 });
+}
+
+function rptDwPopulateSectionFilter() {
+  var sel = document.getElementById('rpt-dw-sectionf');
+  if (!sel) return;
+  var current = sel.value;
+  var sections = Array.from(new Set(rptDwBaseCases().map(function (c) { return String(c.section || '').trim(); }).filter(Boolean))).sort();
+  sel.innerHTML = '<option value="">All</option>' + sections.map(function (s) { return '<option value="' + xe(s) + '">' + xe(s) + '</option>'; }).join('');
+  sel.value = current;
+}
+
+function rptDwSearchChanged() {
+  _rptDwFilters.search = (document.getElementById('rpt-dw-search').value || '').trim().toUpperCase();
+  _rptDwCurrentPage = 1;
+  renderDemandWiseReport();
+}
+
+function rptDwApplyFilters() {
+  _rptDwFilters.search = (document.getElementById('rpt-dw-search').value || '').trim().toUpperCase();
+  _rptDwFilters.section = document.getElementById('rpt-dw-sectionf').value;
+  _rptDwFilters.regStatus = document.getElementById('rpt-dw-regstatus').value;
+  _rptDwFilters.from = document.getElementById('rpt-dw-from').value;
+  _rptDwFilters.to = document.getElementById('rpt-dw-to').value;
+  _rptDwCurrentPage = 1;
+  renderDemandWiseReport();
+}
+
+function rptDwResetFilters() {
+  _rptDwFilters = { search: '', section: '', regStatus: '', from: '', to: '' };
+  ['rpt-dw-search', 'rpt-dw-sectionf', 'rpt-dw-regstatus', 'rpt-dw-from', 'rpt-dw-to'].forEach(function (id) {
+    var el = document.getElementById(id); if (el) el.value = '';
+  });
+  _rptDwCurrentPage = 1;
+  renderDemandWiseReport();
+}
+
+function renderDemandWiseReport() {
+  rptDwPopulateSectionFilter();
+  var g = document.getElementById('rpt-dw-search'); if (g) g.value = _rptDwFilters.search;
+  var sf = document.getElementById('rpt-dw-sectionf'); if (sf) sf.value = _rptDwFilters.section;
+  var rs = document.getElementById('rpt-dw-regstatus'); if (rs) rs.value = _rptDwFilters.regStatus;
+  var fd = document.getElementById('rpt-dw-from'); if (fd) fd.value = _rptDwFilters.from;
+  var td = document.getElementById('rpt-dw-to'); if (td) td.value = _rptDwFilters.to;
+
+  var wrap = document.getElementById('rpt-dw-wrap');
+  var subtotalBar = document.getElementById('rpt-dw-subtotal-bar');
+  if (!wrap) return;
+
+  var filtered = rptDwFilteredCases();
+  var sub = rptDwSubtotal(filtered);
+  if (subtotalBar) {
+    subtotalBar.innerHTML = '<div><div class="wchr-label">Demands</div><div class="wchr-val" style="color:var(--navy-text);">' + filtered.length + '</div></div>'
+      + '<div><div class="wchr-label">IGST</div><div class="wchr-val" style="color:var(--navy-text);">' + fmt(sub.igst) + '</div></div>'
+      + '<div><div class="wchr-label">CGST</div><div class="wchr-val" style="color:var(--navy-text);">' + fmt(sub.cgst) + '</div></div>'
+      + '<div><div class="wchr-label">SGST</div><div class="wchr-val" style="color:var(--navy-text);">' + fmt(sub.sgst) + '</div></div>'
+      + '<div><div class="wchr-label">CESS</div><div class="wchr-val" style="color:var(--navy-text);">' + fmt(sub.cess) + '</div></div>'
+      + '<div><div class="wchr-label">Subtotal (Pending)</div><div class="wchr-val">' + fmt(sub.total) + '</div></div>';
+  }
+
+  if (!filtered.length) {
+    wrap.innerHTML = '<div class="empty"><div class="empty-icon"><i class="fa-solid fa-chart-bar" style="font-size:40px;color:var(--blue);opacity:0.4;"></i></div><div class="empty-title">No Demands Found</div><div class="empty-sub">No collectible demands match the current filters</div></div>';
+    return;
+  }
+
+  var sorted = rptDwSortCases(filtered);
+  var pageSize = _rptDwPageSize === 'all' ? sorted.length : _rptDwPageSize;
+  var totalPages = Math.max(1, Math.ceil(sorted.length / pageSize));
+  if (_rptDwCurrentPage > totalPages) _rptDwCurrentPage = totalPages;
+  if (_rptDwCurrentPage < 1) _rptDwCurrentPage = 1;
+  var startIdx = (_rptDwCurrentPage - 1) * pageSize;
+  var pageCases = sorted.slice(startIdx, startIdx + pageSize);
+
+  var rows = pageCases.map(function (c, i) {
+    var age = getDemandAgeDays(c);
+    var collectibleReg = isCollectible(c.gstin);
+    var regPill = collectibleReg === null || collectibleReg === undefined ? '<span class="pill pill-gray">Unknown</span>'
+      : collectibleReg ? '<span class="pill pill-green">Active</span>' : '<span class="pill pill-red">Cancelled</span>';
+    return '<tr>'
+      + '<td>' + (startIdx + i + 1) + '</td>'
+      + '<td class="demand-id">' + xe(c.demandId) + '</td>'
+      + '<td>' + fmtDate(c.dcr_date || c.demandDate) + '</td>'
+      + '<td class="gstin-cell">' + xe(c.gstin) + '</td>'
+      + '<td>' + xe(taxpayerDisplayName(c.gstin, c.legalName)) + '</td>'
+      + '<td>' + xe(c.taxPeriod) + '</td>'
+      + '<td style="text-align:center;">' + xe(c.section) + '</td>'
+      + '<td style="text-align:center;">' + dayBadge(age) + '</td>'
+      + '<td>' + regPill + '</td>'
+      + '<td style="text-align:right;">' + fmt0(c.pend_igst) + '</td>'
+      + '<td style="text-align:right;">' + fmt0(c.pend_cgst) + '</td>'
+      + '<td style="text-align:right;">' + fmt0(c.pend_sgst) + '</td>'
+      + '<td style="text-align:right;">' + fmt0(c.pend_cess) + '</td>'
+      + '<td><div class="amount-cell pending">' + fmt(c.pend_total) + '</div></td>'
+      + '</tr>';
+  }).join('');
+
+  var th = function (label, col) { return '<th style="cursor:pointer;white-space:nowrap;" onclick="rptDwSortBy(\'' + col + '\')">' + label + rptDwSortArrow(col) + '</th>'; };
+
+  wrap.innerHTML = '<div class="table-scroll"><table><thead><tr>'
+    + '<th>#</th>'
+    + th('Demand ID', 'demandId')
+    + th('Order Date', 'orderDate')
+    + '<th>GSTIN</th><th>Trade Name</th><th>Tax Period</th><th>Section</th>'
+    + th('Days', 'days')
+    + '<th>Reg Status</th>'
+    + th('IGST (₹)', 'igst') + th('CGST (₹)', 'cgst') + th('SGST (₹)', 'sgst') + th('CESS (₹)', 'cess') + th('Pending (₹)', 'total')
+    + '</tr></thead><tbody>' + rows + '</tbody></table></div>'
+    + rptDwPaginationHTML(sorted.length, totalPages);
+}
+
+function rptDwPaginationHTML(total, totalPages) {
+  var pageBtns = wizPageNumberList(_rptDwCurrentPage, totalPages).map(function (p) {
+    if (p === '...') return '<span class="tp-ellipsis">…</span>';
+    return '<button type="button" class="tp-page' + (p === _rptDwCurrentPage ? ' active' : '') + '" onclick="rptDwGoToPageNum(' + p + ')">' + p + '</button>';
+  }).join('');
+  var sizes = [25, 50, 100];
+  var sizeOptions = sizes.map(function (n) { return '<option value="' + n + '"' + (_rptDwPageSize === n ? ' selected' : '') + '>' + n + ' / page</option>'; }).join('')
+    + '<option value="all"' + (_rptDwPageSize === 'all' ? ' selected' : '') + '>All</option>';
+  return '<div class="table-pagination">'
+    + '<div class="tp-pages">'
+    + '<button type="button" class="tp-btn" onclick="rptDwGoToPage(-1)"' + (_rptDwCurrentPage <= 1 ? ' disabled' : '') + '><i class="fa-solid fa-chevron-left"></i></button>'
+    + pageBtns
+    + '<button type="button" class="tp-btn" onclick="rptDwGoToPage(1)"' + (_rptDwCurrentPage >= totalPages ? ' disabled' : '') + '><i class="fa-solid fa-chevron-right"></i></button>'
+    + '</div>'
+    + '<select class="tp-size-select" onchange="rptDwSetPageSize(this.value)">' + sizeOptions + '</select>'
+    + '</div>';
+}
+function rptDwSetPageSize(val) { _rptDwPageSize = val === 'all' ? 'all' : parseInt(val, 10); _rptDwCurrentPage = 1; renderDemandWiseReport(); }
+function rptDwGoToPage(delta) { _rptDwCurrentPage += delta; renderDemandWiseReport(); }
+function rptDwGoToPageNum(n) { _rptDwCurrentPage = n; renderDemandWiseReport(); }
