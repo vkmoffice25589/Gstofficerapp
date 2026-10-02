@@ -336,7 +336,6 @@ function renderDCRSection() {
 }
 
 function dcrPanelHead(hasDCR) {
-  var lastUploaded = AppState.lastImportAt ? fmtDateTime(AppState.lastImportAt) : '—';
   return '<div class="dcr-panel">'
     + '<div class="dcr-panel-head">'
     + '<div class="dcr-head-left">'
@@ -344,17 +343,8 @@ function dcrPanelHead(hasDCR) {
     + '<div><div class="dcr-title">1. Upload DCR <span class="dcr-title-sub">(Demand &amp; Collection Register)</span></div>'
     + '<div class="dcr-desc">Upload quarterly DCR files. The system will reconcile the newly uploaded DCR with the previously consolidated DCR.</div></div>'
     + '</div>'
-    + '<div class="dcr-head-right">'
-    + '<div class="dcr-last-uploaded"><div class="dlu-label">Last Uploaded On</div><div class="dlu-val">' + xe(lastUploaded) + '</div></div>'
-    + '<button type="button" class="btn btn-outline btn-sm" onclick="openDcrGuidelines()"><i class="fa-solid fa-circle-info"></i> View Guidelines</button>'
-    + '<button type="button" class="btn btn-outline btn-sm"' + (AppState.lastReconciliation ? '' : ' disabled') + ' onclick="wizViewReconciliationReport()"><i class="fa-solid fa-file-lines"></i> View Reconciliation Report</button>'
-    + '<button type="button" class="btn btn-danger-outline btn-sm"' + (hasDCR ? '' : ' disabled') + ' onclick="wizClearDCR()"><i class="fa-solid fa-trash"></i> Clear / Delete DCR</button>'
-    + '</div>'
     + '</div>';
 }
-
-function openDcrGuidelines() { var ov = document.getElementById('dcr-guidelines-overlay'); if (ov) ov.classList.add('show'); }
-function closeDcrGuidelines() { var ov = document.getElementById('dcr-guidelines-overlay'); if (ov) ov.classList.remove('show'); }
 
 function dcrUploadRow() {
   return '<div class="dcr-upload-row">'
@@ -468,7 +458,13 @@ function dcrFilesTable() {
     }).join('');
     body = '<div class="table-wrap"><div class="table-scroll"><table><thead><tr><th>File Name</th><th>Financial Year</th><th>Quarter</th><th>Records</th><th>Uploaded On</th><th>Status</th><th>Action</th></tr></thead><tbody>' + rows + '</tbody></table></div></div>';
   }
-  return '<div class="dcr-files-wrap"><div class="dcr-col-label">Uploaded DCR Files</div>' + body + '</div>';
+  var hasDCR = AppState.cases.length > 0;
+  return '<div class="dcr-files-wrap">'
+    + '<div class="dcr-files-head">'
+    + '<div class="dcr-col-label" style="margin:0;">Uploaded DCR Files</div>'
+    + '<button type="button" class="btn btn-danger-outline btn-sm"' + (hasDCR ? '' : ' disabled') + ' onclick="wizClearDCR()"><i class="fa-solid fa-trash"></i> Clear / Delete DCR</button>'
+    + '</div>'
+    + body + '</div>';
 }
 
 /* Full consolidated DCR (every valid case currently held), not just the
@@ -557,36 +553,6 @@ function wizClearDCR() {
   if (typeof renderWizardStepper === 'function') renderWizardStepper();
   if (typeof renderDashboard === 'function' && document.getElementById('page-dashboard').classList.contains('active')) renderDashboard();
   showToast('🗑 DCR data cleared');
-}
-
-function wizViewReconciliationReport() {
-  var r = AppState.lastReconciliation;
-  if (!r) { showToast('⚠️ No reconciliation report yet'); return; }
-  var rows = (r.details || []).map(function (d) {
-    return '<tr><td>' + xe(d.gstin) + '</td><td>' + xe(d.demandId) + '</td><td style="text-transform:capitalize;">' + xe(d.type) + '</td><td style="text-align:right;">' + fmt0(d.amount) + '</td><td>' + xe(d.remarks) + '</td></tr>';
-  }).join('');
-  var win = window.open('', '_blank');
-  if (!win) { showToast('⚠️ Enable pop-ups to view the report'); return; }
-  win.document.write(
-    '<html><head><title>DCR Reconciliation Report</title><style>'
-    + 'body{font-family:Arial,sans-serif;padding:32px;color:#0F172A;} h2{margin:0 0 4px;} .sub{color:#64748B;font-size:13px;margin-bottom:20px;}'
-    + 'table{width:100%;border-collapse:collapse;} th,td{border:1px solid #E2E8F0;padding:8px 10px;font-size:12.5px;} th{background:#F1F5F9;text-align:left;}'
-    + '.stats{display:flex;gap:14px;margin-bottom:20px;flex-wrap:wrap;} .stat{border:1px solid #E2E8F0;border-radius:8px;padding:10px 14px;min-width:150px;} .stat b{display:block;font-size:15px;}'
-    + '</style></head><body>'
-    + '<h2>DCR Reconciliation Report</h2>'
-    + '<div class="sub">Files: ' + xe((r.fileNames || []).join(', ')) + ' &middot; Reconciled: ' + xe(fmtDateTime(r.reconciledAt)) + '</div>'
-    + '<div class="stats">'
-    + '<div class="stat">Opening Balance<b>' + fmt(r.openingBalance) + '</b></div>'
-    + '<div class="stat">New Demands Added<b>' + fmt(r.newDemandsAdded) + '</b></div>'
-    + '<div class="stat">Closed / Eliminated<b>' + fmt(r.closedEliminated) + '</b></div>'
-    + '<div class="stat">Appeal / HC / Others<b>' + fmt(r.appealHcOthers) + '</b></div>'
-    + '<div class="stat">Closing Balance<b>' + fmt(r.closingBalance) + '</b></div>'
-    + '</div>'
-    + (rows ? ('<table><thead><tr><th>GSTIN</th><th>Demand ID</th><th>Type</th><th>Amount (₹)</th><th>Remarks</th></tr></thead><tbody>' + rows + '</tbody></table>')
-      : '<p>No individual demand changes in this reconciliation — only new demands were added.</p>')
-    + '</body></html>'
-  );
-  win.document.close();
 }
 
 function wizDownloadReconciliationReport() {

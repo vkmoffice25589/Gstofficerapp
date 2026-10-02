@@ -211,6 +211,7 @@
 .btn-link:hover { text-decoration: underline; }
 
 .dcr-files-wrap { border-top: 1px solid var(--border); padding-top: 20px; margin-bottom: 18px; }
+.dcr-files-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; }
 .icon-btn-danger {
   width: 30px; height: 30px; border-radius: var(--radius-sm); border: 1px solid var(--danger-border);
   background: var(--surface); color: var(--danger); cursor: pointer; display: flex; align-items: center;
@@ -363,6 +364,8 @@
    worth of DCR uploads or register refreshes shouldn't make the officer
    scroll past the whole page just to reach the next section. */
 #page-dataupload .dcr-files-wrap { padding-top: 6px; margin-bottom: 6px; }
+#page-dataupload .dcr-files-head { margin-bottom: 6px; }
+#page-dataupload .dcr-files-head .btn { height: 26px; padding: 0 9px; font-size: 11px; }
 #page-dataupload .dcr-files-wrap .table-scroll { max-height: 150px; overflow-y: auto; }
 #page-dataupload .dcr-files-wrap th, #page-dataupload .dcr-files-wrap td { padding: 6px 10px; font-size: 12px; white-space: nowrap; }
 #page-dataupload .dcr-files-wrap .icon-btn-outline, #page-dataupload .dcr-files-wrap .icon-btn-danger { width: 22px; height: 22px; font-size: 10px; }
