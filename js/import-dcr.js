@@ -423,13 +423,16 @@ function dcrReconciliationSummary() {
     + '<div class="dcr-col-label" style="margin:0;">Reconciliation Summary (with previously uploaded DCR)</div>'
     + '<span class="pill pill-green"><i class="fa-solid fa-circle-check"></i> Reconciled Successfully</span>'
     + '</div>'
-    + '<div class="stats dcr-recon-tiles">' + tiles.map(function (t) {
-      return '<div class="scard ' + t.cls + '"><div class="slabel"><i class="fa-solid ' + t.icon + '"></i> ' + t.label + '</div><div class="sval ' + t.cls + '" style="font-size:16px;">' + t.val + '</div></div>';
+    + '<div class="dcr-recon-tiles">' + tiles.map(function (t) {
+      return '<div class="dcr-recon-tile ' + t.cls + '">'
+        + '<div class="drt-head"><div class="drt-icon"><i class="fa-solid ' + t.icon + '"></i></div><div class="drt-label">' + t.label + '</div></div>'
+        + '<div class="drt-val">' + t.val + '</div>'
+        + '</div>';
     }).join('') + '</div>'
     + '<div class="dcr-recon-actions">'
-    + '<button type="button" class="btn-link" onclick="exportDCRExcel()"><i class="fa-solid fa-file-excel"></i> Export DCR (Excel)</button>'
-    + '<button type="button" class="btn-link" onclick="wizDownloadReconciliationReport()"><i class="fa-solid fa-download"></i> Download Reconciliation Report (Excel)</button>'
-    + '<button type="button" class="btn-link btn-link-danger" onclick="wizClearDCR()"><i class="fa-solid fa-trash"></i> Clear / Delete DCR</button>'
+    + '<button type="button" class="btn btn-blue" onclick="exportDCRExcel()"><i class="fa-solid fa-file-excel"></i> Export DCR (Excel)</button>'
+    + '<button type="button" class="btn btn-outline" onclick="wizDownloadReconciliationReport()"><i class="fa-solid fa-download"></i> Download Reconciliation Report (Excel)</button>'
+    + '<button type="button" class="btn btn-danger-outline" onclick="wizClearDCR()"><i class="fa-solid fa-trash"></i> Clear / Delete DCR</button>'
     + '</div>'
     + '</div>';
 }

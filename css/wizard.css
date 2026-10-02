@@ -118,13 +118,11 @@
 .btn-danger-outline { background: var(--surface); color: var(--danger); border-color: var(--danger-border); }
 .btn-danger-outline:hover { background: var(--danger-dim); }
 
-/* Two columns (dropzone | summary) — tuned for the DCR panel's actual width
-   now that it shares the page with the Taxpayer Register panel in a
-   2-column grid, not the full page width this was originally built for.
-   The old 3-column version (dropzone | guidelines | summary) crammed into
-   half the width was the "messy" look — guidelines moved to a modal
-   (View Guidelines button) instead of a squeezed third column. */
-.dcr-upload-row { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-4); margin-bottom: 22px; align-items: stretch; }
+/* Two columns (dropzone | summary) — the summary column is wider since the
+   Reconciliation Summary's 3-per-row tiles need more room than an even
+   split gives them; the dropzone itself doesn't need much width to stay
+   usable. */
+.dcr-upload-row { display: grid; grid-template-columns: 0.85fr 1.3fr; gap: var(--sp-4); margin-bottom: 22px; align-items: stretch; }
 .dcr-col-label { font-size: 12.5px; font-weight: 700; color: var(--navy-text); margin-bottom: 10px; display: flex; align-items: center; gap: 6px; }
 .dcr-col-label i { color: var(--primary-blue); }
 
@@ -196,21 +194,34 @@
 
 .dcr-recon-wrap { border-top: 1px solid var(--border); padding-top: 20px; margin-bottom: 22px; }
 .dcr-recon-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; }
-.dcr-recon-tiles { grid-template-columns: repeat(3, 1fr); margin-bottom: 12px; }
-.dcr-recon-tiles .slabel { display: flex; align-items: center; gap: 5px; }
-.dcr-recon-actions { display: flex; gap: 16px; flex-wrap: wrap; }
 
-/* Reconciliation Summary nested in the upload row's right column (next to
-   the dropzone) instead of as its own full-width section below it — that
-   half-width space is too narrow for the 3-tile row, so it drops to 2, and
-   the wrap's own top border/spacing is dropped since the card around it
-   (.dcr-upload-summary) already provides that separation. */
-.dcr-upload-summary-recon .dcr-recon-wrap { border-top: none; padding-top: 0; margin-bottom: 0; }
-.dcr-upload-summary-recon .dcr-recon-tiles { grid-template-columns: repeat(2, 1fr); }
-.btn-link { background: none; border: none; padding: 0; color: var(--primary-blue); font-size: 12.5px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
-.btn-link:hover { text-decoration: underline; }
-.btn-link-danger { color: var(--danger); }
+/* Reconciliation tiles — a tinted, bordered card per figure (not the plain
+   white-with-top-stripe .scard look) so each one reads as its own colour
+   category at a glance, matching the 3-per-row layout the officer asked
+   to see here. */
+.dcr-recon-tiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 16px; }
+.dcr-recon-tile { border-radius: var(--radius-md); border: 1px solid; padding: 14px 16px; min-width: 0; }
+.drt-head { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+.drt-icon { width: 26px; height: 26px; border-radius: 50%; background: #fff; display: flex; align-items: center; justify-content: center; font-size: 12px; flex-shrink: 0; }
+.drt-label { font-size: 11px; font-weight: 700; color: var(--ink3); text-transform: uppercase; letter-spacing: 0.3px; }
+.drt-val { font-size: 18px; font-weight: 700; font-family: var(--font-mono); overflow-wrap: break-word; }
 
+.dcr-recon-tile.blue   { background: var(--primary-blue-dim); border-color: var(--primary-blue-border); }
+.dcr-recon-tile.blue .drt-icon, .dcr-recon-tile.blue .drt-val { color: var(--primary-blue); }
+.dcr-recon-tile.green  { background: var(--success-dim); border-color: var(--success-border); }
+.dcr-recon-tile.green .drt-icon, .dcr-recon-tile.green .drt-val { color: var(--success); }
+.dcr-recon-tile.gold   { background: var(--gold-dim); border-color: var(--gold-border); }
+.dcr-recon-tile.gold .drt-icon, .dcr-recon-tile.gold .drt-val { color: var(--gold); }
+.dcr-recon-tile.red    { background: var(--danger-dim); border-color: var(--danger-border); }
+.dcr-recon-tile.red .drt-icon, .dcr-recon-tile.red .drt-val { color: var(--danger); }
+.dcr-recon-tile.purple { background: var(--purple-dim); border-color: var(--purple-border); }
+.dcr-recon-tile.purple .drt-icon, .dcr-recon-tile.purple .drt-val { color: var(--purple); }
+
+@media (max-width: 900px) {
+  .dcr-recon-tiles { grid-template-columns: repeat(2, 1fr); }
+}
+
+.dcr-recon-actions { display: flex; gap: 10px; flex-wrap: wrap; }
 .dcr-info-note {
   display: flex; align-items: center; gap: 8px; background: var(--primary-blue-dim); border: 1px solid var(--primary-blue-border);
   border-radius: var(--radius-md); padding: 10px 14px; font-size: 12.5px; color: var(--navy-text);
@@ -261,9 +272,6 @@
   .tpreg-zones { grid-template-columns: 1fr; }
 }
 
-@media (max-width: 900px) {
-  .dcr-recon-tiles { grid-template-columns: repeat(2, 1fr); }
-}
 @media (max-width: 720px) {
   .dcr-upload-row { grid-template-columns: 1fr; }
   .dcr-panel-head { flex-direction: column; }
@@ -325,22 +333,7 @@
 #page-dataupload .dcr-mini-stat.hero .dms-val { font-size: 15px; }
 #page-dataupload .dcr-reconcile-btn { margin-top: 8px; }
 
-/* Reconciliation Summary: 6 bordered KPI cards -> 6 slim chip rows (2 per
-   line), each just a label and a value — the colour-stripe-card treatment
-   makes sense on a dashboard, not crammed into the dropzone's neighbour
-   column. */
-#page-dataupload .dcr-recon-head { margin-bottom: 6px; }
-#page-dataupload .dcr-recon-head .dcr-col-label { font-size: 11.5px; }
-#page-dataupload .dcr-recon-tiles.stats {
-  display: flex; flex-wrap: wrap; gap: 4px 8px; grid-template-columns: unset; margin-bottom: 6px;
-}
-#page-dataupload .dcr-recon-tiles .scard {
-  flex: 1 1 30%; display: flex; align-items: center; justify-content: space-between; gap: 6px;
-  border: none; box-shadow: none; background: var(--surface-2); padding: 2px 7px; border-radius: 5px;
-}
-#page-dataupload .dcr-recon-tiles .scard::before { display: none; }
-#page-dataupload .dcr-recon-tiles .slabel { margin-bottom: 0; font-size: 9.5px; white-space: nowrap; }
-#page-dataupload .dcr-recon-tiles .sval { font-size: 12px !important; }
+#page-dataupload .dcr-recon-head { margin-bottom: 10px; }
 #page-dataupload .dcr-recon-actions { margin-top: 2px; }
 
 #page-dataupload .dcr-info-note { padding: 5px 10px; font-size: 11px; }
