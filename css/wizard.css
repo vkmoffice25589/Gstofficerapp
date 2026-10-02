@@ -570,27 +570,27 @@
   .upload-cards { grid-template-columns: 1fr; }
 }
 
-/* ===== Compact grid-style tables — Issue Notice (Copy) demands + bulk notice results ===== */
-:is(#wiz2-demand-table-wrap, #bulk-all-results) .table-scroll { border: 1px solid var(--border); border-radius: 8px; }
-:is(#wiz2-demand-table-wrap, #bulk-all-results) table { font-size: 13px; }
-:is(#wiz2-demand-table-wrap, #bulk-all-results) th {
+/* ===== Compact grid-style tables — Issue Notice (Copy) demands, bulk notice results + bulk demand editor ===== */
+:is(#wiz2-demand-table-wrap, #bulk-all-results, #bde-table-wrap) .table-scroll { border: 1px solid var(--border); border-radius: 8px; }
+:is(#wiz2-demand-table-wrap, #bulk-all-results, #bde-table-wrap) table { font-size: 13px; }
+:is(#wiz2-demand-table-wrap, #bulk-all-results, #bde-table-wrap) th {
   padding: 9px 12px; font-size: 12.5px; font-weight: 600; color: #334155;
   text-transform: none; letter-spacing: 0; background: #F8FAFC;
 }
-:is(#wiz2-demand-table-wrap, #bulk-all-results) td { padding: 6px 12px; color: #1E293B; font-weight: 400; white-space: nowrap; }
-:is(#wiz2-demand-table-wrap, #bulk-all-results) th + th, :is(#wiz2-demand-table-wrap, #bulk-all-results) td + td { border-left: 1px solid var(--border); }
-:is(#wiz2-demand-table-wrap, #bulk-all-results) th:nth-child(1), :is(#wiz2-demand-table-wrap, #bulk-all-results) td:nth-child(1) { width: 40px; text-align: center; }
-:is(#wiz2-demand-table-wrap, #bulk-all-results) input[type="checkbox"] { width: 15px; height: 15px; vertical-align: middle; cursor: pointer; }
-:is(#wiz2-demand-table-wrap, #bulk-all-results) .demand-id { font-size: 13px; font-weight: 400; color: #1E293B; letter-spacing: 0; }
-:is(#wiz2-demand-table-wrap, #bulk-all-results) .gstin-cell { font-size: 13px; font-weight: 500; color: var(--primary-blue); }
-:is(#wiz2-demand-table-wrap, #bulk-all-results) .day-badge { min-width: 56px; height: 22px; border-radius: 5px; font-size: 12px; font-weight: 500; font-family: var(--font-ui); }
-:is(#wiz2-demand-table-wrap, #bulk-all-results) .pill { border-radius: 5px; font-size: 12px; font-weight: 500; padding: 2px 9px; }
-:is(#wiz2-demand-table-wrap, #bulk-all-results) .amount-cell,
-:is(#wiz2-demand-table-wrap, #bulk-all-results) .amount-cell.pending { font-size: 13px; font-weight: 600; color: #0F172A; text-decoration: none; }
-:is(#wiz2-demand-table-wrap, #bulk-all-results) .amount-cell.clickable:hover { color: var(--primary-blue); text-decoration: underline; }
-:is(#wiz2-demand-table-wrap, #bulk-all-results) tbody tr:has(input[type="checkbox"]:checked) td { background: #EAF2FE; }
-#wiz2-demand-table-wrap th:nth-child(7) { text-align: center; }
-#wiz2-demand-table-wrap th:last-child { text-align: right; }
+:is(#wiz2-demand-table-wrap, #bulk-all-results, #bde-table-wrap) td { padding: 6px 12px; color: #1E293B; font-weight: 400; white-space: nowrap; }
+:is(#wiz2-demand-table-wrap, #bulk-all-results, #bde-table-wrap) th + th, :is(#wiz2-demand-table-wrap, #bulk-all-results, #bde-table-wrap) td + td { border-left: 1px solid var(--border); }
+:is(#wiz2-demand-table-wrap, #bulk-all-results, #bde-table-wrap) th:nth-child(1), :is(#wiz2-demand-table-wrap, #bulk-all-results, #bde-table-wrap) td:nth-child(1) { width: 40px; text-align: center; }
+:is(#wiz2-demand-table-wrap, #bulk-all-results, #bde-table-wrap) input[type="checkbox"] { width: 15px; height: 15px; vertical-align: middle; cursor: pointer; }
+:is(#wiz2-demand-table-wrap, #bulk-all-results, #bde-table-wrap) .demand-id { font-size: 13px; font-weight: 400; color: #1E293B; letter-spacing: 0; }
+:is(#wiz2-demand-table-wrap, #bulk-all-results, #bde-table-wrap) .gstin-cell { font-size: 13px; font-weight: 500; color: var(--primary-blue); }
+:is(#wiz2-demand-table-wrap, #bulk-all-results, #bde-table-wrap) .day-badge { min-width: 56px; height: 22px; border-radius: 5px; font-size: 12px; font-weight: 500; font-family: var(--font-ui); }
+:is(#wiz2-demand-table-wrap, #bulk-all-results, #bde-table-wrap) .pill { border-radius: 5px; font-size: 12px; font-weight: 500; padding: 2px 9px; }
+:is(#wiz2-demand-table-wrap, #bulk-all-results, #bde-table-wrap) .amount-cell,
+:is(#wiz2-demand-table-wrap, #bulk-all-results, #bde-table-wrap) .amount-cell.pending { font-size: 13px; font-weight: 600; color: #0F172A; text-decoration: none; }
+:is(#wiz2-demand-table-wrap, #bulk-all-results, #bde-table-wrap) .amount-cell.clickable:hover { color: var(--primary-blue); text-decoration: underline; }
+:is(#wiz2-demand-table-wrap, #bulk-all-results, #bde-table-wrap) tbody tr:has(input[type="checkbox"]:checked) td { background: #EAF2FE; }
+#wiz2-demand-table-wrap th:nth-child(7), #bde-table-wrap th:nth-child(7) { text-align: center; }
+#wiz2-demand-table-wrap th:last-child, #bde-table-wrap th:last-child { text-align: right; }
 #bulk-all-results th:nth-child(8) { text-align: right; }
 #bulk-all-results td:nth-child(7), #bulk-all-results th:nth-child(7) { text-align: center; }
 #bulk-all-results td { white-space: normal; }
