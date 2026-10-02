@@ -357,6 +357,7 @@ function dcrUploadRow() {
     + '<div class="dcr-dropzone-format">Excel (.xlsx, .xls) &middot; Multiple quarters supported</div>'
     + '</div>'
     + dcrPendingFileChips()
+    + (_dcrPendingFiles.length ? '<button type="button" class="btn btn-blue dcr-reconcile-btn" onclick="wizUploadAndReconcileDCR()"><i class="fa-solid fa-cloud-arrow-up"></i> Upload &amp; Reconcile DCR</button>' : '')
     + '</div>'
     + dcrUploadRightPanel()
     + '</div>';
@@ -387,7 +388,6 @@ function dcrUploadSummaryPanel() {
     + dcrMiniStat('Financial Years', xe(fyRange), 'gold')
     + dcrMiniStat('Quarters', xe(quarters.join(', ') || '—'), 'green')
     + '</div>'
-    + '<button type="button" class="btn btn-blue dcr-reconcile-btn" onclick="wizUploadAndReconcileDCR()"><i class="fa-solid fa-cloud-arrow-up"></i> Upload &amp; Reconcile DCR</button>'
     + '</div>';
 }
 
