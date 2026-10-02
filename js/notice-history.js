@@ -234,6 +234,38 @@ async function histDownloadFilteredReleasesZip(format) {
   });
 }
 
+var HIST_TYPE_LABEL = {
+  notice: 'Notice', bank: 'Bank', bankrelease: 'Bank Release',
+  thirdparty: 'Third-Party', thirdpartyrelease: 'Third-Party Release',
+  property: 'Property', propertyrelease: 'Property Release'
+};
+var HIST_STATUS_LABEL = { issued: 'Issued', active: 'Active', released: 'Released' };
+
+/* One sheet, matching exactly what's on screen — unlike Collectible
+   Demands, this is a mixed-document ledger (notices, attachments,
+   releases), not a tax-head breakdown, so there's no taxpayer-wise
+   subtotal that would mean anything here (summing a Notice's amount
+   against its own Bank attachment's amount would double-count the same
+   underlying arrear). Exports whatever the current filters show. */
+async function histExportExcel() {
+  var items = histFilteredDocuments();
+  if (!items.length) { showToast('⚠️ No documents match the current filters'); return; }
+  await window.LibsReady;
+  var rows = items.map(function (it) {
+    return {
+      Date: fmtDate(it.date), Type: HIST_TYPE_LABEL[it.type] || it.type,
+      Taxpayer: taxpayerDisplayName(it.gstin, it.legalName), GSTIN: it.gstin,
+      Details: it.label, 'Amount (₹)': Number(it.amount) || 0, Status: HIST_STATUS_LABEL[it.status] || it.status
+    };
+  });
+  var ws = XLSX.utils.json_to_sheet(rows);
+  var wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Notice History');
+  var out = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+  downloadBlob(new Blob([out], { type: 'application/octet-stream' }), 'Notice_History_' + todayISO() + '.xlsx');
+  showToast('✅ Exported ' + items.length + ' document(s)');
+}
+
 function histPaginationHTML(total, totalPages) {
   var pageBtns = wizPageNumberList(_histCurrentPage, totalPages).map(function (p) {
     if (p === '...') return '<span class="tp-ellipsis">…</span>';

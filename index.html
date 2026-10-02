@@ -595,13 +595,6 @@
       </div>
     </div>
 
-    <!-- ===== NOTICE HISTORY — records of everything generated: notices,
-         bank attachments (active + released), third-party notices and
-         property attachments. Previously these last few lived as inline
-         "ACTIVE ATTACHMENTS"/"RELEASED ATTACHMENTS"/etc. lists at the
-         bottom of their own Generate Arrear Notice sub-tabs; consolidated
-         here as sub-tabs of their own so every past document lives in one
-         place, separate from the forms that create new ones. ===== -->
     <!-- ===== NOTICE HISTORY — one unified, read-only ledger of every
          document ever issued (Notice, Bank, Third-Party, Property), newest
          first, filterable by GSTIN/type/status/date. Replaces the earlier
@@ -638,6 +631,7 @@
         <div class="fg rel-filter-btn-fg"><button class="btn btn-outline" onclick="histResetFilters()">Reset</button></div>
         <div class="fg rel-filter-btn-fg"><button class="btn btn-outline" onclick="histDownloadFilteredReleasesZip('docx')" title="Zips every release order currently shown (Word)"><i class="fa-solid fa-file-zipper"></i> Releases (Word)</button></div>
         <div class="fg rel-filter-btn-fg"><button class="btn btn-outline" onclick="histDownloadFilteredReleasesZip('pdf')" title="Zips every release order currently shown (PDF)"><i class="fa-solid fa-file-zipper"></i> Releases (PDF)</button></div>
+        <div class="fg rel-filter-btn-fg"><button class="btn btn-outline" onclick="histExportExcel()" title="Exports whatever's currently filtered"><i class="fa-solid fa-file-excel"></i> Export to Excel</button></div>
       </div>
 
       <div class="table-wrap">
