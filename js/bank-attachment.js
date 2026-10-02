@@ -517,7 +517,7 @@ function renderBankAtts() {
       + '<span style="font-size:11px;color:var(--ink3);margin-left:6px;">DRC-13:</span>'
       + '<button class="btn btn-outline btn-xs" onclick="baDownloadDrc13(\'' + b.id + '\',\'docx\')"><i class="fa-solid fa-file-word"></i> Word</button>'
       + '<button class="btn btn-outline btn-xs" onclick="baDownloadDrc13(\'' + b.id + '\',\'pdf\')"><i class="fa-solid fa-file-pdf"></i> PDF</button>'
-      + '<button class="btn btn-orange btn-xs" onclick="baGoToRelease(\'' + b.id + '\')"><i class="fa-solid fa-unlock"></i> Release</button>'
+      + '<button class="btn btn-orange btn-xs" onclick="relGoToRelease(\'bank\',\'' + b.id + '\')"><i class="fa-solid fa-unlock"></i> Release</button>'
       + '</div></div>';
   }).join('');
 }
@@ -537,12 +537,15 @@ function baDownloadDrc13(id, fmt) {
   else buildBankDrc13Docx(b, cfg).then(function (blob) { downloadBlob(blob, b.ref.replace(/\//g, '_') + '_DRC13.docx'); });
 }
 
-/* ===== Release Attachment tab — search across every active bank
-   attachment, then release the selected one with the full Release Order
-   (matching the office's "Bank release Reference" format) generated as
-   Word + PDF. Replaces the old bare reason-only modal, which couldn't
-   capture the case-specific facts (petition date, taxpayer address,
-   narrative) the real release order needs. ===== */
+/* ===== Release Attachment tab — unified across all three attachment
+   types (Bank, Third-Party, Property). Lists every active (not yet
+   released) attachment of any type, filterable by GSTIN/taxpayer, and
+   releases the selected one with the matching Release Order (Word + PDF)
+   — Bank uses buildBankReleaseDocx/generateBankReleasePDF, Third-Party
+   uses buildThirdPartyReleaseDocx/generateThirdPartyReleasePDF, Property
+   uses buildPropertyReleaseDocx/generatePropertyReleasePDF. Previously
+   this tab only handled bank attachments; third-party and property
+   attachments had no release concept at all. ===== */
 var RELEASE_REASONS = ['Demand Paid', 'First Appeal Filed', 'WP Filed & Stay Obtained', 'Revision - Demand Nullified'];
 var RELEASE_NARRATIVE_TEMPLATES = {
   'Demand Paid': 'The taxpayer has since remitted the outstanding demand in full and has furnished proof of payment to this office.',
@@ -550,84 +553,143 @@ var RELEASE_NARRATIVE_TEMPLATES = {
   'WP Filed & Stay Obtained': 'The taxpayer has filed a reply to this office stating that they have filed a writ petition before the Honourable High Court and have complied with the conditions ordered therein.',
   'Revision - Demand Nullified': 'The demand against the taxpayer has been nullified pursuant to a revision order passed by the competent authority, a copy of which has been furnished to this office.'
 };
-var _brSelectedId = null;
+var _relGSTINFilter = '';
+var _relPending = null; // { type: 'bank'|'thirdparty'|'property', id }
+var REL_TYPE_BADGE = { bank: '<span class="pill pill-blue">Bank</span>', thirdparty: '<span class="pill pill-purple">Third Party</span>', property: '<span class="pill pill-gold">Property</span>' };
+function relTypeList(type) { return type === 'bank' ? AppState.bankAtts : type === 'thirdparty' ? AppState.thirdPartyNotices : AppState.propertyAttachments; }
+function relTypeGstin(type, rec) { return type === 'thirdparty' ? rec.defaulterGstin : rec.gstin; }
 
 function renderBankReleaseTab() {
-  var s = document.getElementById('br-search'); if (s) s.value = '';
-  var r = document.getElementById('br-search-results'); if (r) r.style.display = 'none';
-  var f = document.getElementById('br-form-card'); if (f) f.style.display = 'none';
-  _brSelectedId = null;
+  var f = document.getElementById('rel-gstin-filter'); if (f) f.value = _relGSTINFilter;
+  _relPending = null;
+  renderReleasableList();
   renderReleasedList();
 }
 
-function brSearchAttachment(query) {
-  var resultsEl = document.getElementById('br-search-results');
-  query = (query || '').trim().toUpperCase();
-  if (query.length < 2) { resultsEl.style.display = 'none'; return; }
-  var matches = AppState.bankAtts.filter(function (b) { return !b.released; }).filter(function (b) {
-    return (b.gstin || '').toUpperCase().indexOf(query) !== -1 || (b.legalName || '').toUpperCase().indexOf(query) !== -1 || (b.bankName || '').toUpperCase().indexOf(query) !== -1;
-  }).slice(0, 12);
-  resultsEl.innerHTML = matches.length
-    ? matches.map(function (b) { return '<div class="gs-item" onclick="brSelectAttachment(\'' + b.id + '\')"><strong>' + xe(taxpayerDisplayName(b.gstin, b.legalName)) + '</strong><br><span style="color:var(--ink3);font-family:var(--mono);font-size:10px;">' + xe(b.gstin) + ' • ' + xe(b.bankName) + '</span></div>'; }).join('')
-    : '<div class="gs-item">No active attachments found</div>';
-  resultsEl.style.display = 'block';
+function relFilterChanged() {
+  _relGSTINFilter = (document.getElementById('rel-gstin-filter').value || '').trim().toUpperCase();
+  renderReleasableList();
 }
 
-function brSelectAttachment(id) {
-  var b = AppState.bankAtts.find(function (x) { return x.id === id; });
-  if (!b) return;
-  _brSelectedId = id;
-  document.getElementById('br-search').value = b.legalName;
-  document.getElementById('br-search-results').style.display = 'none';
+function relAllReleasable() {
+  var out = [];
+  AppState.bankAtts.filter(function (b) { return !b.released; }).forEach(function (b) {
+    out.push({ type: 'bank', id: b.id, gstin: b.gstin, legalName: b.legalName, label: 'Bank: ' + (b.bankName || '—'), amount: b.totalAmt, date: b.date });
+  });
+  AppState.thirdPartyNotices.filter(function (t) { return !t.released; }).forEach(function (t) {
+    out.push({ type: 'thirdparty', id: t.id, gstin: t.defaulterGstin, legalName: t.legalName, label: 'Third Party: ' + (t.debtorLegal || '—'), amount: t.totalAmt, date: t.date });
+  });
+  AppState.propertyAttachments.filter(function (p) { return !p.released; }).forEach(function (p) {
+    out.push({ type: 'property', id: p.id, gstin: p.gstin, legalName: p.legalName, label: 'Property: ' + (p.propertyDescription || '—'), amount: p.totalAmt, date: p.date });
+  });
+  return out.sort(function (a, b) { return new Date(b.date) - new Date(a.date); });
+}
 
-  document.getElementById('br-selected-name').textContent = b.legalName;
-  document.getElementById('br-selected-sub').textContent = b.gstin;
-  document.getElementById('br-selected-info').innerHTML =
-    '<div class="info-item"><div class="info-label">Bank</div><div class="info-val" style="font-size:12px;">' + xe(b.bankName) + '</div></div>'
-    + '<div class="info-item"><div class="info-label">IFSC</div><div class="info-val" style="font-size:12px;">' + xe(b.ifsc) + '</div></div>'
-    + '<div class="info-item"><div class="info-label">Account No.</div><div class="info-val" style="font-size:12px;">' + xe(b.accno || '—') + '</div></div>'
-    + '<div class="info-item"><div class="info-label">Attached Amount</div><div class="info-val" style="color:var(--red);">' + fmt(b.totalAmt) + '</div></div>'
-    + '<div class="info-item"><div class="info-label">Attachment Ref.</div><div class="info-val" style="font-size:12px;">' + xe(b.ref) + '</div></div>'
-    + '<div class="info-item"><div class="info-label">Attached On</div><div class="info-val" style="font-size:12px;">' + fmtDate(b.date) + '</div></div>';
+function renderReleasableList() {
+  var wrap = document.getElementById('rel-list-wrap');
+  if (!wrap) return;
+  var items = relAllReleasable();
+  if (_relGSTINFilter) items = items.filter(function (it) {
+    return (it.gstin || '').toUpperCase().indexOf(_relGSTINFilter) !== -1 || (it.legalName || '').toUpperCase().indexOf(_relGSTINFilter) !== -1;
+  });
+  if (!items.length) {
+    wrap.innerHTML = '<div class="empty"><div class="empty-sub">No active attachments' + (_relGSTINFilter ? ' match "' + xe(_relGSTINFilter) + '"' : ' to release') + '.</div></div>';
+    return;
+  }
+  wrap.innerHTML = '<div class="table-scroll"><table><thead><tr><th>Type</th><th>Taxpayer</th><th>GSTIN</th><th>Details</th><th>Date</th><th>Amount</th><th></th></tr></thead><tbody>'
+    + items.map(function (it) {
+      return '<tr>'
+        + '<td>' + REL_TYPE_BADGE[it.type] + '</td>'
+        + '<td>' + xe(taxpayerDisplayName(it.gstin, it.legalName)) + '</td>'
+        + '<td class="gstin-cell">' + xe(it.gstin) + '</td>'
+        + '<td style="font-size:12px;">' + xe(it.label) + '</td>'
+        + '<td>' + fmtDate(it.date) + '</td>'
+        + '<td><div class="amount-cell pending">' + fmt(it.amount) + '</div></td>'
+        + '<td><button class="btn btn-orange btn-xs" onclick="relSelectItem(\'' + it.type + '\',\'' + it.id + '\')"><i class="fa-solid fa-unlock"></i> Release</button></td>'
+        + '</tr>';
+    }).join('') + '</tbody></table></div>';
+}
 
-  var reasonSel = document.getElementById('br-reason');
+function relSelectItem(type, id) {
+  var rec = relTypeList(type).find(function (x) { return x.id === id; });
+  if (!rec) return;
+  _relPending = { type: type, id: id };
+  var gstin = relTypeGstin(type, rec);
+
+  document.getElementById('rel-modal-name').textContent = taxpayerDisplayName(gstin, rec.legalName);
+  document.getElementById('rel-modal-sub').textContent = gstin;
+
+  var infoHtml;
+  if (type === 'bank') {
+    infoHtml = '<div class="info-item"><div class="info-label">Bank</div><div class="info-val" style="font-size:12px;">' + xe(rec.bankName) + '</div></div>'
+      + '<div class="info-item"><div class="info-label">IFSC</div><div class="info-val" style="font-size:12px;">' + xe(rec.ifsc) + '</div></div>'
+      + '<div class="info-item"><div class="info-label">Attachment Ref.</div><div class="info-val" style="font-size:12px;">' + xe(rec.ref) + '</div></div>';
+  } else if (type === 'thirdparty') {
+    infoHtml = '<div class="info-item"><div class="info-label">Third Party</div><div class="info-val" style="font-size:12px;">' + xe(rec.debtorLegal) + '</div></div>'
+      + '<div class="info-item"><div class="info-label">Notice Date</div><div class="info-val" style="font-size:12px;">' + fmtDate(rec.date) + '</div></div>';
+  } else {
+    infoHtml = '<div class="info-item"><div class="info-label">Property</div><div class="info-val" style="font-size:12px;">' + xe(rec.propertyDescription) + '</div></div>'
+      + '<div class="info-item"><div class="info-label">Location</div><div class="info-val" style="font-size:12px;">' + xe(rec.propertyLocation) + '</div></div>';
+  }
+  infoHtml += '<div class="info-item"><div class="info-label">Demand Amount</div><div class="info-val" style="color:var(--red);">' + fmt(rec.totalAmt) + '</div></div>';
+  document.getElementById('rel-modal-info').innerHTML = infoHtml;
+
+  var reasonSel = document.getElementById('rel-reason');
   reasonSel.innerHTML = RELEASE_REASONS.map(function (r) { return '<option value="' + xe(r) + '">' + xe(r) + '</option>'; }).join('');
-  document.getElementById('br-release-date').value = todayISO();
-  document.getElementById('br-petition-date').value = '';
-  var addr = AppState.addressCache[b.gstin] || AppState.addressCache[(b.gstin || '').toUpperCase()];
-  document.getElementById('br-addr').value = (addr && addr.address) || '';
-  document.getElementById('br-narrative').value = RELEASE_NARRATIVE_TEMPLATES[RELEASE_REASONS[0]];
+  document.getElementById('rel-release-date').value = todayISO();
+  document.getElementById('rel-petition-date').value = '';
+  var addr = AppState.addressCache[gstin] || AppState.addressCache[(gstin || '').toUpperCase()];
+  document.getElementById('rel-addr').value = type === 'thirdparty' ? (rec.debtorAddr || '') : ((addr && addr.address) || '');
+  document.getElementById('rel-narrative').value = RELEASE_NARRATIVE_TEMPLATES[RELEASE_REASONS[0]];
 
-  document.getElementById('br-form-card').style.display = 'block';
-  document.getElementById('br-form-card').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  document.getElementById('rel-modal-overlay').classList.add('show');
 }
 
-function brReasonChanged() {
-  var reason = document.getElementById('br-reason').value;
-  document.getElementById('br-narrative').value = RELEASE_NARRATIVE_TEMPLATES[reason] || '';
+function relReasonChanged() {
+  var reason = document.getElementById('rel-reason').value;
+  document.getElementById('rel-narrative').value = RELEASE_NARRATIVE_TEMPLATES[reason] || '';
 }
 
-function brGenerateRelease() {
-  var b = AppState.bankAtts.find(function (x) { return x.id === _brSelectedId; });
-  if (!b) { showToast('⚠️ Select an attachment first'); return; }
-  var narrative = document.getElementById('br-narrative').value.trim();
+function relCloseModal() {
+  document.getElementById('rel-modal-overlay').classList.remove('show');
+}
+
+function relConfirmRelease() {
+  if (!_relPending) return;
+  var narrative = document.getElementById('rel-narrative').value.trim();
   if (!narrative) { showToast('⚠️ Enter the case details for the release order'); return; }
 
-  b.released = true;
-  b.releasedDate = document.getElementById('br-release-date').value || todayISO();
-  b.releasedReason = document.getElementById('br-reason').value;
-  b.releasedPetitionDate = document.getElementById('br-petition-date').value;
-  b.releasedAddr = document.getElementById('br-addr').value.trim();
-  b.releasedNarrative = narrative;
+  var type = _relPending.type, id = _relPending.id;
+  var rec = relTypeList(type).find(function (x) { return x.id === id; });
+  if (!rec) return;
+
+  rec.released = true;
+  rec.releasedDate = document.getElementById('rel-release-date').value || todayISO();
+  rec.releasedReason = document.getElementById('rel-reason').value;
+  rec.releasedPetitionDate = document.getElementById('rel-petition-date').value;
+  rec.releasedAddr = document.getElementById('rel-addr').value.trim();
+  rec.releasedNarrative = narrative;
   persist();
 
+  relCloseModal();
   showToast('✅ Attachment released — generating release order...');
   var cfg = getSettings();
-  buildBankReleaseDocx(b, cfg).then(function (blob) { downloadBlob(blob, b.ref.replace(/\//g, '_') + '_Release.docx'); });
-  generateBankReleasePDF(b, cfg);
+  if (type === 'bank') {
+    buildBankReleaseDocx(rec, cfg).then(function (blob) { downloadBlob(blob, rec.ref.replace(/\//g, '_') + '_Release.docx'); });
+    generateBankReleasePDF(rec, cfg);
+    renderBankAtts();
+  } else if (type === 'thirdparty') {
+    buildThirdPartyReleaseDocx(rec, cfg).then(function (blob) { downloadBlob(blob, ('TP_Release_' + rec.defaulterGstin).replace(/[\/\\]/g, '_') + '.docx'); });
+    generateThirdPartyReleasePDF(rec, cfg);
+    renderThirdPartyList();
+  } else {
+    buildPropertyReleaseDocx(rec, cfg).then(function (blob) { downloadBlob(blob, ('Property_Release_' + rec.gstin).replace(/[\/\\]/g, '_') + '.docx'); });
+    generatePropertyReleasePDF(rec, cfg);
+    renderPropertyList();
+  }
 
-  renderBankReleaseTab();
-  renderBankAtts();
+  renderReleasableList();
+  renderReleasedList();
   updateSidebar();
   if (typeof renderDashboard === 'function' && document.getElementById('page-dashboard').classList.contains('active')) renderDashboard();
 }
@@ -635,42 +697,55 @@ function brGenerateRelease() {
 function renderReleasedList() {
   var wrap = document.getElementById('br-released-list');
   if (!wrap) return;
-  var list = AppState.bankAtts.filter(function (b) { return b.released; })
-    .sort(function (a, b) { return new Date(b.releasedDate || 0) - new Date(a.releasedDate || 0); });
-  if (!list.length) {
+  var items = [];
+  AppState.bankAtts.filter(function (b) { return b.released; }).forEach(function (b) { items.push({ type: 'bank', rec: b, gstin: b.gstin, legalName: b.legalName, label: 'Bank: ' + (b.bankName || '—') }); });
+  AppState.thirdPartyNotices.filter(function (t) { return t.released; }).forEach(function (t) { items.push({ type: 'thirdparty', rec: t, gstin: t.defaulterGstin, legalName: t.legalName, label: 'Third Party: ' + (t.debtorLegal || '—') }); });
+  AppState.propertyAttachments.filter(function (p) { return p.released; }).forEach(function (p) { items.push({ type: 'property', rec: p, gstin: p.gstin, legalName: p.legalName, label: 'Property: ' + (p.propertyDescription || '—') }); });
+  items.sort(function (a, b) { return new Date(b.rec.releasedDate || 0) - new Date(a.rec.releasedDate || 0); });
+
+  if (!items.length) {
     wrap.innerHTML = '<div class="empty"><div class="empty-sub">No attachments released yet.</div></div>';
     return;
   }
-  wrap.innerHTML = list.map(function (b) {
+  wrap.innerHTML = items.map(function (it) {
+    var b = it.rec;
     return '<div class="ba-card released">'
       + '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap;">'
-      + '<div><div style="font-weight:700;font-size:13px;">' + xe(taxpayerDisplayName(b.gstin, b.legalName)) + '</div><div class="gstin-cell">' + xe(b.gstin) + '</div></div>'
+      + '<div>' + REL_TYPE_BADGE[it.type] + ' <span style="font-weight:700;font-size:13px;">' + xe(taxpayerDisplayName(it.gstin, it.legalName)) + '</span><div class="gstin-cell">' + xe(it.gstin) + '</div></div>'
       + '<span class="pill pill-gray">Released ' + fmtDate(b.releasedDate) + '</span>'
       + '</div>'
       + '<div class="info-grid" style="margin-top:10px;">'
-      + '<div class="info-item"><div class="info-label">Bank</div><div class="info-val" style="font-size:12px;">' + xe(b.bankName) + '</div></div>'
+      + '<div class="info-item"><div class="info-label">Details</div><div class="info-val" style="font-size:12px;">' + xe(it.label) + '</div></div>'
       + '<div class="info-item"><div class="info-label">Reason</div><div class="info-val" style="font-size:12px;">' + xe(b.releasedReason || '—') + '</div></div>'
       + '</div>'
       + '<div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;align-items:center;">'
-      + '<button class="btn btn-outline btn-xs" onclick="brDownloadRelease(\'' + b.id + '\',\'docx\')"><i class="fa-solid fa-file-word"></i> Release Order (Word)</button>'
-      + '<button class="btn btn-outline btn-xs" onclick="brDownloadRelease(\'' + b.id + '\',\'pdf\')"><i class="fa-solid fa-file-pdf"></i> PDF</button>'
+      + '<button class="btn btn-outline btn-xs" onclick="brDownloadRelease(\'' + it.type + '\',\'' + b.id + '\',\'docx\')"><i class="fa-solid fa-file-word"></i> Release Order (Word)</button>'
+      + '<button class="btn btn-outline btn-xs" onclick="brDownloadRelease(\'' + it.type + '\',\'' + b.id + '\',\'pdf\')"><i class="fa-solid fa-file-pdf"></i> PDF</button>'
       + '</div></div>';
   }).join('');
 }
 
-function brDownloadRelease(id, fmt) {
-  var b = AppState.bankAtts.find(function (x) { return x.id === id; });
-  if (!b) return;
+function brDownloadRelease(type, id, fmt) {
+  var rec = relTypeList(type).find(function (x) { return x.id === id; });
+  if (!rec) return;
   var cfg = getSettings();
-  if (fmt === 'pdf') generateBankReleasePDF(b, cfg);
-  else buildBankReleaseDocx(b, cfg).then(function (blob) { downloadBlob(blob, b.ref.replace(/\//g, '_') + '_Release.docx'); });
+  if (type === 'bank') {
+    if (fmt === 'pdf') generateBankReleasePDF(rec, cfg);
+    else buildBankReleaseDocx(rec, cfg).then(function (blob) { downloadBlob(blob, rec.ref.replace(/\//g, '_') + '_Release.docx'); });
+  } else if (type === 'thirdparty') {
+    if (fmt === 'pdf') generateThirdPartyReleasePDF(rec, cfg);
+    else buildThirdPartyReleaseDocx(rec, cfg).then(function (blob) { downloadBlob(blob, ('TP_Release_' + rec.defaulterGstin).replace(/[\/\\]/g, '_') + '.docx'); });
+  } else {
+    if (fmt === 'pdf') generatePropertyReleasePDF(rec, cfg);
+    else buildPropertyReleaseDocx(rec, cfg).then(function (blob) { downloadBlob(blob, ('Property_Release_' + rec.gstin).replace(/[\/\\]/g, '_') + '.docx'); });
+  }
 }
 
-/* Jump straight from a card's "Release" button in the Bank Attachment
-   tab into the Release Attachment tab, with that attachment pre-selected. */
-function baGoToRelease(id) {
+/* Jump straight from a card's "Release" button (Bank/Third-Party/Property
+   list) into the Release Attachment tab, with that attachment pre-selected. */
+function relGoToRelease(type, id) {
   nav('bulknotice');
   var tabEl = document.querySelector('#page-bulknotice .tab[data-tab="bankrelease"]');
   bulkTab('bankrelease', tabEl);
-  brSelectAttachment(id);
+  relSelectItem(type, id);
 }

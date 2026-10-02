@@ -518,6 +518,60 @@ async function buildThirdPartyPdfBlob(tp, cfg) {
   return doc.output('blob');
 }
 
+/* ===== Third-Party Notice — Release Order (PDF) =====
+   Mirrors buildThirdPartyReleaseDocx() in docx-export.js. */
+async function buildThirdPartyReleasePdfDoc(tp, cfg) {
+  var ctx = await newA4Doc();
+  var isTemporary = RELEASE_TEMPORARY_REASONS.indexOf(tp.releasedReason) !== -1;
+  var y = ctx.top;
+
+  y = pdfHeading(ctx, 'COMMERCIAL TAXES DEPARTMENT', y, { spacingAfter: 14 });
+  y = pdfFromTo(ctx, y,
+    [
+      { text: 'From' },
+      { text: (cfg.officerName ? cfg.officerName + ', ' : '') + (cfg.desig || ''), bold: true },
+      { text: cfg.circle || '' },
+      { text: cfg.city || '' }
+    ],
+    [
+      { text: 'To' },
+      { text: tp.debtorLegal || '—', bold: true }
+    ].concat(tp.debtorAddr ? [{ text: tp.debtorAddr }] : [])
+  );
+
+  y = pdfPara(ctx, 'GSTIN: ' + (tp.defaulterGstin || '—') + '/ dated: ' + fmtDate(tp.releasedDate || todayISO()), y, { spacingAfter: 10 });
+  y = pdfPara(ctx, 'Sir/Madam,', y, { spacingAfter: 4 });
+
+  var subText = 'GST Act 2017 – Tvl. ' + (tp.legalName || '—') + ' - Arrears of Tax Recovery Under Section 79(1)(c) – Notice in DRC-13 issued to third party – Attachment ' + (isTemporary ? 'Temporarily Withdrawn' : 'Released') + ' - Regarding.';
+  var refText = 'This office Notice in FORM GST DRC-13, GSTIN. ' + (tp.defaulterGstin || '—') + ', dt.' + fmtDate(tp.date) + '.'
+    + (tp.releasedPetitionDate ? ' The Taxpayer\'s Petition Dated: ' + fmtDate(tp.releasedPetitionDate) + '.' : '');
+  y = pdfTable(ctx, {
+    startY: y,
+    body: [
+      [{ content: 'Sub:-', styles: { fontStyle: 'bold' } }, subText],
+      [{ content: 'Ref:', styles: { fontStyle: 'bold' } }, refText]
+    ],
+    theme: 'plain',
+    columnStyles: { 0: { cellWidth: 35 } }
+  }) + 10;
+
+  y = pdfPara(ctx, '*********', y, { align: 'center', spacingAfter: 6 });
+  y = pdfPara(ctx, 'Tvl. ' + (tp.legalName || '—') + ' being the defaulter referred to above. ' + (tp.releasedNarrative || ''), y, { spacingAfter: 8 });
+
+  var closing = isTemporary
+    ? 'In view of the above, the notice issued to you in the reference 1st cited is temporarily withdrawn and you are no longer required to withhold any amount on account of the defaulter till further orders.'
+    : 'In view of the above, the notice issued to you in the reference 1st cited is released and you are no longer required to withhold any amount on account of the defaulter.';
+  y = pdfPara(ctx, closing, y, { spacingAfter: 20 });
+
+  y = pdfSignatureBlock(ctx, y, cfg, { showCity: false, circleSuffix: '.', spacingAfter: 20 });
+  return finishPdfDoc(ctx);
+}
+
+async function generateThirdPartyReleasePDF(tp, cfg) {
+  var doc = await buildThirdPartyReleasePdfDoc(tp, cfg);
+  doc.save(('TP_Release_' + (tp.defaulterGstin || 'notice')).replace(/[\/\\]/g, '_') + '.pdf');
+}
+
 /* ===== Property Attachment Order — Section 79(d) (PDF) =====
    Mirrors buildPropertyAttachmentDocx() in docx-export.js. */
 async function buildPropertyAttachmentPdfDoc(pa, cfg) {
@@ -556,6 +610,37 @@ async function generatePropertyAttachmentPDF(pa, cfg) {
 async function buildPropertyAttachmentPdfBlob(pa, cfg) {
   var doc = await buildPropertyAttachmentPdfDoc(pa, cfg);
   return doc.output('blob');
+}
+
+/* ===== Property Attachment — Release Order (PDF) =====
+   Mirrors buildPropertyReleaseDocx() in docx-export.js. */
+async function buildPropertyReleasePdfDoc(pa, cfg) {
+  var ctx = await newA4Doc();
+  var isTemporary = RELEASE_TEMPORARY_REASONS.indexOf(pa.releasedReason) !== -1;
+  var y = ctx.top;
+
+  y = pdfOfficeHeaderBlock(ctx, y, cfg);
+  y = pdfHeading(ctx, 'ORDER OF RELEASE OF PROPERTY ATTACHMENT', y, { spacingAfter: 4 });
+  y = pdfPara(ctx, 'under Section 79(1)(d) of the GST Act', y, { align: 'center', size: 11, spacingAfter: 14 });
+
+  y = pdfPara(ctx, 'Defaulter: ' + (pa.legalName || '—') + '   GSTIN: ' + (pa.gstin || '—'), y, { bold: true, spacingAfter: 10 });
+  y = pdfPara(ctx, 'Whereas the property described below was attached vide this office order dated ' + fmtDate(pa.date) + ' under Section 79(1)(d) of the GST Act' + (pa.releasedPetitionDate ? ', and whereas the taxpayer has submitted a petition dated ' + fmtDate(pa.releasedPetitionDate) : '') + '. ' + (pa.releasedNarrative || ''), y, { spacingAfter: 10 });
+
+  y = pdfEnsureSpace(ctx, y, 3 * PDF_LINE_HEIGHT);
+  y = pdfPara(ctx, 'Property Description: ' + (pa.propertyDescription || '—'), y, { spacingAfter: 0 });
+  y = pdfPara(ctx, 'Location / Survey No.: ' + (pa.propertyLocation || '—'), y, { spacingAfter: 20 });
+
+  y = pdfPara(ctx, isTemporary
+    ? 'In view of the above, the attachment of the said property is temporarily withdrawn till further orders.'
+    : 'In view of the above, the attachment of the said property is hereby released.', y, { spacingAfter: 20 });
+
+  y = pdfSignatureBlock(ctx, y, cfg, { showCity: false });
+  return finishPdfDoc(ctx);
+}
+
+async function generatePropertyReleasePDF(pa, cfg) {
+  var doc = await buildPropertyReleasePdfDoc(pa, cfg);
+  doc.save(('Property_Release_' + (pa.gstin || 'order')).replace(/[\/\\]/g, '_') + '.pdf');
 }
 
 /* ===== Recovery Profile dossier (PDF) =====

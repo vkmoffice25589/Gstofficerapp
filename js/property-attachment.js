@@ -58,6 +58,7 @@ function paBuildRecord() {
     propertyValue: parseFloat(document.getElementById('pa-property-value').value) || 0,
     officer: document.getElementById('pa-officer').value.trim(),
     date: document.getElementById('pa-date').value || todayISO(),
+    released: false, releasedDate: '', releasedReason: '', releasedPetitionDate: '', releasedAddr: '', releasedNarrative: '',
     createdAt: new Date().toISOString()
   };
 }
@@ -90,11 +91,12 @@ function paSaveAndDownload() {
 function renderPropertyList() {
   var wrap = document.getElementById('property-list');
   if (!wrap) return;
-  if (!AppState.propertyAttachments.length) { wrap.innerHTML = '<div class="empty-sub">No property attachments recorded yet.</div>'; return; }
-  var list = AppState.propertyAttachments.slice().sort(function (a, b) { return new Date(b.createdAt) - new Date(a.createdAt); });
-  wrap.innerHTML = '<div class="table-scroll"><table><thead><tr><th>Date</th><th>Taxpayer</th><th>Property</th><th>Value</th><th>Demand Amount</th></tr></thead><tbody>'
+  var list = AppState.propertyAttachments.filter(function (p) { return !p.released; }).sort(function (a, b) { return new Date(b.createdAt) - new Date(a.createdAt); });
+  if (!list.length) { wrap.innerHTML = '<div class="empty-sub">No active property attachments — see the Release Attachment tab for released ones.</div>'; return; }
+  wrap.innerHTML = '<div class="table-scroll"><table><thead><tr><th>Date</th><th>Taxpayer</th><th>Property</th><th>Value</th><th>Demand Amount</th><th></th></tr></thead><tbody>'
     + list.map(function (p) {
       return '<tr><td>' + fmtDate(p.date) + '</td><td>' + xe(taxpayerDisplayName(p.gstin, p.legalName)) + '<br><span class="gstin-cell">' + xe(p.gstin) + '</span></td>'
-        + '<td>' + xe(p.propertyDescription) + '</td><td>' + fmt(p.propertyValue) + '</td><td><div class="amount-cell pending">' + fmt(p.totalAmt) + '</div></td></tr>';
+        + '<td>' + xe(p.propertyDescription) + '</td><td>' + fmt(p.propertyValue) + '</td><td><div class="amount-cell pending">' + fmt(p.totalAmt) + '</div></td>'
+        + '<td><button class="btn btn-orange btn-xs" onclick="relGoToRelease(\'property\',\'' + p.id + '\')"><i class="fa-solid fa-unlock"></i> Release</button></td></tr>';
     }).join('') + '</tbody></table></div>';
 }

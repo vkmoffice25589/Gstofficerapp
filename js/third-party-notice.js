@@ -59,6 +59,7 @@ function tpBuildNotice() {
     debtorEmail: document.getElementById('tp-debtor-email').value.trim(),
     debtorAddr: document.getElementById('tp-debtor-addr').value.trim(),
     cases: caseSnapshots(cases), totalAmt: totalAmt, date: document.getElementById('tp-date').value || todayISO(),
+    released: false, releasedDate: '', releasedReason: '', releasedPetitionDate: '', releasedAddr: '', releasedNarrative: '',
     createdAt: new Date().toISOString()
   };
 }
@@ -90,11 +91,12 @@ function tpSaveAndDownload() {
 function renderThirdPartyList() {
   var wrap = document.getElementById('third-party-list');
   if (!wrap) return;
-  if (!AppState.thirdPartyNotices.length) { wrap.innerHTML = '<div class="empty-sub">No third-party notices issued yet.</div>'; return; }
-  var list = AppState.thirdPartyNotices.slice().sort(function (a, b) { return new Date(b.createdAt) - new Date(a.createdAt); });
-  wrap.innerHTML = '<div class="table-scroll"><table><thead><tr><th>Date</th><th>Defaulter</th><th>Third Party</th><th>Amount</th></tr></thead><tbody>'
+  var list = AppState.thirdPartyNotices.filter(function (t) { return !t.released; }).sort(function (a, b) { return new Date(b.createdAt) - new Date(a.createdAt); });
+  if (!list.length) { wrap.innerHTML = '<div class="empty-sub">No active third-party notices — see the Release Attachment tab for released ones.</div>'; return; }
+  wrap.innerHTML = '<div class="table-scroll"><table><thead><tr><th>Date</th><th>Defaulter</th><th>Third Party</th><th>Amount</th><th></th></tr></thead><tbody>'
     + list.map(function (t) {
       return '<tr><td>' + fmtDate(t.date) + '</td><td>' + xe(taxpayerDisplayName(t.defaulterGstin, t.legalName)) + '<br><span class="gstin-cell">' + xe(t.defaulterGstin) + '</span></td>'
-        + '<td>' + xe(t.debtorLegal) + '</td><td><div class="amount-cell pending">' + fmt(t.totalAmt) + '</div></td></tr>';
+        + '<td>' + xe(t.debtorLegal) + '</td><td><div class="amount-cell pending">' + fmt(t.totalAmt) + '</div></td>'
+        + '<td><button class="btn btn-orange btn-xs" onclick="relGoToRelease(\'thirdparty\',\'' + t.id + '\')"><i class="fa-solid fa-unlock"></i> Release</button></td></tr>';
     }).join('') + '</tbody></table></div>';
 }

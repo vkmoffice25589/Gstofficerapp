@@ -658,6 +658,41 @@ function buildThirdPartyDocx(tp, cfg) {
   return buildDocxBlob(body, { headerText: 'FORM GST DRC-13 — GSTIN: ' + (tp.defaulterGstin || '—') });
 }
 
+/* ===== 3a. Third-Party Notice — Release Order =====
+   Mirrors buildBankReleaseDocx() — tells the third party (debtor) that the
+   DRC-13 notice served on them under Section 79(1)(c) is withdrawn/
+   released, so they are no longer required to withhold or remit any
+   amount on the defaulter's account. Reads release fields directly off
+   the saved thirdPartyNotices record. */
+function buildThirdPartyReleaseDocx(tp, cfg) {
+  var isTemporary = RELEASE_TEMPORARY_REASONS.indexOf(tp.releasedReason) !== -1;
+  var fromText = wPara('From', { size: 10, spacingAfter: 20 })
+    + wPara((cfg.officerName ? cfg.officerName + ', ' : '') + (cfg.desig || '') + ',', { bold: true, size: 10, spacingAfter: 20 })
+    + wPara(cfg.circle || '', { size: 10, spacingAfter: 20 })
+    + wPara(cfg.city || '', { size: 10, spacingAfter: 20 });
+  var toText = wPara('To', { size: 10, spacingAfter: 20 })
+    + wPara(tp.debtorLegal || '—', { bold: true, size: 10, spacingAfter: 20 })
+    + (tp.debtorAddr ? wPara(tp.debtorAddr, { size: 10, spacingAfter: 20, keepLines: true }) : '');
+
+  var subText = 'GST Act 2017 – Tvl. ' + (tp.legalName || '—') + ' - Arrears of Tax Recovery Under Section 79(1)(c) – Notice in DRC-13 issued to third party – Attachment ' + (isTemporary ? 'Temporarily Withdrawn' : 'Released') + ' - Regarding.';
+  var refText = 'This office Notice in FORM GST DRC-13, GSTIN. ' + (tp.defaulterGstin || '—') + ', dt.' + fmtDate(tp.date) + '.'
+    + (tp.releasedPetitionDate ? ' The Taxpayer\'s Petition Dated: ' + fmtDate(tp.releasedPetitionDate) + '.' : '');
+  var closing = isTemporary
+    ? 'In view of the above, the notice issued to you in the reference 1st cited is temporarily withdrawn and you are no longer required to withhold any amount on account of the defaulter till further orders.'
+    : 'In view of the above, the notice issued to you in the reference 1st cited is released and you are no longer required to withhold any amount on account of the defaulter.';
+
+  var body = wHeading('COMMERCIAL TAXES DEPARTMENT', { align: 'center', size: 13, spacingAfter: 160 })
+    + wKeepTogetherBlock(wFromToGrid(fromText, toText, 4300, 5406)) + wSpacer(4)
+    + wPara('GSTIN: ' + (tp.defaulterGstin || '—') + '/ dated: ' + fmtDate(tp.releasedDate || todayISO()), { spacingAfter: 160 })
+    + wPara('Sir/Madam,', { spacingAfter: 100, keepNext: true })
+    + wTable([[{ text: 'Sub:-', bold: true }, subText], [{ text: 'Ref:', bold: true }, refText]], [900, 8806], { noBorder: true, noHeaderShade: true })
+    + wPara('*********', { align: 'center', spacingAfter: 160 })
+    + wPara('Tvl. ' + (tp.legalName || '—') + ' being the defaulter referred to above. ' + (tp.releasedNarrative || ''), { align: 'justify', firstLineIndent: true, spacingAfter: 120 })
+    + wPara(closing, { align: 'justify', firstLineIndent: true, spacingAfter: 300 })
+    + wSignatureBlock(cfg, { showCity: false, circleSuffix: '.', spacingAfter: 300 });
+  return buildDocxBlob(body, { headerText: 'Third-Party Release — GSTIN: ' + (tp.defaulterGstin || '—') });
+}
+
 /* ===== 4. Property Attachment Order — Section 79(d) ===== */
 function buildPropertyAttachmentDocx(pa, cfg) {
   var d = demandRowsForDocx(pa.cases || []);
@@ -674,6 +709,29 @@ function buildPropertyAttachmentDocx(pa, cfg) {
     )
     + wSignatureBlock(cfg, { showCity: false });
   return buildDocxBlob(body, { headerText: 'Property Attachment — GSTIN: ' + (pa.gstin || '—') });
+}
+
+/* ===== 4a. Property Attachment — Release Order =====
+   Mirrors buildBankReleaseDocx() — an order (not a letter to an outside
+   party) releasing or temporarily withdrawing the property attachment
+   recorded under Section 79(1)(d). Reads release fields directly off the
+   saved propertyAttachments record. */
+function buildPropertyReleaseDocx(pa, cfg) {
+  var isTemporary = RELEASE_TEMPORARY_REASONS.indexOf(pa.releasedReason) !== -1;
+  var body = officeHeaderBlock(cfg)
+    + wHeading('ORDER OF RELEASE OF PROPERTY ATTACHMENT', { align: 'center', size: 13, spacingAfter: 0 })
+    + wHeading('under Section 79(1)(d) of the GST Act', { align: 'center', bold: false, size: 11, spacingAfter: 160 })
+    + wPara('Defaulter: ' + (pa.legalName || '—') + '   GSTIN: ' + (pa.gstin || '—'), { bold: true, spacingAfter: 160, keepNext: true })
+    + wPara('Whereas the property described below was attached vide this office order dated ' + fmtDate(pa.date) + ' under Section 79(1)(d) of the GST Act' + (pa.releasedPetitionDate ? ', and whereas the taxpayer has submitted a petition dated ' + fmtDate(pa.releasedPetitionDate) : '') + '. ' + (pa.releasedNarrative || ''), { align: 'justify', firstLineIndent: true, spacingAfter: 160, keepNext: true })
+    + wKeepTogetherBlock(
+      wPara('Property Description: ' + (pa.propertyDescription || '—'), { keepLines: true })
+      + wPara('Location / Survey No.: ' + (pa.propertyLocation || '—'), { keepLines: true, spacingAfter: 120 })
+    )
+    + wPara(isTemporary
+      ? 'In view of the above, the attachment of the said property is temporarily withdrawn till further orders.'
+      : 'In view of the above, the attachment of the said property is hereby released.', { align: 'justify', firstLineIndent: true, spacingAfter: 300 })
+    + wSignatureBlock(cfg, { showCity: false });
+  return buildDocxBlob(body, { headerText: 'Property Release — GSTIN: ' + (pa.gstin || '—') });
 }
 
 /* ===== 5. Recovery Profile dossier ===== */
