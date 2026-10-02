@@ -660,3 +660,10 @@ header { display: none; }
 }
 
 .rel-bulk-bar { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 14px; background: var(--primary-blue-dim); border-bottom: 1px solid var(--border); font-size: 13px; font-weight: 600; color: var(--navy-text); }
+
+/* ---- Third-Party Notice: the "Multiple Third Parties" modal's editable
+   row table (name/trade/gstin/address/mobile/email per row) ---- */
+.tp-debtor-table input[type="text"] { width: 100%; box-sizing: border-box; height: 32px; border: 1px solid var(--border); border-radius: 6px; font-size: 12.5px; padding: 0 8px; color: var(--navy-text); background: var(--surface); }
+.tp-debtor-table input[type="text"]:focus { outline: none; border-color: var(--primary-blue); box-shadow: 0 0 0 2px var(--primary-blue-dim); }
+.tp-debtor-table td { padding: 5px 6px; }
+#tp-debtor-rows-wrap .table-scroll { max-height: 360px; overflow-y: auto; }

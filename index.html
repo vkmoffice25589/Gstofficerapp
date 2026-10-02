@@ -834,29 +834,28 @@
   </div>
 </div>
 
-<!-- ===== Third-Party Notice — Debtor Details modal, opened by Generate
-     PDF/Word once demands are selected, same pattern as Bank Attachment's
-     Bank Details modal. ===== -->
+<!-- ===== Third-Party Notice — Multiple Third Parties modal, opened by
+     Generate PDF/Word once demands are selected. Every row gets the same
+     ticked demands and the same full amount (each third party is
+     independently liable for the whole arrear under Section 79(1)(c)) —
+     only the recipient differs — and Generate bundles every notice into
+     one ZIP, same pattern as the existing Bulk Notice zip. ===== -->
 <div class="overlay" id="tp-debtor-modal-overlay" onclick="if(event.target===this) tpCloseDebtorModal()">
-  <div class="modal" style="width:620px;">
+  <div class="modal modal-lg">
     <div class="mhead">
-      <div><div class="mtitle"><i class="fa-solid fa-user-group" style="color:#166534;margin-right:6px;"></i>Third Party (Debtor) Details</div><div class="msub">Who the FORM GST DRC-13 notice will be served on</div></div>
+      <div><div class="mtitle"><i class="fa-solid fa-user-group" style="color:#166534;margin-right:6px;"></i>Third Parties to Notify</div><div class="msub" id="tp-bulk-modal-sub">—</div></div>
       <button class="mclose" onclick="tpCloseDebtorModal()">&times;</button>
     </div>
     <div class="mbody">
-      <div class="form-grid">
-        <div class="fg"><label>Legal Name *</label><input type="text" id="tp-debtor-legal"/></div>
-        <div class="fg"><label>Trade Name</label><input type="text" id="tp-debtor-trade"/></div>
-        <div class="fg"><label>GSTIN (if registered)</label><input type="text" id="tp-debtor-gstin"/></div>
-        <div class="fg"><label>Mobile</label><input type="text" id="tp-debtor-mobile"/></div>
-        <div class="fg"><label>Email</label><input type="text" id="tp-debtor-email"/></div>
-        <div class="fg"><label>Notice Date</label><input type="date" id="tp-date"/></div>
-        <div class="fg full"><label>Address</label><textarea id="tp-debtor-addr" rows="2"></textarea></div>
+      <div class="form-grid" style="margin-bottom:12px;">
+        <div class="fg"><label>Notice Date</label><input type="date" id="tp-bulk-date"/></div>
       </div>
+      <div id="tp-debtor-rows-wrap"></div>
+      <button type="button" class="btn btn-outline btn-sm" style="margin-top:10px;" onclick="tpAddDebtorRow()"><i class="fa-solid fa-plus"></i> Add Row</button>
     </div>
     <div class="mfoot">
       <button class="btn btn-outline" onclick="tpCloseDebtorModal()">Cancel</button>
-      <button class="btn btn-blue" id="tp-modal-generate-btn" onclick="tpConfirmGenerate()"><i class="fa-solid fa-file-export"></i> Generate</button>
+      <button class="btn btn-blue" id="tp-bulk-generate-btn" onclick="tpConfirmGenerate()"><i class="fa-solid fa-file-export"></i> Generate</button>
     </div>
   </div>
 </div>

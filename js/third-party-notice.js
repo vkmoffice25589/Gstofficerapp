@@ -306,58 +306,34 @@ function tpUpdateSelectionSummary() {
   }
 }
 
-var TP_REQUIRED_FIELDS = [['debtorAddr', 'Third Party Address']];
-
-/* Builds, validates and saves the selected demands as a third-party
-   notice record in AppState.thirdPartyNotices — shared by both the PDF
-   and Word generate buttons, which only differ in which document format
-   they export afterward. Returns the saved record, or null if nothing
-   was generated (validation failed, nothing selected, required fields
-   missing). */
-function tpFinalizeNotice() {
-  if (!_tpGSTIN) { showToast('⚠️ Search and select a defaulter taxpayer first'); return null; }
-  var cases = tpSelectedCases();
-  if (!cases.length) { showToast('⚠️ Select at least one demand'); return null; }
-  var debtorLegal = document.getElementById('tp-debtor-legal').value.trim();
-  if (!debtorLegal) { showToast('⚠️ Enter the third party (debtor) name'); return null; }
-  var draftFields = { debtorAddr: document.getElementById('tp-debtor-addr').value.trim() };
-  if (!confirmMissingFields(draftFields, TP_REQUIRED_FIELDS, 'This DRC-13 notice')) return null;
-
-  var c0 = cases[0];
-  var totalAmt = cases.reduce(function (s, c) { return s + (Number(c.pend_total) || 0); }, 0);
-
-  var tp = {
-    id: uid('tp'), defaulterGstin: _tpGSTIN, legalName: c0.legalName,
-    debtorGstin: document.getElementById('tp-debtor-gstin').value.trim(),
-    debtorLegal: debtorLegal, debtorTrade: document.getElementById('tp-debtor-trade').value.trim(),
-    debtorMobile: document.getElementById('tp-debtor-mobile').value.trim(),
-    debtorEmail: document.getElementById('tp-debtor-email').value.trim(),
-    debtorAddr: document.getElementById('tp-debtor-addr').value.trim(),
-    cases: caseSnapshots(cases), totalAmt: totalAmt, date: document.getElementById('tp-date').value || todayISO(),
-    released: false, releasedDate: '', releasedReason: '', releasedPetitionDate: '', releasedAddr: '', releasedNarrative: '',
-    createdAt: new Date().toISOString()
-  };
-
-  AppState.thirdPartyNotices.push(tp);
-  persist();
-  renderThirdPartyList();
-  updateSidebar();
-  if (typeof renderDashboard === 'function' && document.getElementById('page-dashboard').classList.contains('active')) renderDashboard();
-  return tp;
-}
-
-/* format: 'pdf' | 'word'. Opens the Debtor Details modal once demands are
-   selected, exactly like Bank Attachment's Bank Details modal — the
-   demand table gets the full screen while picking, and the debtor form
-   gets a focused dialog instead of competing for space inline. */
+/* ===== Multiple Third Parties modal — a defaulter's arrear can legally be
+   pursued from several third parties at once (each independently liable
+   for the full amount until whoever pays first), so instead of one
+   debtor's details per Generate click, this opens an editable table where
+   the officer adds as many third parties as needed (default a few blank
+   rows, "+ Add Row" for more). Every row gets the SAME ticked demands and
+   the SAME full amount — only the recipient differs — and Generate saves
+   one thirdPartyNotices record per row, builds every document, and bundles
+   them into a single ZIP (same JSZip pattern as the existing Bulk Notice
+   zip in notices.js). ===== */
 var _tpPendingFormat = null;
+var _tpDebtorRows = [];
+
+function tpBlankDebtorRow() { return { legal: '', trade: '', gstin: '', mobile: '', email: '', addr: '' }; }
 
 function tpGenerate(format) {
   if (!_tpGSTIN) { showToast('⚠️ Search and select a defaulter taxpayer first'); return; }
   if (!tpSelectedCases().length) { showToast('⚠️ Select at least one demand'); return; }
   _tpPendingFormat = format;
-  var btn = document.getElementById('tp-modal-generate-btn');
-  btn.innerHTML = '<i class="fa-solid fa-file-' + (format === 'pdf' ? 'pdf' : 'word') + '"></i> Generate ' + (format === 'pdf' ? 'PDF' : 'Word');
+  _tpDebtorRows = [tpBlankDebtorRow(), tpBlankDebtorRow(), tpBlankDebtorRow()];
+
+  var total = tpSelectedCases().reduce(function (s, c) { return s + (Number(c.pend_total) || 0); }, 0);
+  document.getElementById('tp-bulk-modal-sub').textContent = tpSelectedCases().length + ' demand(s) ticked — each third party below will be issued notice for the full ' + fmt(total);
+  document.getElementById('tp-bulk-date').value = todayISO();
+  var btn = document.getElementById('tp-bulk-generate-btn');
+  btn.innerHTML = '<i class="fa-solid fa-file-' + (format === 'pdf' ? 'pdf' : 'word') + '"></i> Generate ' + (format === 'pdf' ? 'PDF' : 'Word') + ' (ZIP)';
+
+  tpRenderDebtorRows();
   document.getElementById('tp-debtor-modal-overlay').classList.add('show');
 }
 
@@ -365,16 +341,97 @@ function tpCloseDebtorModal() {
   document.getElementById('tp-debtor-modal-overlay').classList.remove('show');
 }
 
-function tpConfirmGenerate() {
+function tpRenderDebtorRows() {
+  var wrap = document.getElementById('tp-debtor-rows-wrap');
+  wrap.innerHTML = '<div class="table-scroll"><table class="tp-debtor-table"><thead><tr>'
+    + '<th style="width:30px;">#</th><th>Name *</th><th>Trade Name</th><th>GSTIN</th><th>Address *</th><th>Mobile</th><th>Email</th><th></th>'
+    + '</tr></thead><tbody>'
+    + _tpDebtorRows.map(function (r, i) {
+      return '<tr>'
+        + '<td>' + (i + 1) + '</td>'
+        + '<td><input type="text" value="' + xe(r.legal) + '" oninput="tpUpdateDebtorRow(' + i + ',\'legal\',this.value)"/></td>'
+        + '<td><input type="text" value="' + xe(r.trade) + '" oninput="tpUpdateDebtorRow(' + i + ',\'trade\',this.value)"/></td>'
+        + '<td><input type="text" value="' + xe(r.gstin) + '" oninput="tpUpdateDebtorRow(' + i + ',\'gstin\',this.value)"/></td>'
+        + '<td><input type="text" value="' + xe(r.addr) + '" oninput="tpUpdateDebtorRow(' + i + ',\'addr\',this.value)"/></td>'
+        + '<td><input type="text" value="' + xe(r.mobile) + '" oninput="tpUpdateDebtorRow(' + i + ',\'mobile\',this.value)"/></td>'
+        + '<td><input type="text" value="' + xe(r.email) + '" oninput="tpUpdateDebtorRow(' + i + ',\'email\',this.value)"/></td>'
+        + '<td><button type="button" class="btn btn-outline btn-xs" onclick="tpRemoveDebtorRow(' + i + ')" title="Remove row"><i class="fa-solid fa-trash"></i></button></td>'
+        + '</tr>';
+    }).join('') + '</tbody></table></div>';
+}
+
+/* Mutates row state only — no re-render — so typing in one cell doesn't
+   rebuild the table and steal focus from the input. */
+function tpUpdateDebtorRow(i, field, value) {
+  if (_tpDebtorRows[i]) _tpDebtorRows[i][field] = value;
+}
+
+function tpAddDebtorRow() {
+  _tpDebtorRows.push(tpBlankDebtorRow());
+  tpRenderDebtorRows();
+}
+
+function tpRemoveDebtorRow(i) {
+  _tpDebtorRows.splice(i, 1);
+  tpRenderDebtorRows();
+}
+
+async function tpConfirmGenerate() {
   var format = _tpPendingFormat;
-  var tp = tpFinalizeNotice();
-  if (!tp) return; // validation failed — stays open on the modal with its own toast
+  var cases = tpSelectedCases();
+  if (!cases.length) { showToast('⚠️ Select at least one demand'); return; }
+
+  var rows = _tpDebtorRows.filter(function (r) {
+    return r.legal.trim() || r.trade.trim() || r.gstin.trim() || r.addr.trim() || r.mobile.trim() || r.email.trim();
+  });
+  if (!rows.length) { showToast('⚠️ Add at least one third party'); return; }
+  if (rows.some(function (r) { return !r.legal.trim(); })) { showToast('⚠️ Every row needs a Name'); return; }
+  var missingAddr = rows.filter(function (r) { return !r.addr.trim(); }).length;
+  if (missingAddr && !confirm('⚠️ ' + missingAddr + ' row(s) are missing an Address — it will print blank on those notices. Generate anyway?')) return;
+
+  var c0 = cases[0];
+  var totalAmt = cases.reduce(function (s, c) { return s + (Number(c.pend_total) || 0); }, 0);
+  var date = document.getElementById('tp-bulk-date').value || todayISO();
+  var caseSnap = caseSnapshots(cases);
+
+  var saved = rows.map(function (r) {
+    var tp = {
+      id: uid('tp'), defaulterGstin: _tpGSTIN, legalName: c0.legalName,
+      debtorGstin: r.gstin.trim(), debtorLegal: r.legal.trim(), debtorTrade: r.trade.trim(),
+      debtorMobile: r.mobile.trim(), debtorEmail: r.email.trim(), debtorAddr: r.addr.trim(),
+      cases: caseSnap, totalAmt: totalAmt, date: date,
+      released: false, releasedDate: '', releasedReason: '', releasedPetitionDate: '', releasedAddr: '', releasedNarrative: '',
+      createdAt: new Date().toISOString()
+    };
+    AppState.thirdPartyNotices.push(tp);
+    return tp;
+  });
+  persist();
+  renderThirdPartyList();
+  updateSidebar();
+  if (typeof renderDashboard === 'function' && document.getElementById('page-dashboard').classList.contains('active')) renderDashboard();
+
   tpCloseDebtorModal();
-  showToast('✅ Third-party notice saved — generating document...');
   tpClearAll();
+  showToast('⏳ Generating ' + saved.length + ' notice(s)...');
+
   var cfg = getSettings();
-  if (format === 'pdf') generateThirdPartyPDF(tp, cfg);
-  else buildThirdPartyDocx(tp, cfg).then(function (blob) { downloadBlob(blob, 'DRC13_' + tp.defaulterGstin + '_' + todayISO() + '.docx'); });
+  await window.LibsReady;
+  var zip = new JSZip();
+  var ext = format === 'pdf' ? 'pdf' : 'docx';
+  var builds = saved.map(function (tp) {
+    var p = format === 'pdf' ? buildThirdPartyPdfBlob(tp, cfg) : buildThirdPartyDocx(tp, cfg);
+    return p.then(function (blob) {
+      var safeName = (tp.debtorLegal || 'ThirdParty').replace(/[^\w\- ]+/g, '').trim().replace(/\s+/g, '_') || 'ThirdParty';
+      zip.file('DRC13_' + safeName + '_' + tp.defaulterGstin + '.' + ext, blob);
+    });
+  });
+  Promise.all(builds).then(function () {
+    return zip.generateAsync({ type: 'blob' });
+  }).then(function (zipBlob) {
+    downloadBlob(zipBlob, 'ThirdParty_Notices_' + todayISO() + '.zip');
+    showToast('✅ Downloaded ' + saved.length + ' notice(s) as ZIP');
+  });
 }
 
 /* Lightweight read-only preview of the selected demands + total, mirroring
@@ -392,7 +449,7 @@ function tpPreview() {
   win.document.write(
     '<html><head><title>Third-Party Notice Preview</title><style>body{font-family:Arial,sans-serif;padding:40px;color:#1a2b42;} h2{text-align:center;margin:4px 0;} table{width:100%;border-collapse:collapse;margin-top:20px;} th,td{border:1px solid #c8d3e0;padding:8px;font-size:12px;} th{background:#f7f9fc;}</style></head><body>'
     + '<h2>THIRD-PARTY NOTICE (DRC-13) — PREVIEW</h2>'
-    + '<p><strong>Defaulter GSTIN:</strong> ' + xe(_tpGSTIN) + ' &nbsp; <strong>Third Party:</strong> ' + xe(document.getElementById('tp-debtor-legal').value || '—') + '</p>'
+    + '<p><strong>Defaulter GSTIN:</strong> ' + xe(_tpGSTIN) + ' — each third party notified will be issued this same amount.</p>'
     + '<table><thead><tr><th>Tax Period</th><th>Demand ID</th><th>Section</th><th>Order Date</th><th>Pending (₹)</th></tr></thead><tbody>' + rows + '</tbody></table>'
     + '<p style="margin-top:16px;font-weight:bold;">Total Amount: ₹' + fmt0(total) + '</p>'
     + '</body></html>'
@@ -401,15 +458,12 @@ function tpPreview() {
 }
 
 function tpClearAll() {
-  _tpGSTIN = null; _tpSection62 = 'exclude'; _tpFilteredCases = []; _tpSelectedDemandIds = new Set();
-  ['tp-gstin-input', 'tp-debtor-gstin', 'tp-debtor-legal', 'tp-debtor-trade', 'tp-debtor-mobile', 'tp-debtor-email', 'tp-debtor-addr'].forEach(function (id) {
-    var el = document.getElementById(id); if (el) el.value = '';
-  });
+  _tpGSTIN = null; _tpSection62 = 'exclude'; _tpFilteredCases = []; _tpSelectedDemandIds = new Set(); _tpDebtorRows = [];
+  var g = document.getElementById('tp-gstin-input'); if (g) g.value = '';
   document.getElementById('tp-gstin-hint').textContent = '';
   tpHideSuggest();
   document.getElementById('tp-taxpayer-details').innerHTML = TP_EMPTY_DETAILS;
   document.getElementById('tp-demand-section').style.display = 'none';
-  document.getElementById('tp-date').value = todayISO();
   tpUpdateSelectionSummary();
 }
 
