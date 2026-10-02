@@ -53,7 +53,6 @@
 #page-bulknotice .wizard-card-sub { font-size: 13.5px; margin-top: 4px; }
 
 #page-bulknotice .wizard-card .fg label { color: var(--navy-text); font-weight: 700; font-size: 12.5px; letter-spacing: 0.2px; }
-#page-bulknotice #wiz2-gstin-input { height: 46px; border-radius: 10px; font-size: 14.5px; padding: 10px 34px 10px 14px; }
 #page-bulknotice .wizard-card .btn-blue { height: 46px; border-radius: 10px; padding: 0 22px; font-size: 14px; }
 
 /* ---- Upload DCR / Upload Taxpayer Register — clean outlined pill
