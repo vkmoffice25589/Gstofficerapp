@@ -547,28 +547,6 @@
 /* ---- Bottom action bar — fixed to the browser viewport, not just the scroll container ---- */
 #bulk-tab-notice2 { padding-bottom: 88px; }
 
-/* Bank Details sticks to the bottom of the viewport too, right above the
-   fixed action bar, so it stays reachable while scrolling a long demand
-   table above it instead of needing to scroll all the way past it every
-   time. Packed into a dense 5-column grid (instead of the standard
-   2-column form) so the stuck block stays compact rather than eating a
-   large slice of the screen permanently. */
-#ba-bank-card {
-  position: sticky; bottom: 88px; z-index: 90; background: var(--surface);
-  box-shadow: 0 -4px 14px rgba(15,23,42,0.08); padding: 14px 20px;
-}
-#ba-bank-card .wizard-card-head { margin-bottom: 10px; }
-#ba-bank-card .form-grid { grid-template-columns: repeat(5, 1fr); gap: 10px 14px; }
-#ba-bank-card .fg.full { grid-column: span 2; }
-#ba-bank-card .fg label { font-size: 10.5px; margin-bottom: 3px; }
-#ba-bank-card input, #ba-bank-card select { height: 36px; font-size: 13px; padding: 0 10px; }
-@media (max-width: 1100px) {
-  #ba-bank-card .form-grid { grid-template-columns: repeat(3, 1fr); }
-}
-@media (max-width: 720px) {
-  #ba-bank-card { position: static; box-shadow: none; }
-  #ba-bank-card .form-grid { grid-template-columns: 1fr; }
-}
 .wizard-action-bar {
   position: fixed; left: 224px; right: 0; bottom: 0; background: var(--surface); border-top: 1px solid var(--border); border-radius: 0;
   padding: 14px 32px; display: flex; align-items: center; gap: 18px; box-shadow: 0 -4px 14px rgba(15,23,42,0.08); flex-wrap: wrap; z-index: 100;

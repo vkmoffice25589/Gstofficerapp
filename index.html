@@ -373,27 +373,6 @@
           <div id="ba-demand-table-wrap"></div>
         </div>
 
-        <div class="wizard-card" id="ba-bank-card" style="display:none;">
-          <div class="wizard-card-head">
-            <div class="wizard-num" style="background:var(--gold);">3</div>
-            <div><div class="wizard-card-title">Bank Details</div><div class="wizard-card-sub">Look up bank/branch automatically from IFSC, or enter manually</div></div>
-          </div>
-          <div class="form-grid">
-            <div class="fg"><label>IFSC Code</label>
-              <div style="display:flex;gap:6px;"><input type="text" id="ba-ifsc" style="text-transform:uppercase;"/><button class="btn btn-outline btn-sm" onclick="autoFillFromIFSC()" type="button"><i class="fa-solid fa-magnifying-glass"></i></button></div>
-            </div>
-            <div class="fg"><label>Bank Name</label><input type="text" id="ba-bank-name"/></div>
-            <div class="fg"><label>Branch</label><input type="text" id="ba-branch"/></div>
-            <div class="fg full"><label>Branch Address</label><input type="text" id="ba-branch-addr"/></div>
-            <div class="fg"><label>Account No.</label><input type="text" id="ba-accno"/></div>
-            <div class="fg"><label>Account Type</label><select id="ba-acctype"><option>Current</option><option>Savings</option><option>CC/OD</option></select></div>
-            <div class="fg"><label>PAN (if known)</label><input type="text" id="ba-pan"/></div>
-            <div class="fg"><label>Attaching Officer</label><input type="text" id="ba-officer"/></div>
-            <div class="fg"><label>Date</label><input type="date" id="ba-date"/></div>
-          </div>
-          <div id="ba-bank-status" style="margin-top:8px;font-size:12px;"></div>
-        </div>
-
         <div class="wizard-action-bar">
           <div class="wab-left">
             <div class="selection-summary" id="ba-bar-summary">0 of 0 selected</div>
@@ -764,6 +743,37 @@
       <button class="mclose" onclick="closeWizExclusionGuide()">&times;</button>
     </div>
     <div class="mbody" id="wiz-exclusion-guide-body"></div>
+  </div>
+</div>
+
+<!-- ===== Bank Attachment — Bank Details modal, opened by Generate PDF/Word
+     once demands are selected, instead of a form pinned on-screen. ===== -->
+<div class="overlay" id="ba-bank-modal-overlay" onclick="if(event.target===this) baCloseBankModal()">
+  <div class="modal" style="width:620px;">
+    <div class="mhead">
+      <div><div class="mtitle"><i class="fa-solid fa-building-columns" style="color:var(--gold);margin-right:6px;"></i>Bank Details</div><div class="msub">Look up bank/branch automatically from IFSC, or enter manually</div></div>
+      <button class="mclose" onclick="baCloseBankModal()">&times;</button>
+    </div>
+    <div class="mbody">
+      <div class="form-grid">
+        <div class="fg"><label>IFSC Code</label>
+          <div style="display:flex;gap:6px;"><input type="text" id="ba-ifsc" style="text-transform:uppercase;"/><button class="btn btn-outline btn-sm" onclick="autoFillFromIFSC()" type="button"><i class="fa-solid fa-magnifying-glass"></i></button></div>
+        </div>
+        <div class="fg"><label>Bank Name</label><input type="text" id="ba-bank-name"/></div>
+        <div class="fg"><label>Branch</label><input type="text" id="ba-branch"/></div>
+        <div class="fg full"><label>Branch Address</label><input type="text" id="ba-branch-addr"/></div>
+        <div class="fg"><label>Account No.</label><input type="text" id="ba-accno"/></div>
+        <div class="fg"><label>Account Type</label><select id="ba-acctype"><option>Current</option><option>Savings</option><option>CC/OD</option></select></div>
+        <div class="fg"><label>PAN (if known)</label><input type="text" id="ba-pan"/></div>
+        <div class="fg"><label>Attaching Officer</label><input type="text" id="ba-officer"/></div>
+        <div class="fg"><label>Date</label><input type="date" id="ba-date"/></div>
+      </div>
+      <div id="ba-bank-status" style="margin-top:8px;font-size:12px;"></div>
+    </div>
+    <div class="mfoot">
+      <button class="btn btn-outline" onclick="baCloseBankModal()">Cancel</button>
+      <button class="btn btn-blue" id="ba-modal-generate-btn" onclick="baConfirmGenerate()"><i class="fa-solid fa-file-export"></i> Generate</button>
+    </div>
   </div>
 </div>
 

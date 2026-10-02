@@ -102,7 +102,6 @@ function baLoadGSTIN(gstin) {
     hint.textContent = '⚠️ ' + gstin + ' not found in imported DCR data';
     detailsBar.innerHTML = BA_EMPTY_DETAILS;
     document.getElementById('ba-demand-section').style.display = 'none';
-    document.getElementById('ba-bank-card').style.display = 'none';
     return;
   }
 
@@ -131,13 +130,11 @@ function baLoadGSTIN(gstin) {
 
   if (!eligibleCases.length) {
     document.getElementById('ba-demand-section').style.display = 'none';
-    document.getElementById('ba-bank-card').style.display = 'none';
     showToast('⚠️ No demands ≥ 90 days found for this taxpayer. Bank attachment requires demands older than 90 days.');
     return;
   }
 
   document.getElementById('ba-demand-section').style.display = 'block';
-  document.getElementById('ba-bank-card').style.display = 'block';
   _baSection62 = 'exclude';
   _baSelectedDemandIds = new Set(eligibleCases.filter(function (c) { return !baIsFlagged(c); }).map(function (c) { return c.demandId; }));
   baUpdateQuickFilterCounts();
@@ -151,7 +148,6 @@ function baClearGSTIN() {
   baHideSuggest();
   document.getElementById('ba-taxpayer-details').innerHTML = BA_EMPTY_DETAILS;
   document.getElementById('ba-demand-section').style.display = 'none';
-  document.getElementById('ba-bank-card').style.display = 'none';
   document.getElementById('ba-gstin-input').focus();
 }
 
@@ -417,13 +413,34 @@ function baFinalizeAttachment() {
   return b;
 }
 
-/* format: 'pdf' | 'word' — generates and downloads both documents (Letter
-   to Bank + Form DRC-13) in that one format, from the saved record's data,
-   the same "regenerate fresh from saved fields, never persist the file
-   itself" pattern every other document type in this app follows. */
+/* format: 'pdf' | 'word'. Rather than pinning the Bank Details form on
+   screen, it opens in a modal once demands are actually selected — the
+   demand table gets the full screen while picking, and the (fairly long)
+   bank form gets a focused dialog instead of being squeezed into a
+   permanently-visible sticky strip. baConfirmGenerate() (the modal's own
+   button) does the actual save-and-export, regenerating fresh from saved
+   fields rather than persisting the file itself, same as every other
+   document type in this app. */
+var _baPendingFormat = null;
+
 function baGenerate(format) {
+  if (!_baGSTIN) { showToast('⚠️ Search and select a taxpayer first'); return; }
+  if (!baSelectedCases().length) { showToast('⚠️ Select at least one demand to attach'); return; }
+  _baPendingFormat = format;
+  var btn = document.getElementById('ba-modal-generate-btn');
+  btn.innerHTML = '<i class="fa-solid fa-file-' + (format === 'pdf' ? 'pdf' : 'word') + '"></i> Generate ' + (format === 'pdf' ? 'PDF' : 'Word');
+  document.getElementById('ba-bank-modal-overlay').classList.add('show');
+}
+
+function baCloseBankModal() {
+  document.getElementById('ba-bank-modal-overlay').classList.remove('show');
+}
+
+function baConfirmGenerate() {
+  var format = _baPendingFormat;
   var b = baFinalizeAttachment();
-  if (!b) return;
+  if (!b) return; // validation failed — stays open on the modal with its own toast
+  baCloseBankModal();
   showToast('✅ Bank attachment ' + b.ref + ' saved — generating documents...');
   baClearAll();
   var cfg = getSettings();
@@ -468,7 +485,6 @@ function baClearAll() {
   baHideSuggest();
   document.getElementById('ba-taxpayer-details').innerHTML = BA_EMPTY_DETAILS;
   document.getElementById('ba-demand-section').style.display = 'none';
-  document.getElementById('ba-bank-card').style.display = 'none';
   document.getElementById('ba-bank-status').textContent = '';
   document.getElementById('ba-date').value = todayISO();
 }
