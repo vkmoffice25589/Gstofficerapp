@@ -199,12 +199,12 @@
    white-with-top-stripe .scard look) so each one reads as its own colour
    category at a glance, matching the 3-per-row layout the officer asked
    to see here. */
-.dcr-recon-tiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 16px; }
-.dcr-recon-tile { border-radius: var(--radius-md); border: 1px solid; padding: 14px 16px; min-width: 0; }
-.drt-head { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
-.drt-icon { width: 26px; height: 26px; border-radius: 50%; background: #fff; display: flex; align-items: center; justify-content: center; font-size: 12px; flex-shrink: 0; }
-.drt-label { font-size: 11px; font-weight: 700; color: var(--ink3); text-transform: uppercase; letter-spacing: 0.3px; }
-.drt-val { font-size: 18px; font-weight: 700; font-family: var(--font-mono); overflow-wrap: break-word; }
+.dcr-recon-tiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 10px; }
+.dcr-recon-tile { border-radius: var(--radius-sm); border: 1px solid; padding: 7px 10px; min-width: 0; }
+.drt-head { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; }
+.drt-icon { width: 18px; height: 18px; border-radius: 50%; background: #fff; display: flex; align-items: center; justify-content: center; font-size: 9px; flex-shrink: 0; }
+.drt-label { font-size: 9.5px; font-weight: 700; color: var(--ink3); text-transform: uppercase; letter-spacing: 0.2px; }
+.drt-val { font-size: 13.5px; font-weight: 700; font-family: var(--font-mono); overflow-wrap: break-word; }
 
 .dcr-recon-tile.blue   { background: var(--primary-blue-dim); border-color: var(--primary-blue-border); }
 .dcr-recon-tile.blue .drt-icon, .dcr-recon-tile.blue .drt-val { color: var(--primary-blue); }
@@ -333,8 +333,11 @@
 #page-dataupload .dcr-mini-stat.hero .dms-val { font-size: 15px; }
 #page-dataupload .dcr-reconcile-btn { margin-top: 8px; }
 
-#page-dataupload .dcr-recon-head { margin-bottom: 10px; }
-#page-dataupload .dcr-recon-actions { margin-top: 2px; }
+#page-dataupload .dcr-recon-head { margin-bottom: 8px; }
+#page-dataupload .dcr-recon-head .dcr-col-label { font-size: 12px; }
+#page-dataupload .dcr-recon-head .pill { font-size: 10.5px; padding: 2px 8px; }
+#page-dataupload .dcr-recon-actions { margin-top: 2px; gap: 8px; }
+#page-dataupload .dcr-recon-actions .btn { height: 30px; padding: 0 12px; font-size: 12px; }
 
 #page-dataupload .dcr-info-note { padding: 5px 10px; font-size: 11px; }
 
