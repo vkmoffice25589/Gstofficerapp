@@ -16,19 +16,72 @@ var _wiz2Section62 = 'exclude'; // 'all' | 'exclude'
 
 /* ===== Section 1: Search GSTIN ===== */
 
-function wiz2SearchGSTIN() {
-  var gstin = (document.getElementById('wiz2-gstin-input').value || '').trim().toUpperCase();
+var WIZ2_EMPTY_DETAILS = '<div class="isc-empty"><i class="fa-solid fa-building-columns"></i> Taxpayer details will appear here after you search.</div>';
+
+/* Unique GSTINs whose GSTIN, DCR legal name or register trade name contains q. */
+function wiz2FindTaxpayers(q) {
+  var seen = {}, out = [];
+  AppState.cases.forEach(function (c) {
+    if (!c.gstin || seen[c.gstin]) return;
+    var reg = AppState.addressCache[c.gstin] || {};
+    var hay = (c.gstin + ' ' + (c.legalName || '') + ' ' + (reg.tradeName || '')).toUpperCase();
+    if (hay.indexOf(q) !== -1) { seen[c.gstin] = true; out.push({ gstin: c.gstin, name: taxpayerDisplayName(c.gstin, c.legalName) }); }
+  });
+  return out;
+}
+
+function wiz2HideSuggest() { document.getElementById('wiz2-suggest').classList.remove('show'); }
+
+function wiz2ShowSuggest(matches, total) {
+  var box = document.getElementById('wiz2-suggest');
+  box.innerHTML = matches.map(function (m) {
+    return '<div class="isc-sug-item" onmousedown="wiz2PickTaxpayer(\'' + m.gstin + '\')"><strong>' + xe(m.name) + '</strong><span>' + m.gstin + '</span></div>';
+  }).join('') + (total > matches.length ? '<div class="isc-sug-more">' + (total - matches.length) + ' more — keep typing to narrow down</div>' : '');
+  box.classList.add('show');
+}
+
+function wiz2SearchSuggest() {
+  var q = (document.getElementById('wiz2-gstin-input').value || '').trim().toUpperCase();
+  document.getElementById('wiz2-gstin-hint').textContent = '';
+  if (q.length < 3 || q.length === 15) { wiz2HideSuggest(); return; }
+  var m = wiz2FindTaxpayers(q);
+  if (!m.length) { wiz2HideSuggest(); return; }
+  wiz2ShowSuggest(m.slice(0, 8), m.length);
+}
+
+function wiz2PickTaxpayer(gstin) {
   document.getElementById('wiz2-gstin-input').value = gstin;
+  wiz2HideSuggest();
+  wiz2LoadGSTIN(gstin);
+}
+
+function wiz2SearchGSTIN() {
+  var input = document.getElementById('wiz2-gstin-input');
+  var q = (input.value || '').trim().toUpperCase();
+  var hint = document.getElementById('wiz2-gstin-hint');
+  wiz2HideSuggest();
+
+  if (!q) { hint.textContent = '⚠️ Enter a GSTIN or Trade Name'; return; }
+  if (q.length === 15) { input.value = q; wiz2LoadGSTIN(q); return; }
+
+  var m = wiz2FindTaxpayers(q);
+  if (!m.length) {
+    hint.textContent = '⚠️ No taxpayer matching "' + q + '" in imported DCR data';
+    return;
+  }
+  if (m.length === 1) { wiz2PickTaxpayer(m[0].gstin); return; }
+  hint.textContent = m.length + ' taxpayers match — pick one below';
+  wiz2ShowSuggest(m.slice(0, 8), m.length);
+}
+
+function wiz2LoadGSTIN(gstin) {
   var hint = document.getElementById('wiz2-gstin-hint');
   var detailsBar = document.getElementById('wiz2-taxpayer-details');
-
-  if (!gstin) { hint.textContent = '⚠️ Enter a GSTIN'; return; }
-  if (gstin.length !== 15) { hint.textContent = '⚠️ GSTIN must be 15 characters (got ' + gstin.length + ')'; return; }
 
   var cases = AppState.cases.filter(function (c) { return c.gstin === gstin; });
   if (!cases.length) {
     hint.textContent = '⚠️ ' + gstin + ' not found in imported DCR data';
-    detailsBar.style.display = 'none';
+    detailsBar.innerHTML = WIZ2_EMPTY_DETAILS;
     document.getElementById('wiz2-demand-section').style.display = 'none';
     return;
   }
@@ -41,15 +94,21 @@ function wiz2SearchGSTIN() {
 
   var legalName = cases[0].legalName || '—';
   var displayName = taxpayerDisplayName(gstin, legalName);
+  var statusPill = reg.regStatus ? (isCollectible(gstin) ? '<span class="pill pill-green">' + xe(reg.regStatus) + '</span>' : '<span class="pill pill-red">' + xe(reg.regStatus) + '</span>') : '<span class="pill pill-gray">Status unknown</span>';
 
-  detailsBar.style.display = 'flex';
   detailsBar.innerHTML =
-    tdb('Trade Name', xe(displayName))
-    + tdb('Legal Name', xe(taxpayerLegalNameCell(gstin, legalName)))
-    + tdb('Status', reg.regStatus ? (isCollectible(gstin) ? '<span class="pill pill-green">' + xe(reg.regStatus) + '</span>' : '<span class="pill pill-red">' + xe(reg.regStatus) + '</span>') : '<span class="pill pill-gray">Unknown</span>')
-    + tdb('Total Pending Arrear (₹)', '<span style="color:var(--red);">' + fmt(pendTotal) + '</span>')
-    + tdb('No. of Demands', String(eligibleCases.length))
-    + '<div class="tdb-item tdb-action"><button type="button" class="eye-btn" title="View Notice History" onclick="goToNoticeHistory(\'' + gstin + '\')"><i class="fa-solid fa-eye"></i></button></div>';
+    '<div class="isc-icon"><i class="fa-solid fa-building-columns"></i></div>'
+    + '<div class="isc-info">'
+    +   '<div class="isc-info-title">Taxpayer Details</div>'
+    +   '<div class="isc-gstin">' + xe(gstin) + ' ' + statusPill + '</div>'
+    +   '<div class="isc-name">' + xe(displayName) + '</div>'
+    +   '<div class="isc-addr">' + (reg.address ? xe(reg.address) : 'Address not available — upload the Taxpayer Register') + '</div>'
+    +   '<div class="isc-meta"><span>Pending <strong>' + fmt(pendTotal) + '</strong></span><span>Demands <strong>' + eligibleCases.length + '</strong></span></div>'
+    + '</div>'
+    + '<div class="isc-actions">'
+    +   '<button type="button" class="isc-view-btn" onclick="goToRecoveryProfile(\'' + gstin + '\')">View Full Details <i class="fa-solid fa-arrow-right"></i></button>'
+    +   '<button type="button" class="isc-link-btn" onclick="goToNoticeHistory(\'' + gstin + '\')"><i class="fa-solid fa-clock-rotate-left"></i> Notice History</button>'
+    + '</div>';
 
   document.getElementById('wiz2-demand-section').style.display = 'block';
   _wiz2PageSize = 10; _wiz2CurrentPage = 1;
@@ -65,7 +124,8 @@ function wiz2ClearGSTIN() {
   _wiz2GSTIN = null;
   document.getElementById('wiz2-gstin-input').value = '';
   document.getElementById('wiz2-gstin-hint').textContent = '';
-  document.getElementById('wiz2-taxpayer-details').style.display = 'none';
+  wiz2HideSuggest();
+  document.getElementById('wiz2-taxpayer-details').innerHTML = WIZ2_EMPTY_DETAILS;
   document.getElementById('wiz2-demand-section').style.display = 'none';
   document.getElementById('wiz2-gstin-input').focus();
 }
@@ -445,24 +505,43 @@ function wiz2BuildNotices() {
   return out;
 }
 
-function wizGenerateNotice2() {
-  if (!AppState.cases.length || !hasRegisterData()) { showToast('⚠️ Upload DCR and Taxpayer Register before generating a notice'); return; }
+/* Builds, validates and saves the selected demands as notice(s) in
+   AppState — shared by both the PDF and Word generate buttons, which only
+   differ in which file format they export afterward. Returns the saved
+   notices, or null if nothing was generated (validation failed, nothing
+   selected, uploads missing). */
+function wiz2FinalizeNotices() {
+  if (!AppState.cases.length || !hasRegisterData()) { showToast('⚠️ Upload DCR and Taxpayer Register before generating a notice'); return null; }
   var noticesToSave = wiz2BuildNotices();
-  if (!noticesToSave.length) return;
+  if (!noticesToSave.length) return null;
   for (var i = 0; i < noticesToSave.length; i++) {
-    if (!confirmMissingFields(noticesToSave[i], NOTICE_REQUIRED_FIELDS, 'Notice ' + noticesToSave[i].num)) return;
+    if (!confirmMissingFields(noticesToSave[i], NOTICE_REQUIRED_FIELDS, 'Notice ' + noticesToSave[i].num)) return null;
   }
   noticesToSave.forEach(function (n) { AppState.notices.push(n); });
   persist();
   updateSidebar();
   renderWizardStepper();
   if (typeof renderDashboard === 'function' && document.getElementById('page-dashboard').classList.contains('active')) renderDashboard();
+  return noticesToSave;
+}
 
+function wizGenerateNoticePDF2() {
+  var noticesToSave = wiz2FinalizeNotices();
+  if (!noticesToSave) return;
+  var cfg = getSettings();
+  Promise.all(noticesToSave.map(function (n) { return generateNoticePDF(n, cfg); })).then(function () {
+    showToast('✅ ' + noticesToSave.length + ' notice(s) generated (PDF) — ' + noticesToSave.map(function (n) { return n.num; }).join(', '));
+  });
+}
+
+function wizGenerateNoticeWord2() {
+  var noticesToSave = wiz2FinalizeNotices();
+  if (!noticesToSave) return;
   var cfg = getSettings();
   Promise.all(noticesToSave.map(function (n) {
     return buildNoticeDocx(n, cfg).then(function (blob) { downloadBlob(blob, n.num.replace(/\//g, '_') + '.docx'); });
   })).then(function () {
-    showToast('✅ ' + noticesToSave.length + ' notice(s) generated — ' + noticesToSave.map(function (n) { return n.num; }).join(', '));
+    showToast('✅ ' + noticesToSave.length + ' notice(s) generated (Word) — ' + noticesToSave.map(function (n) { return n.num; }).join(', '));
   });
 }
 

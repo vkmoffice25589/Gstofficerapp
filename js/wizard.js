@@ -17,6 +17,8 @@ function renderWizardStepper() {
 
   var genBtn = document.getElementById('wiz2-generate-notice-btn');
   if (genBtn) genBtn.disabled = !bothReady;
+  var genBtnWord = document.getElementById('wiz2-generate-notice-word-btn');
+  if (genBtnWord) genBtnWord.disabled = !bothReady;
 
   var banner = document.getElementById('wiz-ready-banner');
   if (banner) banner.style.display = bothReady ? 'flex' : 'none';

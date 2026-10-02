@@ -287,8 +287,9 @@
             <div class="selection-summary">Total Selected Arrear (₹)<span class="selection-total" id="wiz2-bar-total">₹0</span></div>
           </div>
           <div class="wab-center">
-            <button class="btn btn-outline" onclick="previewWizardNotice2()"><i class="fa-solid fa-eye"></i> Preview Notice</button>
-            <button class="btn btn-red" id="wiz2-generate-notice-btn" onclick="wizGenerateNotice2()"><i class="fa-solid fa-paper-plane"></i> Generate Notice</button>
+            <button class="btn btn-outline" onclick="previewWizardNotice2()"><i class="fa-solid fa-eye"></i> Preview</button>
+            <button class="btn btn-blue" id="wiz2-generate-notice-btn" onclick="wizGenerateNoticePDF2()"><i class="fa-solid fa-file-pdf"></i> Generate PDF</button>
+            <button class="btn btn-blue" id="wiz2-generate-notice-word-btn" onclick="wizGenerateNoticeWord2()"><i class="fa-solid fa-file-word"></i> Generate Word</button>
             <button class="btn btn-outline" onclick="wizClearAllFilters2()"><i class="fa-solid fa-rotate-left"></i> Reset</button>
           </div>
           <div class="wab-note">
@@ -588,21 +589,6 @@
           <div class="ar-panel-title"><i class="fa-solid fa-chart-simple"></i> Action Summary</div>
           <div class="ar-summary-chart" id="ar-summary-chart"></div>
         </div>
-      </div>
-
-      <div class="table-wrap ar-cal-card">
-        <div class="ar-panel-title ar-cal-head">
-          <span><i class="fa-solid fa-calendar-days"></i> Action Calendar</span>
-          <div class="ar-cal-nav">
-            <button type="button" class="ar-page-btn" onclick="arCalShift(-1)" title="Previous month"><i class="fa-solid fa-chevron-left"></i></button>
-            <span class="ar-cal-month" id="ar-cal-month"></span>
-            <button type="button" class="ar-page-btn" onclick="arCalShift(1)" title="Next month"><i class="fa-solid fa-chevron-right"></i></button>
-            <button type="button" class="btn btn-outline btn-sm" onclick="arCalToday()">Today</button>
-          </div>
-        </div>
-        <div class="ar-cal-legend" id="ar-cal-legend"></div>
-        <div class="ar-cal-grid" id="ar-cal-grid"></div>
-        <div class="ar-cal-day-list" id="ar-cal-day-list"></div>
       </div>
 
       <!-- Case Detail Drawer -->
