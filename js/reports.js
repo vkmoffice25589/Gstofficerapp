@@ -112,6 +112,13 @@ var _rptDwFilters = { search: '', section: '', regStatus: '', from: '', to: '' }
 var _rptDwSort = { col: 'total', dir: 'desc' };
 var _rptDwPageSize = 25;
 var _rptDwCurrentPage = 1;
+var _rptDwGroupBy = 'none'; // 'none' | 'taxpayer'
+
+function rptDwGroupByChanged() {
+  _rptDwGroupBy = document.getElementById('rpt-dw-groupby').value;
+  _rptDwCurrentPage = 1;
+  renderDemandWiseReport();
+}
 
 function rptDwBaseCases() {
   return AppState.cases.filter(isValidCase).filter(function (c) {
@@ -206,6 +213,79 @@ function rptDwResetFilters() {
   renderDemandWiseReport();
 }
 
+function rptDwTh(label, col) { return '<th style="cursor:pointer;white-space:nowrap;" onclick="rptDwSortBy(\'' + col + '\')">' + label + rptDwSortArrow(col) + '</th>'; }
+function rptDwTheadRow() {
+  return '<tr><th>#</th>' + rptDwTh('Demand ID', 'demandId') + rptDwTh('Order Date', 'orderDate')
+    + '<th>GSTIN</th><th>Trade Name</th><th>Tax Period</th><th>Section</th>' + rptDwTh('Days', 'days') + '<th>Reg Status</th>'
+    + rptDwTh('IGST (₹)', 'igst') + rptDwTh('CGST (₹)', 'cgst') + rptDwTh('SGST (₹)', 'sgst') + rptDwTh('CESS (₹)', 'cess') + rptDwTh('Pending (₹)', 'total') + '</tr>';
+}
+function rptDwCaseRow(c, idx) {
+  var age = getDemandAgeDays(c);
+  var collectibleReg = isCollectible(c.gstin);
+  var regPill = collectibleReg === null || collectibleReg === undefined ? '<span class="pill pill-gray">Unknown</span>'
+    : collectibleReg ? '<span class="pill pill-green">Active</span>' : '<span class="pill pill-red">Cancelled</span>';
+  return '<tr>'
+    + '<td>' + idx + '</td>'
+    + '<td class="demand-id">' + xe(c.demandId) + '</td>'
+    + '<td>' + fmtDate(c.dcr_date || c.demandDate) + '</td>'
+    + '<td class="gstin-cell">' + xe(c.gstin) + '</td>'
+    + '<td>' + xe(taxpayerDisplayName(c.gstin, c.legalName)) + '</td>'
+    + '<td>' + xe(c.taxPeriod) + '</td>'
+    + '<td style="text-align:center;">' + xe(c.section) + '</td>'
+    + '<td style="text-align:center;">' + dayBadge(age) + '</td>'
+    + '<td>' + regPill + '</td>'
+    + '<td style="text-align:right;">' + fmt0(c.pend_igst) + '</td>'
+    + '<td style="text-align:right;">' + fmt0(c.pend_cgst) + '</td>'
+    + '<td style="text-align:right;">' + fmt0(c.pend_sgst) + '</td>'
+    + '<td style="text-align:right;">' + fmt0(c.pend_cess) + '</td>'
+    + '<td><div class="amount-cell pending">' + fmt(c.pend_total) + '</div></td>'
+    + '</tr>';
+}
+
+/* Excel-style "Data > Subtotal": one row per demand, grouped by taxpayer,
+   a subtotal row after each taxpayer's demands, and a grand total at the
+   end. Shown in full (no pagination) since splitting a taxpayer's group
+   across pages would defeat the point. Groups are ordered by their own
+   subtotal, highest first — same "top arrear" spirit as the default sort. */
+function rptDwRenderGrouped(filtered) {
+  var byGstin = {};
+  filtered.forEach(function (c) {
+    if (!byGstin[c.gstin]) byGstin[c.gstin] = [];
+    byGstin[c.gstin].push(c);
+  });
+  var groups = Object.keys(byGstin).map(function (gstin) {
+    var cases = rptDwSortCases(byGstin[gstin]);
+    return { gstin: gstin, legalName: cases[0].legalName, cases: cases, sub: rptDwSubtotal(cases) };
+  }).sort(function (a, b) { return b.sub.total - a.sub.total; });
+
+  var grand = { igst: 0, cgst: 0, sgst: 0, cess: 0, total: 0 };
+  var body = groups.map(function (g) {
+    grand.igst += g.sub.igst; grand.cgst += g.sub.cgst; grand.sgst += g.sub.sgst; grand.cess += g.sub.cess; grand.total += g.sub.total;
+    var rows = g.cases.map(function (c, i) { return rptDwCaseRow(c, i + 1); }).join('');
+    var subtotalRow = '<tr class="rpt-dw-subtotal-row">'
+      + '<td colspan="4"></td>'
+      + '<td colspan="5">Subtotal — ' + xe(taxpayerDisplayName(g.gstin, g.legalName)) + ' (' + g.cases.length + ' demand' + (g.cases.length === 1 ? '' : 's') + ')</td>'
+      + '<td style="text-align:right;">' + fmt0(g.sub.igst) + '</td>'
+      + '<td style="text-align:right;">' + fmt0(g.sub.cgst) + '</td>'
+      + '<td style="text-align:right;">' + fmt0(g.sub.sgst) + '</td>'
+      + '<td style="text-align:right;">' + fmt0(g.sub.cess) + '</td>'
+      + '<td>' + fmt(g.sub.total) + '</td>'
+      + '</tr>';
+    return rows + subtotalRow;
+  }).join('');
+
+  var grandRow = '<tr class="rpt-dw-grandtotal-row">'
+    + '<td colspan="9">GRAND TOTAL — ' + filtered.length + ' demands, ' + groups.length + ' taxpayer' + (groups.length === 1 ? '' : 's') + '</td>'
+    + '<td style="text-align:right;">' + fmt0(grand.igst) + '</td>'
+    + '<td style="text-align:right;">' + fmt0(grand.cgst) + '</td>'
+    + '<td style="text-align:right;">' + fmt0(grand.sgst) + '</td>'
+    + '<td style="text-align:right;">' + fmt0(grand.cess) + '</td>'
+    + '<td>' + fmt(grand.total) + '</td>'
+    + '</tr>';
+
+  return '<div class="table-scroll"><table><thead>' + rptDwTheadRow() + '</thead><tbody>' + body + grandRow + '</tbody></table></div>';
+}
+
 function renderDemandWiseReport() {
   rptDwPopulateSectionFilter();
   var g = document.getElementById('rpt-dw-search'); if (g) g.value = _rptDwFilters.search;
@@ -213,6 +293,7 @@ function renderDemandWiseReport() {
   var rs = document.getElementById('rpt-dw-regstatus'); if (rs) rs.value = _rptDwFilters.regStatus;
   var fd = document.getElementById('rpt-dw-from'); if (fd) fd.value = _rptDwFilters.from;
   var td = document.getElementById('rpt-dw-to'); if (td) td.value = _rptDwFilters.to;
+  var gb = document.getElementById('rpt-dw-groupby'); if (gb) gb.value = _rptDwGroupBy;
 
   var wrap = document.getElementById('rpt-dw-wrap');
   var subtotalBar = document.getElementById('rpt-dw-subtotal-bar');
@@ -234,6 +315,11 @@ function renderDemandWiseReport() {
     return;
   }
 
+  if (_rptDwGroupBy === 'taxpayer') {
+    wrap.innerHTML = rptDwRenderGrouped(filtered);
+    return;
+  }
+
   var sorted = rptDwSortCases(filtered);
   var pageSize = _rptDwPageSize === 'all' ? sorted.length : _rptDwPageSize;
   var totalPages = Math.max(1, Math.ceil(sorted.length / pageSize));
@@ -241,41 +327,9 @@ function renderDemandWiseReport() {
   if (_rptDwCurrentPage < 1) _rptDwCurrentPage = 1;
   var startIdx = (_rptDwCurrentPage - 1) * pageSize;
   var pageCases = sorted.slice(startIdx, startIdx + pageSize);
+  var rows = pageCases.map(function (c, i) { return rptDwCaseRow(c, startIdx + i + 1); }).join('');
 
-  var rows = pageCases.map(function (c, i) {
-    var age = getDemandAgeDays(c);
-    var collectibleReg = isCollectible(c.gstin);
-    var regPill = collectibleReg === null || collectibleReg === undefined ? '<span class="pill pill-gray">Unknown</span>'
-      : collectibleReg ? '<span class="pill pill-green">Active</span>' : '<span class="pill pill-red">Cancelled</span>';
-    return '<tr>'
-      + '<td>' + (startIdx + i + 1) + '</td>'
-      + '<td class="demand-id">' + xe(c.demandId) + '</td>'
-      + '<td>' + fmtDate(c.dcr_date || c.demandDate) + '</td>'
-      + '<td class="gstin-cell">' + xe(c.gstin) + '</td>'
-      + '<td>' + xe(taxpayerDisplayName(c.gstin, c.legalName)) + '</td>'
-      + '<td>' + xe(c.taxPeriod) + '</td>'
-      + '<td style="text-align:center;">' + xe(c.section) + '</td>'
-      + '<td style="text-align:center;">' + dayBadge(age) + '</td>'
-      + '<td>' + regPill + '</td>'
-      + '<td style="text-align:right;">' + fmt0(c.pend_igst) + '</td>'
-      + '<td style="text-align:right;">' + fmt0(c.pend_cgst) + '</td>'
-      + '<td style="text-align:right;">' + fmt0(c.pend_sgst) + '</td>'
-      + '<td style="text-align:right;">' + fmt0(c.pend_cess) + '</td>'
-      + '<td><div class="amount-cell pending">' + fmt(c.pend_total) + '</div></td>'
-      + '</tr>';
-  }).join('');
-
-  var th = function (label, col) { return '<th style="cursor:pointer;white-space:nowrap;" onclick="rptDwSortBy(\'' + col + '\')">' + label + rptDwSortArrow(col) + '</th>'; };
-
-  wrap.innerHTML = '<div class="table-scroll"><table><thead><tr>'
-    + '<th>#</th>'
-    + th('Demand ID', 'demandId')
-    + th('Order Date', 'orderDate')
-    + '<th>GSTIN</th><th>Trade Name</th><th>Tax Period</th><th>Section</th>'
-    + th('Days', 'days')
-    + '<th>Reg Status</th>'
-    + th('IGST (₹)', 'igst') + th('CGST (₹)', 'cgst') + th('SGST (₹)', 'sgst') + th('CESS (₹)', 'cess') + th('Pending (₹)', 'total')
-    + '</tr></thead><tbody>' + rows + '</tbody></table></div>'
+  wrap.innerHTML = '<div class="table-scroll"><table><thead>' + rptDwTheadRow() + '</thead><tbody>' + rows + '</tbody></table></div>'
     + rptDwPaginationHTML(sorted.length, totalPages);
 }
 

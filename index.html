@@ -145,6 +145,10 @@
       <div id="rpt-dw-section" style="display:none;">
         <div class="rel-filter-bar">
           <div class="fg" style="flex:1 1 200px;"><label>Search GSTIN / Trade Name</label><input type="text" id="rpt-dw-search" oninput="rptDwSearchChanged()" placeholder="Enter GSTIN or Trade Name..."/></div>
+          <div class="fg"><label>Group By</label><select class="fsel" id="rpt-dw-groupby" onchange="rptDwGroupByChanged()">
+            <option value="none">None (flat list)</option>
+            <option value="taxpayer">Taxpayer (with subtotals)</option>
+          </select></div>
           <div class="fg"><label>Section</label><select class="fsel" id="rpt-dw-sectionf"><option value="">All</option></select></div>
           <div class="fg"><label>Reg Status</label><select class="fsel" id="rpt-dw-regstatus"><option value="">All</option><option value="active">Active</option><option value="cancelled">Cancelled</option></select></div>
           <div class="fg"><label>Order Date From</label><input type="date" id="rpt-dw-from"/></div>
