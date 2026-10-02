@@ -386,6 +386,7 @@
 .wiz-exclusion-guide-body ul { margin: 0; padding-left: 20px; font-size: 13px; color: var(--muted-text); }
 .wiz-exclusion-guide-body li { margin-bottom: 3px; }
 .wizard-card-head-right { margin-left: auto; text-align: right; }
+.wizard-card-head-right .wchr-total-row { display: flex; align-items: baseline; justify-content: flex-end; gap: 8px; margin-top: 6px; white-space: nowrap; }
 .wizard-card-head-right .wchr-label { font-size: 11px; color: var(--ink3); letter-spacing: 0.3px; text-transform: uppercase; font-weight: 700; }
 .wizard-card-head-right .wchr-val { font-family: var(--font-mono); font-weight: 700; font-size: 17.5px; color: var(--danger); }
 
