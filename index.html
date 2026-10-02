@@ -185,18 +185,33 @@
       <div class="bulk-tab-panel" id="bulk-tab-notice2">
 
         <div class="issue-search-grid">
-          <div class="issue-search-card">
-            <label class="isc-label" for="wiz2-gstin-input">Search GSTIN / Trade Name</label>
-            <div class="isc-row">
+          <div class="issue-search-card isc-premium">
+            <div class="isc-premium-top">
+              <div class="isc-premium-headline">
+                <div class="isc-premium-icon"><i class="fa-solid fa-building-columns"></i></div>
+                <div>
+                  <div class="isc-premium-title">Search Taxpayer</div>
+                  <div class="isc-premium-sub">Find taxpayer details by GSTIN or Trade Name</div>
+                </div>
+              </div>
+              <div class="isc-premium-info"><i class="fa-solid fa-info"></i><span>Enter 15-digit GSTIN or Trade Name to search taxpayer records</span></div>
+            </div>
+            <div class="isc-row isc-premium-row">
               <div class="isc-input-wrap">
                 <i class="fa-solid fa-magnifying-glass isc-input-icon"></i>
-                <input type="text" id="wiz2-gstin-input" class="isc-input" autocomplete="off" placeholder="Enter GSTIN or Trade Name" oninput="wiz2SearchSuggest()" onkeydown="if(event.key==='Enter')wiz2SearchGSTIN();"/>
+                <input type="text" id="wiz2-gstin-input" class="isc-input isc-input-premium" autocomplete="off" placeholder="Enter GSTIN (e.g. 33AAJCP4412H1ZN) or Trade Name" oninput="wiz2SearchSuggest()" onkeydown="if(event.key==='Enter')wiz2SearchGSTIN();"/>
                 <button type="button" class="isc-clear" title="Clear" onclick="wiz2ClearGSTIN()"><i class="fa-solid fa-xmark"></i></button>
                 <div class="isc-suggest" id="wiz2-suggest"></div>
               </div>
-              <button type="button" class="btn btn-blue isc-btn" onclick="wiz2SearchGSTIN()">Search</button>
+              <button type="button" class="isc-btn-premium" onclick="wiz2SearchGSTIN()"><i class="fa-solid fa-magnifying-glass"></i> Search</button>
             </div>
             <div id="wiz2-gstin-hint" class="isc-hint"></div>
+            <div class="isc-quick-search">
+              <span class="isc-qs-label">QUICK SEARCH</span>
+              <span class="isc-qs-chip active"><i class="fa-solid fa-file-lines"></i> GSTIN</span>
+              <span class="isc-qs-chip purple"><i class="fa-solid fa-user"></i> Trade Name</span>
+              <span class="isc-qs-chip gold"><i class="fa-solid fa-building"></i> Legal Name</span>
+            </div>
           </div>
           <div class="issue-search-card isc-details" id="wiz2-taxpayer-details">
             <div class="isc-empty"><i class="fa-solid fa-building-columns"></i> Taxpayer details will appear here after you search.</div>
@@ -328,18 +343,33 @@
       <div class="bulk-tab-panel" id="bulk-tab-bankatt" style="display:none;padding-bottom:88px;">
 
         <div class="issue-search-grid">
-          <div class="issue-search-card">
-            <label class="isc-label" for="ba-gstin-input">Search GSTIN / Trade Name</label>
-            <div class="isc-row">
+          <div class="issue-search-card isc-premium">
+            <div class="isc-premium-top">
+              <div class="isc-premium-headline">
+                <div class="isc-premium-icon"><i class="fa-solid fa-building-columns"></i></div>
+                <div>
+                  <div class="isc-premium-title">Search Taxpayer</div>
+                  <div class="isc-premium-sub">Find taxpayer details by GSTIN or Trade Name</div>
+                </div>
+              </div>
+              <div class="isc-premium-info"><i class="fa-solid fa-info"></i><span>Enter 15-digit GSTIN or Trade Name to search taxpayer records</span></div>
+            </div>
+            <div class="isc-row isc-premium-row">
               <div class="isc-input-wrap">
                 <i class="fa-solid fa-magnifying-glass isc-input-icon"></i>
-                <input type="text" id="ba-gstin-input" class="isc-input" autocomplete="off" placeholder="Enter GSTIN or Trade Name" oninput="baSearchSuggest()" onkeydown="if(event.key==='Enter')baSearchGSTIN();"/>
+                <input type="text" id="ba-gstin-input" class="isc-input isc-input-premium" autocomplete="off" placeholder="Enter GSTIN (e.g. 33AAJCP4412H1ZN) or Trade Name" oninput="baSearchSuggest()" onkeydown="if(event.key==='Enter')baSearchGSTIN();"/>
                 <button type="button" class="isc-clear" title="Clear" onclick="baClearGSTIN()"><i class="fa-solid fa-xmark"></i></button>
                 <div class="isc-suggest" id="ba-suggest"></div>
               </div>
-              <button type="button" class="btn btn-blue isc-btn" onclick="baSearchGSTIN()">Search</button>
+              <button type="button" class="isc-btn-premium" onclick="baSearchGSTIN()"><i class="fa-solid fa-magnifying-glass"></i> Search</button>
             </div>
             <div id="ba-gstin-hint" class="isc-hint"></div>
+            <div class="isc-quick-search">
+              <span class="isc-qs-label">QUICK SEARCH</span>
+              <span class="isc-qs-chip active"><i class="fa-solid fa-file-lines"></i> GSTIN</span>
+              <span class="isc-qs-chip purple"><i class="fa-solid fa-user"></i> Trade Name</span>
+              <span class="isc-qs-chip gold"><i class="fa-solid fa-building"></i> Legal Name</span>
+            </div>
           </div>
           <div class="issue-search-card">
             <div id="ba-taxpayer-details" class="isc-details">
@@ -429,18 +459,33 @@
       <div class="bulk-tab-panel" id="bulk-tab-thirdparty" style="display:none;padding-bottom:88px;">
 
         <div class="issue-search-grid">
-          <div class="issue-search-card">
-            <label class="isc-label" for="tp-gstin-input">Search Defaulter — GSTIN / Trade Name</label>
-            <div class="isc-row">
+          <div class="issue-search-card isc-premium">
+            <div class="isc-premium-top">
+              <div class="isc-premium-headline">
+                <div class="isc-premium-icon"><i class="fa-solid fa-user-group"></i></div>
+                <div>
+                  <div class="isc-premium-title">Search Defaulter</div>
+                  <div class="isc-premium-sub">Find taxpayer details by GSTIN or Trade Name</div>
+                </div>
+              </div>
+              <div class="isc-premium-info"><i class="fa-solid fa-info"></i><span>Enter 15-digit GSTIN or Trade Name to search taxpayer records</span></div>
+            </div>
+            <div class="isc-row isc-premium-row">
               <div class="isc-input-wrap">
                 <i class="fa-solid fa-magnifying-glass isc-input-icon"></i>
-                <input type="text" id="tp-gstin-input" class="isc-input" autocomplete="off" placeholder="Enter GSTIN or Trade Name" oninput="tpSearchSuggest()" onkeydown="if(event.key==='Enter')tpSearchGSTIN();"/>
+                <input type="text" id="tp-gstin-input" class="isc-input isc-input-premium" autocomplete="off" placeholder="Enter GSTIN (e.g. 33AAJCP4412H1ZN) or Trade Name" oninput="tpSearchSuggest()" onkeydown="if(event.key==='Enter')tpSearchGSTIN();"/>
                 <button type="button" class="isc-clear" title="Clear" onclick="tpClearGSTIN()"><i class="fa-solid fa-xmark"></i></button>
                 <div class="isc-suggest" id="tp-suggest"></div>
               </div>
-              <button type="button" class="btn btn-blue isc-btn" onclick="tpSearchGSTIN()">Search</button>
+              <button type="button" class="isc-btn-premium" onclick="tpSearchGSTIN()"><i class="fa-solid fa-magnifying-glass"></i> Search</button>
             </div>
             <div id="tp-gstin-hint" class="isc-hint"></div>
+            <div class="isc-quick-search">
+              <span class="isc-qs-label">QUICK SEARCH</span>
+              <span class="isc-qs-chip active"><i class="fa-solid fa-file-lines"></i> GSTIN</span>
+              <span class="isc-qs-chip purple"><i class="fa-solid fa-user"></i> Trade Name</span>
+              <span class="isc-qs-chip gold"><i class="fa-solid fa-building"></i> Legal Name</span>
+            </div>
           </div>
           <div class="issue-search-card">
             <div id="tp-taxpayer-details" class="isc-details">

@@ -667,3 +667,40 @@ header { display: none; }
 .tp-debtor-table input[type="text"]:focus { outline: none; border-color: var(--primary-blue); box-shadow: 0 0 0 2px var(--primary-blue-dim); }
 .tp-debtor-table td { padding: 5px 6px; }
 #tp-debtor-rows-wrap .table-scroll { max-height: 360px; overflow-y: auto; }
+
+/* ---- Premium search card (Issue Notice / Bank Attachment / Third-Party
+   Notice — the shared .issue-search-grid's first card). Purely cosmetic:
+   the "QUICK SEARCH" chips are decorative labels of what one box already
+   matches against (GSTIN + legal name + trade name together), not real
+   per-field filter toggles — no click handlers, GSTIN is always shown as
+   the "active" one. ---- */
+.isc-premium { position: relative; overflow: hidden; padding: 24px 26px; border-radius: 20px; background: linear-gradient(135deg, var(--surface) 0%, var(--primary-blue-dim) 140%); box-shadow: var(--shadow-lg); }
+.isc-premium::before { content: ''; position: absolute; top: -60px; right: -60px; width: 220px; height: 220px; border-radius: 50%; background: radial-gradient(circle, rgba(0,82,255,0.14), rgba(0,82,255,0) 70%); pointer-events: none; }
+.isc-premium-top { position: relative; display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-bottom: 18px; }
+.isc-premium-headline { display: flex; align-items: center; gap: 14px; }
+.isc-premium-icon { flex: 0 0 auto; width: 56px; height: 56px; border-radius: 14px; background: var(--primary-blue-dim); color: var(--primary-blue); display: flex; align-items: center; justify-content: center; font-size: 24px; }
+.isc-premium-title { font-size: 21px; font-weight: 800; color: var(--navy-text); letter-spacing: -0.2px; }
+.isc-premium-sub { font-size: 13px; color: var(--ink3); margin-top: 2px; }
+.isc-premium-info { flex: 0 0 auto; display: flex; align-items: center; gap: 10px; background: var(--surface); border: 1px solid var(--primary-blue-border, var(--border)); border-radius: 14px; padding: 9px 14px; max-width: 280px; box-shadow: var(--shadow-sm); }
+.isc-premium-info i { flex: 0 0 auto; width: 22px; height: 22px; border-radius: 50%; background: var(--primary-blue); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 11px; }
+.isc-premium-info span { font-size: 11.5px; line-height: 1.35; color: var(--ink2, var(--navy-text)); }
+.isc-premium-row { position: relative; gap: 0; background: var(--surface); border: 1px solid var(--border); border-radius: 16px; box-shadow: var(--shadow-sm); overflow: hidden; }
+.isc-premium-row .isc-input-wrap { border-right: 1px solid var(--border); }
+.isc-input-premium { height: 56px !important; font-size: 15px !important; border: none !important; border-radius: 0 !important; background: transparent !important; box-shadow: none !important; }
+.isc-input-premium:focus { box-shadow: none !important; }
+.isc-premium-row:focus-within { border-color: var(--primary-blue); box-shadow: 0 0 0 4px var(--primary-blue-dim); }
+.isc-premium-row .isc-input-icon { top: 50%; transform: translateY(-50%); font-size: 16px; }
+.isc-premium-row .isc-clear { top: 50%; transform: translateY(-50%); right: 14px; }
+.isc-btn-premium { flex: 0 0 auto; height: 56px; padding: 0 30px; border: none; border-radius: 0; background: linear-gradient(135deg, var(--primary-blue), #2B6CFF); color: #fff; font-weight: 700; font-size: 14.5px; cursor: pointer; display: flex; align-items: center; gap: 9px; white-space: nowrap; }
+.isc-btn-premium:hover { background: linear-gradient(135deg, #0043D1, var(--primary-blue)); }
+.isc-quick-search { position: relative; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 16px; }
+.isc-qs-label { font-size: 10.5px; font-weight: 800; letter-spacing: 0.6px; color: var(--ink3); margin-right: 2px; }
+.isc-qs-chip { display: inline-flex; align-items: center; gap: 7px; padding: 7px 14px; border-radius: 999px; border: 1px solid var(--border); background: var(--surface); font-size: 12.5px; font-weight: 600; color: var(--navy-text); }
+.isc-qs-chip i { font-size: 12px; }
+.isc-qs-chip.active { background: var(--primary-blue-dim); border-color: var(--primary-blue); color: var(--primary-blue); }
+.isc-qs-chip.purple i { color: var(--purple); } .isc-qs-chip.gold i { color: var(--gold); } .isc-qs-chip.green i { color: var(--green); }
+@media (max-width: 760px) {
+  .isc-premium-row { flex-wrap: wrap; }
+  .isc-premium-row .isc-input-wrap { border-right: none; border-bottom: 1px solid var(--border); flex: 1 1 100%; }
+  .isc-btn-premium { flex: 1 1 100%; justify-content: center; }
+}
