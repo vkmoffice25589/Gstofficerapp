@@ -333,6 +333,82 @@ function renderDemandWiseReport() {
     + rptDwPaginationHTML(sorted.length, totalPages);
 }
 
+/* ===== Export to Excel — two sheets built from whatever's currently
+   filtered (same data the on-screen table/subtotal reflect):
+   "Taxpayer Abstract" (one row per taxpayer, e.g. "Sree Satya Traders,
+   8 demands, ₹X") and "Demand Detail" (the full demand-wise breakup with
+   the same per-taxpayer subtotal rows + grand total as the grouped
+   on-screen view). Reuses the XLSX json_to_sheet/book_new pattern already
+   used for DCR exports (import-dcr.js). ===== */
+function rptDwGroupedByTaxpayer(filtered) {
+  var byGstin = {};
+  filtered.forEach(function (c) { (byGstin[c.gstin] = byGstin[c.gstin] || []).push(c); });
+  return Object.keys(byGstin).map(function (gstin) {
+    var cases = rptDwSortCases(byGstin[gstin]);
+    return { gstin: gstin, legalName: cases[0].legalName, cases: cases, sub: rptDwSubtotal(cases) };
+  }).sort(function (a, b) { return b.sub.total - a.sub.total; });
+}
+
+function rptDwRegLabel(gstin) {
+  var col = isCollectible(gstin);
+  return col === null || col === undefined ? 'Unknown' : col ? 'Active' : 'Cancelled';
+}
+
+function rptDwBuildAbstractRows(groups, filtered) {
+  var rows = groups.map(function (g, i) {
+    return {
+      '#': i + 1, GSTIN: g.gstin, 'Trade Name': taxpayerDisplayName(g.gstin, g.legalName), 'Reg Status': rptDwRegLabel(g.gstin),
+      Demands: g.cases.length, 'IGST (₹)': g.sub.igst, 'CGST (₹)': g.sub.cgst, 'SGST (₹)': g.sub.sgst, 'CESS (₹)': g.sub.cess, 'Pending (₹)': g.sub.total
+    };
+  });
+  var grand = rptDwSubtotal(filtered);
+  rows.push({ '#': '', GSTIN: '', 'Trade Name': 'GRAND TOTAL', 'Reg Status': '', Demands: filtered.length, 'IGST (₹)': grand.igst, 'CGST (₹)': grand.cgst, 'SGST (₹)': grand.sgst, 'CESS (₹)': grand.cess, 'Pending (₹)': grand.total });
+  return rows;
+}
+
+function rptDwBuildDetailRows(groups, filtered) {
+  var rows = [];
+  groups.forEach(function (g) {
+    g.cases.forEach(function (c, i) {
+      rows.push({
+        '#': i + 1, 'Demand ID': c.demandId, 'Order Date': fmtDate(c.dcr_date || c.demandDate), GSTIN: c.gstin,
+        'Trade Name': taxpayerDisplayName(c.gstin, c.legalName), 'Tax Period': c.taxPeriod, Section: c.section,
+        Days: getDemandAgeDays(c), 'Reg Status': rptDwRegLabel(c.gstin),
+        'IGST (₹)': Number(c.pend_igst) || 0, 'CGST (₹)': Number(c.pend_cgst) || 0, 'SGST (₹)': Number(c.pend_sgst) || 0,
+        'CESS (₹)': Number(c.pend_cess) || 0, 'Pending (₹)': Number(c.pend_total) || 0
+      });
+    });
+    rows.push({
+      '#': '', 'Demand ID': '', 'Order Date': '', GSTIN: '', 'Trade Name': 'Subtotal — ' + taxpayerDisplayName(g.gstin, g.legalName),
+      'Tax Period': '', Section: '', Days: '', 'Reg Status': g.cases.length + ' demands',
+      'IGST (₹)': g.sub.igst, 'CGST (₹)': g.sub.cgst, 'SGST (₹)': g.sub.sgst, 'CESS (₹)': g.sub.cess, 'Pending (₹)': g.sub.total
+    });
+  });
+  var grand = rptDwSubtotal(filtered);
+  rows.push({
+    '#': '', 'Demand ID': '', 'Order Date': '', GSTIN: '', 'Trade Name': 'GRAND TOTAL', 'Tax Period': '', Section: '', Days: '',
+    'Reg Status': filtered.length + ' demands, ' + groups.length + ' taxpayers',
+    'IGST (₹)': grand.igst, 'CGST (₹)': grand.cgst, 'SGST (₹)': grand.sgst, 'CESS (₹)': grand.cess, 'Pending (₹)': grand.total
+  });
+  return rows;
+}
+
+async function rptDwExportExcel() {
+  var filtered = rptDwFilteredCases();
+  if (!filtered.length) { showToast('⚠️ No demands match the current filters'); return; }
+  await window.LibsReady;
+  var groups = rptDwGroupedByTaxpayer(filtered);
+
+  var abstractSheet = XLSX.utils.json_to_sheet(rptDwBuildAbstractRows(groups, filtered));
+  var detailSheet = XLSX.utils.json_to_sheet(rptDwBuildDetailRows(groups, filtered));
+  var wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, abstractSheet, 'Taxpayer Abstract');
+  XLSX.utils.book_append_sheet(wb, detailSheet, 'Demand Detail');
+  var out = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+  downloadBlob(new Blob([out], { type: 'application/octet-stream' }), 'Collectible_Demands_' + todayISO() + '.xlsx');
+  showToast('✅ Exported ' + filtered.length + ' demands across ' + groups.length + ' taxpayers');
+}
+
 function rptDwPaginationHTML(total, totalPages) {
   var pageBtns = wizPageNumberList(_rptDwCurrentPage, totalPages).map(function (p) {
     if (p === '...') return '<span class="tp-ellipsis">…</span>';

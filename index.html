@@ -155,6 +155,8 @@
           <div class="fg"><label>Order Date To</label><input type="date" id="rpt-dw-to"/></div>
           <div class="fg rel-filter-btn-fg"><button class="btn btn-blue" onclick="rptDwApplyFilters()">Apply Filters</button></div>
           <div class="fg rel-filter-btn-fg"><button class="btn btn-outline" onclick="rptDwResetFilters()">Reset</button></div>
+          <div class="fg rel-filter-btn-fg"><button class="btn btn-outline" onclick="renderDemandWiseReport()" title="Re-reads the latest DCR data — use after importing a new DCR without leaving this page"><i class="fa-solid fa-arrows-rotate"></i> Generate</button></div>
+          <div class="fg rel-filter-btn-fg"><button class="btn btn-outline" onclick="rptDwExportExcel()" title="Sheet 1: taxpayer-wise totals. Sheet 2: full demand-wise breakup with subtotals."><i class="fa-solid fa-file-excel"></i> Export to Excel</button></div>
         </div>
         <div class="rel-bulk-bar" id="rpt-dw-subtotal-bar" style="display:flex;justify-content:flex-start;gap:24px;flex-wrap:wrap;"></div>
         <div class="table-wrap" id="rpt-dw-wrap"></div>
