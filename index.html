@@ -592,8 +592,11 @@
           <option value="">All</option>
           <option value="notice">Notice</option>
           <option value="bank">Bank</option>
+          <option value="bankrelease">Bank Release</option>
           <option value="thirdparty">Third-Party</option>
+          <option value="thirdpartyrelease">Third-Party Release</option>
           <option value="property">Property</option>
+          <option value="propertyrelease">Property Release</option>
         </select></div>
         <div class="fg"><label>Status</label><select class="fsel" id="hist-status-filter">
           <option value="">All</option>
@@ -605,6 +608,8 @@
         <div class="fg"><label>To Date</label><input type="date" id="hist-to-date"/></div>
         <div class="fg rel-filter-btn-fg"><button class="btn btn-blue" onclick="histApplyFilters()">Apply Filters</button></div>
         <div class="fg rel-filter-btn-fg"><button class="btn btn-outline" onclick="histResetFilters()">Reset</button></div>
+        <div class="fg rel-filter-btn-fg"><button class="btn btn-outline" onclick="histDownloadFilteredReleasesZip('docx')" title="Zips every release order currently shown (Word)"><i class="fa-solid fa-file-zipper"></i> Releases (Word)</button></div>
+        <div class="fg rel-filter-btn-fg"><button class="btn btn-outline" onclick="histDownloadFilteredReleasesZip('pdf')" title="Zips every release order currently shown (PDF)"><i class="fa-solid fa-file-zipper"></i> Releases (PDF)</button></div>
       </div>
 
       <div class="table-wrap">

@@ -16,8 +16,11 @@ var _histCurrentPage = 1;
 var HIST_TYPE_BADGE = {
   notice: '<span class="pill pill-green"><i class="fa-solid fa-envelope-open-text"></i> Notice</span>',
   bank: '<span class="pill pill-blue"><i class="fa-solid fa-building-columns"></i> Bank</span>',
+  bankrelease: '<span class="pill pill-blue"><i class="fa-solid fa-unlock"></i> Bank Release</span>',
   thirdparty: '<span class="pill pill-purple"><i class="fa-solid fa-user-group"></i> Third-Party</span>',
-  property: '<span class="pill pill-gold"><i class="fa-solid fa-house"></i> Property</span>'
+  thirdpartyrelease: '<span class="pill pill-purple"><i class="fa-solid fa-unlock"></i> Third-Party Release</span>',
+  property: '<span class="pill pill-gold"><i class="fa-solid fa-house"></i> Property</span>',
+  propertyrelease: '<span class="pill pill-gold"><i class="fa-solid fa-unlock"></i> Property Release</span>'
 };
 var HIST_STATUS_BADGE = {
   issued: '<span class="pill pill-blue">Issued</span>',
@@ -72,10 +75,13 @@ function histResetFilters() {
   renderHistoryTable();
 }
 
-/* Every issued document, normalized into one shape. Notices have no
-   active/released concept (they're just issued, permanently), so they
-   always report status 'issued' — the other three report 'active' or
-   'released' off their own released flag. */
+/* Every issued document AND every release action, normalized into one
+   shape. Notices have no active/released concept (they're just issued,
+   permanently), so they always report status 'issued'. For Bank/Third-
+   Party/Property, a released record produces TWO entries — the original
+   attachment (dated when it was created) and a separate "X Release" entry
+   (dated when it was released) — so the ledger shows both actions on
+   their own timeline rows instead of one row silently changing status. */
 function histAllDocuments() {
   var out = [];
   AppState.notices.forEach(function (n) {
@@ -83,12 +89,21 @@ function histAllDocuments() {
   });
   AppState.bankAtts.forEach(function (b) {
     out.push({ type: 'bank', id: b.id, date: b.date, gstin: b.gstin, legalName: b.legalName, label: 'Bank: ' + (b.bankName || '—'), amount: b.totalAmt, status: b.released ? 'released' : 'active' });
+    if (b.released) {
+      out.push({ type: 'bankrelease', id: b.id, date: b.releasedDate, gstin: b.gstin, legalName: b.legalName, label: 'Released: ' + (b.bankName || '—') + (b.releasedReason ? ' — ' + b.releasedReason : ''), amount: b.totalAmt, status: 'released' });
+    }
   });
   AppState.thirdPartyNotices.forEach(function (t) {
     out.push({ type: 'thirdparty', id: t.id, date: t.date, gstin: t.defaulterGstin, legalName: t.legalName, label: 'Third Party: ' + (t.debtorLegal || '—'), amount: t.totalAmt, status: t.released ? 'released' : 'active' });
+    if (t.released) {
+      out.push({ type: 'thirdpartyrelease', id: t.id, date: t.releasedDate, gstin: t.defaulterGstin, legalName: t.legalName, label: 'Released: ' + (t.debtorLegal || '—') + (t.releasedReason ? ' — ' + t.releasedReason : ''), amount: t.totalAmt, status: 'released' });
+    }
   });
   AppState.propertyAttachments.forEach(function (p) {
     out.push({ type: 'property', id: p.id, date: p.date, gstin: p.gstin, legalName: p.legalName, label: 'Property: ' + (p.propertyDescription || '—'), amount: p.totalAmt, status: p.released ? 'released' : 'active' });
+    if (p.released) {
+      out.push({ type: 'propertyrelease', id: p.id, date: p.releasedDate, gstin: p.gstin, legalName: p.legalName, label: 'Released: ' + (p.propertyDescription || '—') + (p.releasedReason ? ' — ' + p.releasedReason : ''), amount: p.totalAmt, status: 'released' });
+    }
   });
   return out;
 }
@@ -161,13 +176,62 @@ function histActionCell(it) {
   } else if (it.type === 'property') {
     btns += '<button class="btn btn-outline btn-xs" onclick="paDownloadSaved(\'' + it.id + '\',\'docx\')" title="Order (Word)"><i class="fa-solid fa-file-word"></i></button> '
       + '<button class="btn btn-outline btn-xs" onclick="paDownloadSaved(\'' + it.id + '\',\'pdf\')" title="Order (PDF)"><i class="fa-solid fa-file-pdf"></i></button> ';
-  }
-  if (it.status === 'released') {
-    btns += '<button class="btn btn-outline btn-xs" onclick="brDownloadRelease(\'' + it.type + '\',\'' + it.id + '\',\'docx\')" title="Release Order (Word)">Rel <i class="fa-solid fa-file-word"></i></button> '
-      + '<button class="btn btn-outline btn-xs" onclick="brDownloadRelease(\'' + it.type + '\',\'' + it.id + '\',\'pdf\')" title="Release Order (PDF)">Rel <i class="fa-solid fa-file-pdf"></i></button> ';
+  } else if (it.type === 'bankrelease' || it.type === 'thirdpartyrelease' || it.type === 'propertyrelease') {
+    var baseType = it.type.slice(0, -'release'.length); // 'bankrelease' -> 'bank', etc.
+    btns += '<button class="btn btn-outline btn-xs" onclick="brDownloadRelease(\'' + baseType + '\',\'' + it.id + '\',\'docx\')" title="Release Order (Word)"><i class="fa-solid fa-file-word"></i></button> '
+      + '<button class="btn btn-outline btn-xs" onclick="brDownloadRelease(\'' + baseType + '\',\'' + it.id + '\',\'pdf\')" title="Release Order (PDF)"><i class="fa-solid fa-file-pdf"></i></button> ';
   }
   btns += '<button class="btn btn-outline btn-xs" onclick="goToRecoveryProfile(\'' + it.gstin + '\')" title="Recovery Profile"><i class="fa-solid fa-user-shield"></i></button>';
   return btns;
+}
+
+/* Zips every release-order document currently matching the filters —
+   whatever's in view, even a single row (e.g. several third-party
+   releases for one taxpayer, filtered down to just that GSTIN). Reuses
+   relTypeList() (bank-attachment.js) to look up each record by id. */
+async function histDownloadFilteredReleasesZip(format) {
+  var items = histFilteredDocuments().filter(function (it) {
+    return it.type === 'bankrelease' || it.type === 'thirdpartyrelease' || it.type === 'propertyrelease';
+  });
+  if (!items.length) { showToast('⚠️ No release documents match the current filters'); return; }
+
+  showToast('⏳ Zipping ' + items.length + ' release order(s)...');
+  var cfg = getSettings();
+  await window.LibsReady;
+  var zip = new JSZip();
+  var ext = format === 'pdf' ? 'pdf' : 'docx';
+
+  var builds = items.map(function (it) {
+    var baseType = it.type.slice(0, -'release'.length);
+    var rec = relTypeList(baseType).find(function (x) { return x.id === it.id; });
+    if (!rec) return Promise.resolve();
+    var blobPromise;
+    if (baseType === 'bank') {
+      blobPromise = format === 'pdf' ? buildBankReleasePdfDoc(rec, cfg).then(function (doc) { return doc.output('blob'); }) : buildBankReleaseDocx(rec, cfg);
+    } else if (baseType === 'thirdparty') {
+      blobPromise = format === 'pdf' ? buildThirdPartyReleasePdfDoc(rec, cfg).then(function (doc) { return doc.output('blob'); }) : buildThirdPartyReleaseDocx(rec, cfg);
+    } else {
+      blobPromise = format === 'pdf' ? buildPropertyReleasePdfDoc(rec, cfg).then(function (doc) { return doc.output('blob'); }) : buildPropertyReleaseDocx(rec, cfg);
+    }
+    return blobPromise.then(function (blob) {
+      /* Distinguishing detail per record (not just the taxpayer name) —
+         several releases for the same taxpayer (e.g. 3 third-party
+         releases) would otherwise collide on an identical filename and
+         JSZip would silently keep only the last one. */
+      var detail = baseType === 'bank' ? rec.bankName : baseType === 'thirdparty' ? rec.debtorLegal : rec.propertyDescription;
+      var safeDetail = (detail || rec.id).replace(/[^\w\- ]+/g, '').trim().replace(/\s+/g, '_') || rec.id;
+      var safeTaxpayer = (taxpayerDisplayName(it.gstin, it.legalName) || 'Taxpayer').replace(/[^\w\- ]+/g, '').trim().replace(/\s+/g, '_') || 'Taxpayer';
+      var uniqueSuffix = rec.id.slice(-6); // belt-and-braces: guarantees no overwrite even if two debtors share a name
+      zip.file(baseType + '_Release_' + safeTaxpayer + '_' + safeDetail + '_' + uniqueSuffix + '.' + ext, blob);
+    });
+  });
+
+  Promise.all(builds).then(function () {
+    return zip.generateAsync({ type: 'blob' });
+  }).then(function (zipBlob) {
+    downloadBlob(zipBlob, 'Release_Orders_' + todayISO() + '.zip');
+    showToast('✅ Downloaded ' + items.length + ' release order(s) as ZIP');
+  });
 }
 
 function histPaginationHTML(total, totalPages) {
