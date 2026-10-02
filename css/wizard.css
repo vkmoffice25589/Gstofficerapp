@@ -227,9 +227,13 @@
 }
 .icon-btn-outline:hover { background: var(--surface-2); color: var(--primary-blue); }
 
-/* ---- Data Upload page — two-column layout: DCR panel | Taxpayer Register panel ---- */
-.dataupload-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-4); align-items: start; }
-@media (max-width: 1100px) { .dataupload-grid { grid-template-columns: 1fr; } }
+/* ---- Data Upload page — DCR panel, then Taxpayer Register panel below it ---- */
+/* DCR and Taxpayer Register stack (DCR on top) rather than sitting side by
+   side — each panel already runs its own internal multi-column layout
+   (upload zone + summary, or the three register-status zones), so a side
+   by side page layout squeezed both into half-width columns and made the
+   Taxpayer Register's file table/stat tiles cramped. */
+.dataupload-grid { display: grid; grid-template-columns: 1fr; gap: var(--sp-4); align-items: start; }
 
 /* Taxpayer Register panel reuses the DCR panel's card chrome exactly. */
 .tpreg-panel { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 22px 24px; margin-bottom: var(--sp-4); box-shadow: var(--shadow-sm); }
