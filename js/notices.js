@@ -1,8 +1,8 @@
-/* ===== Arrear Notice — Bulk Notice / Paste GSTINs (single-taxpayer flow lives in wizard.js) ===== */
+/* ===== Arrear Notice — Bulk Notice (single-taxpayer flow lives in wizard.js) ===== */
 
 var generatedBulkNotices = []; // in-memory only until persisted / downloaded
 var _bulkSelectedIds = new Set();
-var _bulkResultsElId = null; // which results panel ('bulk-all-results'|'bulk-paste-results') is currently active
+var _bulkResultsElId = null; // which results panel ('bulk-all-results') is currently active
 
 /* Excel-style per-column filter/sort on the results table header.
    _bulkColumnFilters[col] is null (no filter) or a Set of allowed display values. */
@@ -17,8 +17,7 @@ var _bulkCfpChecked = new Set();
    noticeType '' means "All Demands" (both Intimation and Urgent, split per
    taxpayer at generation time, same as the wizard's "Both Notices" option). */
 var _bulkFilterState = {
-  all: { noticeType: '', sec62: 'exclude' },
-  paste: { noticeType: '', sec62: 'exclude' }
+  all: { noticeType: '', sec62: 'exclude' }
 };
 
 function bulkTab(tab, el) {
@@ -29,11 +28,11 @@ function bulkTab(tab, el) {
   var panel = document.getElementById('bulk-tab-' + tab);
   if (panel) panel.style.display = 'block';
   if (tab === 'all') updateBulkAllCount();
-  if (tab === 'all' || tab === 'paste') { updateBulkQuickFilterCounts(tab); updateBulkFilterTags(tab); }
+  if (tab === 'all') { updateBulkQuickFilterCounts(tab); updateBulkFilterTags(tab); }
   if (tab === 'bankatt') renderBankAtts();
   if (tab === 'bankrelease') renderBankReleaseTab();
   var bar = document.getElementById('bulk-action-bar');
-  if (bar) bar.style.display = (generatedBulkNotices.length && (tab === 'all' || tab === 'paste')) ? 'flex' : 'none';
+  if (bar) bar.style.display = (generatedBulkNotices.length && tab === 'all') ? 'flex' : 'none';
 }
 
 function getBulkNoticeType(tab) {
@@ -88,7 +87,7 @@ function updateBulkQuickFilterCounts(tab) {
   setText('bulk-' + tab + '-qf-count-section62', sec62Count);
 }
 
-/* Reads the Order Date / Tax Period Advanced Filters for a bulk tab ('all'|'paste')
+/* Reads the Order Date / Tax Period Advanced Filters for a bulk tab ('all')
    into the {odFrom, odTo, tpFrom, tpTo} shape getTaxpayerMap expects. */
 function readBulkAdvancedFilters(tab) {
   var val = function (id) { var el = document.getElementById(id); return el ? el.value : ''; };
@@ -185,21 +184,6 @@ function generateBulkAll() {
   var excludeSec62 = bulkShouldExcludeSec62('all');
   var map = getTaxpayerMap(noticeType, excludeSec62, readBulkAdvancedFilters('all'));
   runBulkGeneration(map, noticeType, 'bulk-all-results');
-}
-
-function generateBulkPaste() {
-  var raw = document.getElementById('bulk-paste-gstins').value || '';
-  var pasted = raw.split(/[\n,;]+/).map(function (s) { return s.trim().toUpperCase(); }).filter(function (s) { return s.length >= 10; });
-  if (!pasted.length) { showToast('⚠️ Paste at least one GSTIN'); return; }
-
-  var noticeType = getBulkNoticeType('paste');
-  var excludeSec62 = bulkShouldExcludeSec62('paste');
-  var fullMap = getTaxpayerMap(noticeType, excludeSec62, readBulkAdvancedFilters('paste'));
-  var map = {};
-  pasted.forEach(function (g) { if (fullMap[g]) map[g] = fullMap[g]; });
-
-  if (!Object.keys(map).length) { showToast('⚠️ None of the pasted GSTINs have eligible demands'); return; }
-  runBulkGeneration(map, noticeType, 'bulk-paste-results');
 }
 
 function makeBulkNotice(t, cases, kind, seq) {
@@ -724,7 +708,6 @@ function saveAllBulkNotices() {
   if (typeof renderNoticeHistoryPage === 'function') renderNoticeHistoryPage();
   updateBulkAllCount();
   document.getElementById('bulk-all-results') && (document.getElementById('bulk-all-results').innerHTML = '');
-  document.getElementById('bulk-paste-results') && (document.getElementById('bulk-paste-results').innerHTML = '');
   var bar = document.getElementById('bulk-action-bar');
   if (bar) bar.style.display = 'none';
   if (typeof renderDashboard === 'function' && document.getElementById('page-dashboard').classList.contains('active')) renderDashboard();

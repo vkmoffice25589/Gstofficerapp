@@ -31,7 +31,6 @@
    colour in the row. */
 #page-bulknotice .tabs .tab:not(.active) i { filter: saturate(65%); }
 #page-bulknotice .tabs .tab[data-tab="all"] i        { color: var(--purple); }
-#page-bulknotice .tabs .tab[data-tab="paste"] i      { color: #0F766E; }
 #page-bulknotice .tabs .tab[data-tab="bankatt"] i    { color: var(--gold); }
 #page-bulknotice .tabs .tab[data-tab="bankrelease"] i { color: #0891B2; }
 #page-bulknotice .tabs .tab[data-tab="thirdparty"] i { color: var(--success); }

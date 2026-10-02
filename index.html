@@ -165,7 +165,6 @@
       <div class="tabs">
         <div class="tab active" data-tab="notice" onclick="bulkTab('notice', this)"><i class="fa-solid fa-envelope-open-text"></i> Issue Notice</div>
         <div class="tab" data-tab="all" onclick="bulkTab('all', this)"><i class="fa-solid fa-layer-group"></i> Bulk Notice</div>
-        <div class="tab" data-tab="paste" onclick="bulkTab('paste', this)"><i class="fa-solid fa-paste"></i> Paste GSTINs</div>
         <div class="tab" data-tab="bankatt" onclick="bulkTab('bankatt', this)"><i class="fa-solid fa-building-columns"></i> Bank Attachment</div>
         <div class="tab" data-tab="bankrelease" onclick="bulkTab('bankrelease', this)"><i class="fa-solid fa-lock-open"></i> Release Attachment</div>
         <div class="tab" data-tab="thirdparty" onclick="bulkTab('thirdparty', this)"><i class="fa-solid fa-user-group"></i> Third-Party Notice</div>
@@ -316,36 +315,6 @@
           <div id="bulk-all-funnel" style="font-size:11px;color:var(--ink3);font-family:var(--mono);margin-bottom:14px;"></div>
           <button class="btn btn-red" onclick="generateBulkAll()"><i class="fa-solid fa-layer-group"></i> Generate Bulk Notices</button>
           <div id="bulk-all-results"></div>
-        </div>
-      </div>
-
-      <!-- Paste GSTINs -->
-      <div class="bulk-tab-panel" id="bulk-tab-paste" style="display:none;">
-        <div class="table-wrap" style="padding:18px;">
-          <div class="fg full" style="margin-bottom:12px;">
-            <label>Paste GSTINs (one per line, or comma/semicolon separated)</label>
-            <textarea id="bulk-paste-gstins" rows="5" placeholder="33AAAAA0000A1Z5&#10;33BBBBB0000B1Z6"></textarea>
-          </div>
-          <div class="quick-filter-bar" id="bulk-paste-quick-filter-bar">
-            <button type="button" class="qf-chip active" data-qf="all" onclick="bulkQuickFilter('paste','all')">All Demands <span class="qf-count" id="bulk-paste-qf-count-all">0</span></button>
-            <button type="button" class="qf-chip" data-qf="intimation" onclick="bulkQuickFilter('paste','intimation')">Intimation &lt; 90 Days <span class="qf-count" id="bulk-paste-qf-count-intimation">0</span></button>
-            <button type="button" class="qf-chip" data-qf="urgent" onclick="bulkQuickFilter('paste','urgent')">Urgent &ge; 90 Days <span class="qf-count" id="bulk-paste-qf-count-urgent">0</span></button>
-            <button type="button" class="qf-chip" data-qf="section62" onclick="bulkToggleSection62('paste')" title="Section 62 (best-judgment) demands are excluded by default — click to include them">Include Section 62 <span class="qf-count" id="bulk-paste-qf-count-section62">0</span></button>
-            <div class="qf-spacer"></div>
-            <button type="button" class="btn btn-outline btn-sm filters-btn" onclick="toggleBulkAdvancedFilters('paste')"><i class="fa-solid fa-sliders"></i> Advanced Filters</button>
-          </div>
-          <div id="bulk-paste-active-filter-tags" class="active-filter-tags" style="display:none;"></div>
-          <div id="bulk-paste-advanced" style="display:none;background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:12px 14px;margin-bottom:14px;">
-            <div style="display:flex;gap:14px;flex-wrap:wrap;">
-              <div class="fg"><label>Order Date From</label><input type="date" id="bulk-paste-od-from" onchange="updateBulkFilterTags('paste')"/></div>
-              <div class="fg"><label>Order Date To</label><input type="date" id="bulk-paste-od-to" onchange="updateBulkFilterTags('paste')"/></div>
-              <div class="fg"><label>Tax Period From</label><input type="text" id="bulk-paste-tp-from" placeholder="e.g. 01/2025" onchange="updateBulkFilterTags('paste')"/></div>
-              <div class="fg"><label>Tax Period To</label><input type="text" id="bulk-paste-tp-to" placeholder="e.g. 03/2025" onchange="updateBulkFilterTags('paste')"/></div>
-              <button type="button" class="btn btn-outline btn-sm" style="align-self:flex-end;" onclick="clearBulkAdvancedFilters('paste')"><i class="fa-solid fa-rotate-left"></i> Reset</button>
-            </div>
-          </div>
-          <button class="btn btn-red" onclick="generateBulkPaste()"><i class="fa-solid fa-paste"></i> Generate Notices</button>
-          <div id="bulk-paste-results"></div>
         </div>
       </div>
 

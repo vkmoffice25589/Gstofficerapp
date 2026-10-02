@@ -42,7 +42,7 @@ function showHelpSupport() {
     + '<p style="margin-top:10px;"><strong>Quick reference:</strong></p>'
     + '<ul style="margin:6px 0 0 18px;">'
     + '<li>Upload DCR / Taxpayer Register from the Generate Arrear Notice page</li>'
-    + '<li>Issue Notice / Bulk Notice / Paste GSTINs / Bank Attachment / Third-Party Notice / Property Attachment are tabs on that same page</li>'
+    + '<li>Issue Notice / Bulk Notice / Bank Attachment / Third-Party Notice / Property Attachment are tabs on that same page</li>'
     + '<li>Reports shows Top Arrear, Collectible and Non-Collectible taxpayers</li>'
     + '<li>Notice History and Downloads let you re-download anything already generated</li>'
     + '</ul>'
