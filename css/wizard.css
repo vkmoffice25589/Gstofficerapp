@@ -388,6 +388,12 @@
 .wizard-card-head-right { margin-left: auto; text-align: right; }
 .wizard-card-head-right .wchr-label { font-size: 11px; color: var(--ink3); letter-spacing: 0.3px; text-transform: uppercase; font-weight: 700; }
 .wizard-card-head-right .wchr-val { font-family: var(--font-mono); font-weight: 700; font-size: 17.5px; color: var(--danger); }
+.wizard-card-head-right .wchr-taxpayer { font-size: 13px; font-weight: 700; color: var(--navy-text); margin-bottom: 6px; }
+
+/* scrollIntoView(block:'start') targets land right under the sticky tab
+   bar (#bulknotice-tabs-section > .tabs) otherwise, hiding the card's own
+   title/number under it. */
+#page-bulknotice .wizard-card { scroll-margin-top: 76px; }
 
 /* ---- Quick filter bar (above the demand table) ---- */
 .quick-filter-bar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 16px 0; }

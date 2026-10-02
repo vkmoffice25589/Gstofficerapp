@@ -111,6 +111,7 @@ function wiz2LoadGSTIN(gstin) {
     + '</div>';
 
   document.getElementById('wiz2-demand-section').style.display = 'block';
+  document.getElementById('wiz2-head-taxpayer').textContent = displayName + ' · ' + gstin;
   _wiz2PageSize = 10; _wiz2CurrentPage = 1;
   wiz2ResetDrawerFilters();
   _wiz2SelectedDemandIds = new Set(
@@ -128,6 +129,7 @@ function wiz2ClearGSTIN() {
   wiz2HideSuggest();
   document.getElementById('wiz2-taxpayer-details').innerHTML = WIZ2_EMPTY_DETAILS;
   document.getElementById('wiz2-demand-section').style.display = 'none';
+  document.getElementById('wiz2-head-taxpayer').textContent = '';
   document.getElementById('wiz2-gstin-input').focus();
 }
 

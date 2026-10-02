@@ -132,6 +132,7 @@ function tpLoadGSTIN(gstin) {
   }
 
   document.getElementById('tp-demand-section').style.display = 'block';
+  document.getElementById('tp-head-taxpayer').textContent = displayName + ' · ' + gstin;
   _tpSection62 = 'exclude';
   _tpSelectedDemandIds = new Set(eligibleCases.filter(function (c) { return !tpIsFlagged(c); }).map(function (c) { return c.demandId; }));
   tpUpdateQuickFilterCounts();
@@ -465,6 +466,7 @@ function tpClearAll() {
   tpHideSuggest();
   document.getElementById('tp-taxpayer-details').innerHTML = TP_EMPTY_DETAILS;
   document.getElementById('tp-demand-section').style.display = 'none';
+  document.getElementById('tp-head-taxpayer').textContent = '';
   tpUpdateSelectionSummary();
 }
 
