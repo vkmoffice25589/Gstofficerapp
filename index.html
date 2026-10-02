@@ -173,155 +173,37 @@
 
       <div id="bulknotice-tabs-section" style="display:none;">
       <div class="tabs">
-        <div class="tab active" data-tab="notice" onclick="bulkTab('notice', this)"><i class="fa-solid fa-envelope-open-text"></i> Issue Notice</div>
+        <div class="tab active" data-tab="notice2" onclick="bulkTab('notice2', this)"><i class="fa-solid fa-envelope-open-text"></i> Issue Notice</div>
         <div class="tab" data-tab="all" onclick="bulkTab('all', this)"><i class="fa-solid fa-layer-group"></i> Bulk Notice</div>
         <div class="tab" data-tab="bankatt" onclick="bulkTab('bankatt', this)"><i class="fa-solid fa-building-columns"></i> Bank Attachment</div>
         <div class="tab" data-tab="bankrelease" onclick="bulkTab('bankrelease', this)"><i class="fa-solid fa-lock-open"></i> Release Attachment</div>
         <div class="tab" data-tab="thirdparty" onclick="bulkTab('thirdparty', this)"><i class="fa-solid fa-user-group"></i> Third-Party Notice</div>
         <div class="tab" data-tab="property" onclick="bulkTab('property', this)"><i class="fa-solid fa-house-lock"></i> Property Attachment</div>
-        <div class="tab" data-tab="notice2" onclick="bulkTab('notice2', this)"><i class="fa-solid fa-clone"></i> Issue Notice (Copy)</div>
       </div>
 
-      <!-- Issue Notice — wizard -->
-      <div class="bulk-tab-panel" id="bulk-tab-notice">
+      <!-- Issue Notice — formerly "Issue Notice (Copy)" (js/wizard-copy.js), promoted to
+           the one and only Issue Notice tab; the original wiz-* implementation it was
+           cloned from has been removed. Internal IDs/functions stay wiz2-*/notice2 —
+           only user-facing labels changed. -->
+      <div class="bulk-tab-panel" id="bulk-tab-notice2">
 
-        <div class="wizard-card">
-          <div class="wizard-card-head">
-            <div class="wizard-num">1</div>
-            <div><div class="wizard-card-title">Search GSTIN</div><div class="wizard-card-sub">Enter GSTIN to find taxpayer. Legal and trade name will be auto populated.</div></div>
-          </div>
-          <div class="form-grid">
-            <div class="fg full" style="display:flex;flex-direction:row;gap:8px;align-items:flex-end;">
-              <div style="flex:1;position:relative;">
-                <label>GSTIN *</label>
-                <input type="text" id="wiz-gstin-input" style="text-transform:uppercase;padding-right:32px;" placeholder="Enter GSTIN" onkeydown="if(event.key==='Enter')wizSearchGSTIN();"/>
-                <button type="button" class="input-clear-btn" title="Clear" onclick="wizClearGSTIN()"><i class="fa-solid fa-xmark"></i></button>
+        <div class="issue-search-grid">
+          <div class="issue-search-card">
+            <label class="isc-label" for="wiz2-gstin-input">Search GSTIN / Trade Name</label>
+            <div class="isc-row">
+              <div class="isc-input-wrap">
+                <i class="fa-solid fa-magnifying-glass isc-input-icon"></i>
+                <input type="text" id="wiz2-gstin-input" class="isc-input" autocomplete="off" placeholder="Enter GSTIN or Trade Name" oninput="wiz2SearchSuggest()" onkeydown="if(event.key==='Enter')wiz2SearchGSTIN();"/>
+                <button type="button" class="isc-clear" title="Clear" onclick="wiz2ClearGSTIN()"><i class="fa-solid fa-xmark"></i></button>
+                <div class="isc-suggest" id="wiz2-suggest"></div>
               </div>
-              <button class="btn btn-blue" onclick="wizSearchGSTIN()"><i class="fa-solid fa-magnifying-glass"></i> Search</button>
+              <button type="button" class="btn btn-blue isc-btn" onclick="wiz2SearchGSTIN()">Search</button>
             </div>
+            <div id="wiz2-gstin-hint" class="isc-hint"></div>
           </div>
-          <div id="wiz-gstin-hint" style="margin-top:6px;font-size:12px;color:var(--warning);"></div>
-          <div id="wiz-taxpayer-details" class="taxpayer-details-bar" style="display:none;"></div>
-        </div>
-
-        <div class="wizard-card" id="wiz-demand-section" style="display:none;">
-          <div class="wizard-card-head">
-            <div class="wizard-num">2</div>
-            <div><div class="wizard-card-title">Demands to Include in Notice</div><div class="wizard-card-sub">All demands are shown. Flagged rows (Excluded / Section 62) are unchecked by default — tick to include anyway.</div></div>
-            <div class="wizard-card-head-right">
-              <span class="pill pill-green" id="wiz-head-count">0 of 0 selected</span>
-              <div style="margin-top:6px;"><div class="wchr-label">Total Selected Arrear (₹)</div><div class="wchr-val" id="wiz-head-total">₹0</div></div>
-            </div>
+          <div class="issue-search-card isc-details" id="wiz2-taxpayer-details">
+            <div class="isc-empty"><i class="fa-solid fa-building-columns"></i> Taxpayer details will appear here after you search.</div>
           </div>
-
-          <div class="quick-filter-bar" id="wiz-quick-filter-bar">
-            <button type="button" class="qf-chip active" data-qf="all" onclick="quickFilterAll()">All Demands <span class="qf-count" id="qf-count-all">0</span></button>
-            <button type="button" class="qf-chip" data-qf="intimation" onclick="quickFilterIntimation()">Intimation &lt; 90 Days <span class="qf-count" id="qf-count-intimation">0</span></button>
-            <button type="button" class="qf-chip" data-qf="urgent" onclick="quickFilterUrgent()">Urgent &ge; 90 Days <span class="qf-count" id="qf-count-urgent">0</span></button>
-            <button type="button" class="qf-chip" data-qf="section62" onclick="toggleSection62Included()" title="Section 62 (best-judgment) demands are excluded by default — click to include them">Include Section 62 <span class="qf-count" id="qf-count-section62">0</span></button>
-            <div class="qf-spacer"></div>
-            <button type="button" class="btn btn-outline btn-sm filters-btn" onclick="openWizFilterDrawer()"><i class="fa-solid fa-sliders"></i> Advanced Filters<span class="filters-badge" id="wiz-filters-badge" style="display:none;">0</span></button>
-          </div>
-
-          <div class="wiz-flag-legend">
-            <span class="pill pill-orange wiz-excluded-badge">Excluded</span> = higher forum / closed / refund demand &nbsp;&nbsp;
-            <span class="pill pill-gold wiz-excluded-badge">Section 62</span> = best-judgment assessment &nbsp;&nbsp;
-            <span>— both stay unchecked until you tick them.</span>
-            <button type="button" class="wiz-flag-legend-link" onclick="openWizExclusionGuide()">View full list &rsaquo;</button>
-          </div>
-
-          <div id="wiz-active-filter-tags" class="active-filter-tags" style="display:none;"></div>
-
-          <div id="wiz-demand-table-wrap"></div>
-        </div>
-
-        <!-- Advanced Filters — right-side drawer -->
-        <div class="filter-drawer-overlay" id="wiz-filter-drawer-overlay" onclick="cancelWizFilterDrawer()"></div>
-        <div class="filter-drawer" id="wiz-filter-drawer">
-          <div class="filter-drawer-head">
-            <div class="filter-drawer-title"><i class="fa-solid fa-sliders"></i> Advanced Filters</div>
-            <button class="mclose" onclick="cancelWizFilterDrawer()">&times;</button>
-          </div>
-          <div class="filter-drawer-body">
-            <label class="wizard-col-label">Notice Type</label>
-            <div class="notice-type-cards">
-              <div class="notice-type-card type-intimation" data-type="intimation" onclick="selectWizNoticeType('intimation', this)"><i class="fa-solid fa-envelope"></i><div class="ntc-text"><div class="ntc-title">Intimation Notice</div><div class="ntc-sub">&lt; 90 days</div></div></div>
-              <div class="notice-type-card type-urgent" data-type="urgent" onclick="selectWizNoticeType('urgent', this)"><i class="fa-solid fa-triangle-exclamation"></i><div class="ntc-text"><div class="ntc-title">Urgent Notice</div><div class="ntc-sub">&ge; 90 days</div></div></div>
-              <div class="notice-type-card type-both selected" data-type="both" onclick="selectWizNoticeType('both', this)"><i class="fa-solid fa-layer-group"></i><div class="ntc-text"><div class="ntc-title">Both Notices</div><div class="ntc-sub">Generate both notices where applicable</div><div class="ntc-sub2">&lt; 90 days &rarr; Intimation &nbsp;|&nbsp; &ge; 90 days &rarr; Urgent</div></div></div>
-            </div>
-
-            <label class="wizard-col-label" style="margin-top:22px;">Section Filter</label>
-            <div class="filter-cards">
-              <div class="filter-card selected" data-mode="exclude" onclick="selectWizSectionFilter('exclude', this)"><div class="fc-radio"></div><div><div class="fc-title">Exclude Section 62 (default)</div><div class="fc-sub">Section 62 (best-judgment) demands are not treated as arrears</div></div></div>
-              <div class="filter-card" data-mode="all" onclick="selectWizSectionFilter('all', this)"><div class="fc-radio"></div><div><div class="fc-title">Include All Sections</div><div class="fc-sub">Include Section 62 demands as well, if the officer wants to pursue them</div></div></div>
-            </div>
-
-            <label class="wizard-col-label" style="margin-top:22px;">Other Filters</label>
-            <div class="wizard-filters-panel">
-              <div class="fg"><label>Demand Type</label>
-                <select class="fsel" id="wiz-demand-type">
-                  <option>All</option><option>Tax</option><option>Interest</option><option>Penalty</option><option>Other</option>
-                </select>
-              </div>
-              <div class="wizard-filters-panel-row">
-                <div class="fg"><label>Order Date From</label><input type="date" id="wiz-order-date-from"/></div>
-                <div class="fg"><label>Order Date To</label><input type="date" id="wiz-order-date-to"/></div>
-              </div>
-              <div class="wizard-filters-panel-row">
-                <div class="fg"><label>Tax Period From</label><input type="text" id="wiz-tax-period-from" placeholder="e.g. 01/2025"/></div>
-                <div class="fg"><label>Tax Period To</label><input type="text" id="wiz-tax-period-to" placeholder="e.g. 03/2025"/></div>
-              </div>
-            </div>
-          </div>
-          <div class="filter-drawer-foot">
-            <button class="btn btn-outline" onclick="wizResetDrawerFilters()"><i class="fa-solid fa-rotate-left"></i> Reset Filters</button>
-            <button class="btn btn-red" onclick="wizApplyFilters()"><i class="fa-solid fa-check"></i> Apply Filters</button>
-          </div>
-        </div>
-
-        <div class="wizard-action-bar">
-          <div class="wab-left">
-            <div class="selection-summary" id="wiz-bar-summary">0 of 0 selected</div>
-            <div class="selection-summary">Total Selected Arrear (₹)<span class="selection-total" id="wiz-bar-total">₹0</span></div>
-          </div>
-          <div class="wab-center">
-            <button class="btn btn-outline" onclick="previewWizardNotice()"><i class="fa-solid fa-eye"></i> Preview Notice</button>
-            <button class="btn btn-red" id="wiz-generate-notice-btn" onclick="wizGenerateNotice()"><i class="fa-solid fa-paper-plane"></i> Generate Notice</button>
-            <button class="btn btn-outline" onclick="wizClearAllFilters()"><i class="fa-solid fa-rotate-left"></i> Reset</button>
-          </div>
-          <div class="wab-note">
-            <i class="fa-solid fa-circle-info"></i>
-            <span>Only eligible and selected demands will be included in the notice.</span>
-          </div>
-        </div>
-
-        <div class="wiz-upload-actions">
-          <button class="btn btn-outline" onclick="document.getElementById('dcr-file-input').click()"><i class="fa-solid fa-upload"></i> Upload DCR</button>
-          <button class="btn btn-outline" onclick="nav('dataupload');wizChevronGoToTaxpayerRegister();"><i class="fa-solid fa-upload"></i> Upload Taxpayer Register</button>
-        </div>
-      </div>
-
-      <!-- Issue Notice (Copy) — independent duplicate of Issue Notice above (js/wizard-copy.js),
-           for the officer to remodify separately without touching the original. -->
-      <div class="bulk-tab-panel" id="bulk-tab-notice2" style="display:none;">
-
-        <div class="wizard-card">
-          <div class="wizard-card-head">
-            <div class="wizard-num">1</div>
-            <div><div class="wizard-card-title">Search GSTIN</div><div class="wizard-card-sub">Enter GSTIN to find taxpayer. Legal and trade name will be auto populated.</div></div>
-          </div>
-          <div class="form-grid">
-            <div class="fg full" style="display:flex;flex-direction:row;gap:8px;align-items:flex-end;">
-              <div style="flex:1;position:relative;">
-                <label>GSTIN *</label>
-                <input type="text" id="wiz2-gstin-input" style="text-transform:uppercase;padding-right:32px;" placeholder="Enter GSTIN" onkeydown="if(event.key==='Enter')wiz2SearchGSTIN();"/>
-                <button type="button" class="input-clear-btn" title="Clear" onclick="wiz2ClearGSTIN()"><i class="fa-solid fa-xmark"></i></button>
-              </div>
-              <button class="btn btn-blue" onclick="wiz2SearchGSTIN()"><i class="fa-solid fa-magnifying-glass"></i> Search</button>
-            </div>
-          </div>
-          <div id="wiz2-gstin-hint" style="margin-top:6px;font-size:12px;color:var(--warning);"></div>
-          <div id="wiz2-taxpayer-details" class="taxpayer-details-bar" style="display:none;"></div>
         </div>
 
         <div class="wizard-card" id="wiz2-demand-section" style="display:none;">
@@ -413,11 +295,6 @@
             <i class="fa-solid fa-circle-info"></i>
             <span>Only eligible and selected demands will be included in the notice.</span>
           </div>
-        </div>
-
-        <div class="wiz-upload-actions">
-          <button class="btn btn-outline" onclick="document.getElementById('dcr-file-input').click()"><i class="fa-solid fa-upload"></i> Upload DCR</button>
-          <button class="btn btn-outline" onclick="nav('dataupload');wizChevronGoToTaxpayerRegister();"><i class="fa-solid fa-upload"></i> Upload Taxpayer Register</button>
         </div>
       </div>
 

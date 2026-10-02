@@ -184,7 +184,7 @@ function renderDashActionRequired(cases, groups) {
 
   var items = [
     { color: 'red', icon: 'fa-bolt', label: 'Urgent Notices Due', hint: '≥ 90 days, notice-eligible', count: urgentGstins.size, onclick: "nav('bulknotice');bulkTab('all', document.querySelector('#page-bulknotice .tab[data-tab=all]'))" },
-    { color: 'orange', icon: 'fa-envelope', label: 'Intimation Notices Available', hint: '< 90 days, notice-eligible', count: intimGstins.size, onclick: "nav('bulknotice');bulkTab('notice', document.querySelector('#page-bulknotice .tab[data-tab=notice]'))" },
+    { color: 'orange', icon: 'fa-envelope', label: 'Intimation Notices Available', hint: '< 90 days, notice-eligible', count: intimGstins.size, onclick: "nav('bulknotice');bulkTab('notice2', document.querySelector('#page-bulknotice .tab[data-tab=notice2]'))" },
     { color: 'gold', icon: 'fa-building-columns', label: 'Bank Attachment Candidates', hint: '≥ 90 days, not yet attached', count: bankCandidates, onclick: "nav('bulknotice'); bulkTab('bankatt', document.querySelector('#page-bulknotice .tab[data-tab=bankatt]'))" },
     { color: 'purple', icon: 'fa-address-book', label: 'Taxpayers Without Register Details', hint: 'not found in Taxpayer Register', count: withoutRegister, onclick: "nav('bulknotice')" },
     { color: 'blue', icon: 'fa-magnifying-glass', label: 'Cases Requiring Review', hint: 'recoverable but parked at higher forum', count: reviewGstins.size, onclick: "nav('cases')" }
