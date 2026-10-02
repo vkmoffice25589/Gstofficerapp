@@ -160,11 +160,8 @@
 
     <!-- ===== ARREAR NOTICE ===== -->
     <div class="page" id="page-bulknotice">
-      <div class="ph">
-        <div><div class="ph-title"><i class="fa-solid fa-bolt"></i>Generate Arrear Notice</div><div class="ph-sub">Issue notices and take recovery action against uploaded arrear cases.</div></div>
-      </div>
 
-      <div class="empty" id="bulknotice-not-ready" style="display:none;">
+      <div class="empty" id="bulknotice-not-ready" style="display:none;margin-top:24px;">
         <div class="empty-icon"><i class="fa-solid fa-cloud-arrow-up" style="font-size:40px;color:var(--blue);opacity:0.4;"></i></div>
         <div class="empty-title">DCR / Taxpayer Register Not Uploaded</div>
         <div class="empty-sub" id="bulknotice-not-ready-msg">Upload both to start generating notices and taking recovery action.</div>
@@ -328,34 +325,63 @@
       </div>
 
       <!-- Bank Attachment -->
-      <div class="bulk-tab-panel" id="bulk-tab-bankatt" style="display:none;">
-        <div class="wizard-card">
-          <div class="wizard-card-head">
-            <div class="wizard-num" style="background:var(--gold);">1</div>
-            <div><div class="wizard-card-title">Search Taxpayer</div><div class="wizard-card-sub">Only taxpayers with demands &ge; 90 days old are eligible — Section 79(1)(a)</div></div>
+      <div class="bulk-tab-panel" id="bulk-tab-bankatt" style="display:none;padding-bottom:88px;">
+
+        <div class="issue-search-grid">
+          <div class="issue-search-card">
+            <label class="isc-label" for="ba-gstin-input">Search GSTIN / Trade Name</label>
+            <div class="isc-row">
+              <div class="isc-input-wrap">
+                <i class="fa-solid fa-magnifying-glass isc-input-icon"></i>
+                <input type="text" id="ba-gstin-input" class="isc-input" autocomplete="off" placeholder="Enter GSTIN or Trade Name" oninput="baSearchSuggest()" onkeydown="if(event.key==='Enter')baSearchGSTIN();"/>
+                <button type="button" class="isc-clear" title="Clear" onclick="baClearGSTIN()"><i class="fa-solid fa-xmark"></i></button>
+                <div class="isc-suggest" id="ba-suggest"></div>
+              </div>
+              <button type="button" class="btn btn-blue isc-btn" onclick="baSearchGSTIN()">Search</button>
+            </div>
+            <div id="ba-gstin-hint" class="isc-hint"></div>
           </div>
-          <div class="form-grid">
-            <div class="fg full" style="position:relative;">
-              <label>GSTIN or Taxpayer Name</label>
-              <input type="text" id="ba-tp-search" oninput="baSearchTaxpayer(this.value)" placeholder="Only taxpayers with demands ≥ 90 days shown..."/>
-              <div id="ba-tp-results" class="gs-results" style="position:absolute;top:100%;"></div>
-              <input type="hidden" id="ba-gstin"/>
+          <div class="issue-search-card">
+            <div id="ba-taxpayer-details" class="isc-details">
+              <div class="isc-empty"><i class="fa-solid fa-building-columns"></i> Taxpayer details will appear here after you search. Only demands &ge; 90 days old (Section 79(1)(a)) are shown.</div>
             </div>
           </div>
-          <div id="ba-demands-preview" style="margin-top:12px;"></div>
         </div>
 
-        <div class="wizard-card">
+        <div class="wizard-card" id="ba-demand-section" style="display:none;">
           <div class="wizard-card-head">
             <div class="wizard-num" style="background:var(--gold);">2</div>
+            <div><div class="wizard-card-title">Demands to Attach</div><div class="wizard-card-sub">Only demands &ge; 90 days old are shown. Flagged rows (Excluded / Section 62) are unchecked by default — tick to include anyway.</div></div>
+            <div class="wizard-card-head-right">
+              <span class="pill pill-green" id="ba-head-count">0 of 0 selected</span>
+              <div style="margin-top:6px;"><div class="wchr-label">Total Selected Arrear (₹)</div><div class="wchr-val" id="ba-head-total" style="color:var(--gold);">₹0</div></div>
+            </div>
+          </div>
+
+          <div class="quick-filter-bar" id="ba-quick-filter-bar">
+            <button type="button" class="qf-chip active" data-qf="all" onclick="baQuickFilterAll()">All Demands <span class="qf-count" id="ba-qf-count-all">0</span></button>
+            <button type="button" class="qf-chip" data-qf="section62" onclick="baToggleSection62()" title="Section 62 (best-judgment) demands are excluded by default — click to include them">Include Section 62 <span class="qf-count" id="ba-qf-count-section62">0</span></button>
+          </div>
+
+          <div class="wiz-flag-legend">
+            <span class="pill pill-orange wiz-excluded-badge">Excluded</span> = higher forum / closed / refund demand &nbsp;&nbsp;
+            <span class="pill pill-gold wiz-excluded-badge">Section 62</span> = best-judgment assessment &nbsp;&nbsp;
+            <span>— both stay unchecked until you tick them.</span>
+            <button type="button" class="wiz-flag-legend-link" onclick="openWizExclusionGuide()">View full list &rsaquo;</button>
+          </div>
+
+          <div id="ba-demand-table-wrap"></div>
+        </div>
+
+        <div class="wizard-card" id="ba-bank-card" style="display:none;">
+          <div class="wizard-card-head">
+            <div class="wizard-num" style="background:var(--gold);">3</div>
             <div><div class="wizard-card-title">Bank Details</div><div class="wizard-card-sub">Look up bank/branch automatically from IFSC, or enter manually</div></div>
-            <div class="wizard-card-head-right"><div class="wchr-label">Total Attached Amount</div><div class="wchr-val" id="ba-amount-display" style="color:var(--gold);">₹0</div></div>
           </div>
           <div class="form-grid">
             <div class="fg"><label>IFSC Code</label>
               <div style="display:flex;gap:6px;"><input type="text" id="ba-ifsc" style="text-transform:uppercase;"/><button class="btn btn-outline btn-sm" onclick="autoFillFromIFSC()" type="button"><i class="fa-solid fa-magnifying-glass"></i></button></div>
             </div>
-            <input type="hidden" id="ba-amount"/>
             <div class="fg"><label>Bank Name</label><input type="text" id="ba-bank-name"/></div>
             <div class="fg"><label>Branch</label><input type="text" id="ba-branch"/></div>
             <div class="fg full"><label>Branch Address</label><input type="text" id="ba-branch-addr"/></div>
@@ -366,8 +392,23 @@
             <div class="fg"><label>Date</label><input type="date" id="ba-date"/></div>
           </div>
           <div id="ba-bank-status" style="margin-top:8px;font-size:12px;"></div>
-          <button class="btn btn-orange" style="margin-top:14px;" onclick="generateBankAttachment()"><i class="fa-solid fa-file-export"></i> Generate Bank Attachment</button>
-          <div style="font-size:11px;color:var(--ink3);margin-top:6px;"><i class="fa-solid fa-circle-info"></i> Saves this attachment and downloads the Letter to Bank and Form DRC-13, each as Word and PDF.</div>
+        </div>
+
+        <div class="wizard-action-bar">
+          <div class="wab-left">
+            <div class="selection-summary" id="ba-bar-summary">0 of 0 selected</div>
+            <div class="selection-summary">Total Selected Arrear (₹)<span class="selection-total" id="ba-bar-total">₹0</span></div>
+          </div>
+          <div class="wab-center">
+            <button class="btn btn-outline" onclick="baClearAll()"><i class="fa-solid fa-xmark"></i> Clear All</button>
+            <button class="btn btn-outline" onclick="baPreview()"><i class="fa-solid fa-eye"></i> Preview</button>
+            <button class="btn btn-blue" id="ba-generate-pdf-btn" onclick="baGenerate('pdf')"><i class="fa-solid fa-file-pdf"></i> Generate PDF</button>
+            <button class="btn btn-blue" id="ba-generate-word-btn" onclick="baGenerate('word')"><i class="fa-solid fa-file-word"></i> Generate Word</button>
+          </div>
+          <div class="wab-note">
+            <i class="fa-solid fa-circle-info"></i>
+            <span>Saves this attachment and downloads the Letter to Bank and Form DRC-13.</span>
+          </div>
         </div>
 
         <div class="ph-sub" style="margin-bottom:8px;">ACTIVE ATTACHMENTS</div>
@@ -632,6 +673,16 @@
         <div class="table-wrap" style="padding:18px;">
           <div class="ph-sub" style="margin-bottom:10px;">NOTICE HEADER/FOOTER PREVIEW</div>
           <pre id="settings-preview" style="white-space:pre-wrap;font-family:var(--mono);font-size:12px;color:var(--ink2);line-height:1.6;"></pre>
+        </div>
+      </div>
+
+      <div class="table-wrap" style="padding:18px;margin-top:16px;">
+        <div class="ph-sub" style="margin-bottom:10px;">DATA &amp; BACKUP</div>
+        <div style="font-size:12.5px;color:var(--ink2);margin-bottom:12px;">All data lives in this browser only. Export a backup regularly and keep the file safe.</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <button class="btn btn-outline" onclick="Storage.backup()"><i class="fa-solid fa-download"></i> Export Backup</button>
+          <button class="btn btn-outline" onclick="document.getElementById('restore-file-input').click()"><i class="fa-solid fa-upload"></i> Restore Backup</button>
+          <button class="btn btn-outline" style="color:var(--danger);" onclick="Storage.clear()"><i class="fa-solid fa-trash"></i> Clear All Data</button>
         </div>
       </div>
     </div>
