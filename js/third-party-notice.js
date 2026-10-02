@@ -461,6 +461,17 @@ function tpPreview() {
   win.document.close();
 }
 
+/* Redownloads an already-saved third-party notice's DRC-13 — used by
+   Notice History's unified ledger to re-fetch a document without
+   re-running the whole search/select/modal flow. */
+function tpDownloadSaved(id, fmt) {
+  var tp = AppState.thirdPartyNotices.find(function (x) { return x.id === id; });
+  if (!tp) return;
+  var cfg = getSettings();
+  if (fmt === 'pdf') generateThirdPartyPDF(tp, cfg);
+  else buildThirdPartyDocx(tp, cfg).then(function (blob) { downloadBlob(blob, 'DRC13_' + tp.defaulterGstin + '_' + todayISO() + '.docx'); });
+}
+
 function tpClearAll() {
   _tpGSTIN = null; _tpSection62 = 'exclude'; _tpFilteredCases = []; _tpSelectedDemandIds = new Set(); _tpDebtorRows = [];
   var g = document.getElementById('tp-gstin-input'); if (g) g.value = '';

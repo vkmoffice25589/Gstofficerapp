@@ -545,7 +545,7 @@ function generateSelectedBulkNotices() {
   _bulkSelectedIds.clear();
   persist();
   updateSidebar();
-  if (typeof renderNoticeHistoryPage === 'function') renderNoticeHistoryPage();
+  if (typeof renderHistoryTable === 'function') renderHistoryTable();
   if (typeof renderDashboard === 'function' && document.getElementById('page-dashboard').classList.contains('active')) renderDashboard();
 
   var cfg = getSettings();
@@ -705,7 +705,7 @@ function saveAllBulkNotices() {
   _bulkSelectedIds.clear();
   persist();
   updateSidebar();
-  if (typeof renderNoticeHistoryPage === 'function') renderNoticeHistoryPage();
+  if (typeof renderHistoryTable === 'function') renderHistoryTable();
   updateBulkAllCount();
   document.getElementById('bulk-all-results') && (document.getElementById('bulk-all-results').innerHTML = '');
   var bar = document.getElementById('bulk-action-bar');

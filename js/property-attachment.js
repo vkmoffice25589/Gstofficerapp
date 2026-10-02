@@ -88,6 +88,17 @@ function paSaveAndDownload() {
   showToast('✅ Property attachment recorded');
 }
 
+/* Redownloads an already-saved property attachment order — used by
+   Notice History's unified ledger to re-fetch a document without
+   re-running the whole search/select/save flow. */
+function paDownloadSaved(id, fmt) {
+  var pa = AppState.propertyAttachments.find(function (x) { return x.id === id; });
+  if (!pa) return;
+  var cfg = getSettings();
+  if (fmt === 'pdf') generatePropertyAttachmentPDF(pa, cfg);
+  else buildPropertyAttachmentDocx(pa, cfg).then(function (blob) { downloadBlob(blob, 'PropertyAttachment_' + pa.gstin + '_' + todayISO() + '.docx'); });
+}
+
 function renderPropertyList() {
   var wrap = document.getElementById('property-list');
   if (!wrap) return;

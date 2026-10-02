@@ -574,43 +574,41 @@
          bottom of their own Generate Arrear Notice sub-tabs; consolidated
          here as sub-tabs of their own so every past document lives in one
          place, separate from the forms that create new ones. ===== -->
+    <!-- ===== NOTICE HISTORY — one unified, read-only ledger of every
+         document ever issued (Notice, Bank, Third-Party, Property), newest
+         first, filterable by GSTIN/type/status/date. Replaces the earlier
+         4-tab layout (Notice/Bank/Release/Others) — releasing an
+         attachment still happens only on Generate Arrear Notice's own
+         Release Attachment tab; this page is purely for looking back at
+         what's already been done and re-downloading a document. ===== -->
     <div class="page" id="page-history">
       <div class="ph">
         <div><div class="ph-title"><i class="fa-solid fa-clock-rotate-left"></i>Notice History</div><div class="ph-sub">Every notice, bank attachment, third-party notice and property attachment issued from this system</div></div>
       </div>
 
-      <div class="tabs">
-        <div class="tab active" data-tab="notices" onclick="histTab('notices', this)"><i class="fa-solid fa-envelope-open-text"></i> Notice</div>
-        <div class="tab" data-tab="bankatt" onclick="histTab('bankatt', this)"><i class="fa-solid fa-building-columns"></i> Bank</div>
-        <div class="tab" data-tab="bankrelease" onclick="histTab('bankrelease', this)"><i class="fa-solid fa-unlock"></i> Release</div>
-        <div class="tab" data-tab="others" onclick="histTab('others', this)"><i class="fa-solid fa-layer-group"></i> Others</div>
+      <div class="rel-filter-bar">
+        <div class="fg" style="flex:1 1 220px;"><label>Search GSTIN / Taxpayer</label><input type="text" id="hist-gstin-filter" oninput="histSearchChanged()" placeholder="Enter GSTIN or Taxpayer Name..."/></div>
+        <div class="fg"><label>Document Type</label><select class="fsel" id="hist-type-filter">
+          <option value="">All</option>
+          <option value="notice">Notice</option>
+          <option value="bank">Bank</option>
+          <option value="thirdparty">Third-Party</option>
+          <option value="property">Property</option>
+        </select></div>
+        <div class="fg"><label>Status</label><select class="fsel" id="hist-status-filter">
+          <option value="">All</option>
+          <option value="issued">Issued</option>
+          <option value="active">Active</option>
+          <option value="released">Released</option>
+        </select></div>
+        <div class="fg"><label>From Date</label><input type="date" id="hist-from-date"/></div>
+        <div class="fg"><label>To Date</label><input type="date" id="hist-to-date"/></div>
+        <div class="fg rel-filter-btn-fg"><button class="btn btn-blue" onclick="histApplyFilters()">Apply Filters</button></div>
+        <div class="fg rel-filter-btn-fg"><button class="btn btn-outline" onclick="histResetFilters()">Reset</button></div>
       </div>
 
-      <div class="hist-tab-panel" id="hist-tab-notices">
-        <div class="table-wrap" style="padding:14px 16px;margin-bottom:16px;">
-          <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;">
-            <div class="fg" style="flex:1;min-width:220px;"><label>Search GSTIN / Taxpayer</label><input type="text" id="hist-filter-gstin" oninput="histFilterChanged()" placeholder="Filter by GSTIN or name..."/></div>
-            <div class="fg"><label>Notice Type</label><select class="fsel" id="hist-filter-type" onchange="renderNoticeHistoryPage()"><option value="">All</option><option value="intimation">Intimation</option><option value="urgent">Urgent</option></select></div>
-          </div>
-        </div>
-        <div class="table-wrap" id="notice-history-table-wrap"></div>
-      </div>
-
-      <div class="hist-tab-panel" id="hist-tab-bankatt" style="display:none;">
-        <div class="ph-sub" style="margin-bottom:8px;">ACTIVE ATTACHMENTS</div>
-        <div id="bank-atts-list"></div>
-      </div>
-
-      <div class="hist-tab-panel" id="hist-tab-bankrelease" style="display:none;">
-        <div class="ph-sub" style="margin-bottom:8px;">RELEASED ATTACHMENTS</div>
-        <div id="br-released-list"></div>
-      </div>
-
-      <div class="hist-tab-panel" id="hist-tab-others" style="display:none;">
-        <div class="ph-sub" style="margin-bottom:8px;">THIRD-PARTY NOTICES — ACTIVE</div>
-        <div class="table-wrap" id="third-party-list" style="margin-bottom:24px;"></div>
-        <div class="ph-sub" style="margin-bottom:8px;">PROPERTY ATTACHMENTS — ACTIVE</div>
-        <div class="table-wrap" id="property-list"></div>
+      <div class="table-wrap">
+        <div id="hist-list-wrap"></div>
       </div>
     </div>
 
