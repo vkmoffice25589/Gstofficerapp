@@ -330,10 +330,10 @@ function taxpayerRegisterFilesTable() {
         + '<td>' + fmt0(f.records) + '</td>'
         + '<td>' + fmtDateTime(f.uploadedAt) + '</td>'
         + '<td><span class="pill pill-green"><i class="fa-solid fa-check"></i> Uploaded</span></td>'
-        + '<td>'
-        + '<button type="button" class="icon-btn-outline" title="View file details" onclick="wizViewTaxpayerRegisterFile(\'' + f.id + '\')"><i class="fa-solid fa-eye"></i></button> '
+        + '<td><div class="row-actions">'
+        + '<button type="button" class="icon-btn-outline" title="View file details" onclick="wizViewTaxpayerRegisterFile(\'' + f.id + '\')"><i class="fa-solid fa-eye"></i></button>'
         + '<button type="button" class="icon-btn-danger" title="Delete this file" onclick="wizDeleteTaxpayerRegisterFile(\'' + f.id + '\')"><i class="fa-solid fa-trash"></i></button>'
-        + '</td>'
+        + '</div></td>'
         + '</tr>';
     }).join('');
     body = '<div class="table-wrap"><div class="table-scroll"><table><thead><tr><th>Type</th><th>File Name</th><th>Records</th><th>Uploaded On</th><th>Status</th><th>Action</th></tr></thead><tbody>' + rows + '</tbody></table></div></div>';

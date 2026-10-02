@@ -231,6 +231,7 @@
   justify-content: center; font-size: 12.5px; transition: background 0.12s, color 0.12s;
 }
 .icon-btn-outline:hover { background: var(--surface-2); color: var(--primary-blue); }
+.row-actions { display: flex; align-items: center; gap: 4px; }
 
 /* ---- Data Upload page — DCR panel, then Taxpayer Register panel below it ---- */
 /* DCR and Taxpayer Register stack (DCR on top) rather than sitting side by
@@ -285,6 +286,103 @@
   .dcr-head-right { align-items: flex-start; }
   .dcr-last-uploaded { text-align: left; }
 }
+
+/* ---- Data Upload page density pass — the DCR panel and Taxpayer Register
+   panel now stack (DCR on top), which roughly doubles the page's total
+   height versus the old side-by-side layout. Getting the whole page to
+   fit one screen needs more than padding trims: the dropzones go from a
+   tall centered box to a single compact row (icon/text/button inline),
+   the Reconciliation Summary's 6 cards collapse into slim label:value
+   rows, and the uploaded-files tables get a capped height with their own
+   internal scrollbar — so a long file list scrolls itself instead of
+   growing the page. Scoped to #page-dataupload only; nothing here touches
+   .scard/.empty/.ph on any other page. */
+#page-dataupload .ph { margin-bottom: 8px; }
+#page-dataupload .ph-title { font-size: 19px; }
+#page-dataupload .ph-sub { font-size: 11.5px; margin-top: 2px; }
+#page-dataupload #tp-reg-summary .stats { gap: 6px; }
+#page-dataupload #tp-reg-summary button { height: 28px; margin-top: 8px !important; font-size: 12px; }
+#page-dataupload .dataupload-grid { gap: 10px; }
+#page-dataupload .dcr-panel, #page-dataupload .tpreg-panel { padding: 10px 14px; margin-bottom: 0; }
+#page-dataupload .dcr-panel-head { padding-bottom: 6px; margin-bottom: 8px; }
+#page-dataupload .dcr-head-icon { font-size: 18px; }
+#page-dataupload .dcr-title { font-size: 14.5px; }
+#page-dataupload .dcr-desc { font-size: 11.5px; margin-top: 1px; max-width: 400px; }
+#page-dataupload .dcr-panel-head { flex-wrap: nowrap; gap: 10px; }
+#page-dataupload .dcr-head-right { gap: 6px; }
+#page-dataupload .dcr-head-right .btn { height: 26px; padding: 0 9px; font-size: 11px; }
+#page-dataupload .dcr-last-uploaded { margin-right: 0; }
+#page-dataupload .dlu-label { font-size: 9px; }
+#page-dataupload .dlu-val { font-size: 11.5px; margin-top: 0; }
+#page-dataupload .dcr-upload-row { margin-bottom: 8px; }
+#page-dataupload .dcr-col-label { margin-bottom: 4px; font-size: 11.5px; }
+
+/* Dropzones: one compact horizontal row instead of a tall centered box.
+   Same markup (icon / title / "or" / button / format text), just laid out
+   inline — a drop target doesn't need to be a tall box to be clickable. */
+#page-dataupload .dcr-dropzone, #page-dataupload .tpreg-dropzone {
+  flex-direction: row; flex-wrap: wrap; justify-content: center; min-height: unset;
+}
+#page-dataupload .dcr-dropzone { padding: 8px 14px; gap: 6px 12px; }
+#page-dataupload .dcr-dropzone-icon { width: 22px; height: 22px; background: none; margin-bottom: 0; }
+#page-dataupload .dcr-dropzone-icon i { font-size: 15px; }
+#page-dataupload .dcr-dropzone-title { font-size: 12px; }
+#page-dataupload .dcr-dropzone-format { margin-top: 0; }
+#page-dataupload .dcr-pending-chips { margin-top: 6px; }
+
+#page-dataupload .scard { padding: 6px 10px; }
+#page-dataupload .slabel { font-size: 9.5px; margin-bottom: 2px; }
+#page-dataupload .sval { font-size: 13px; }
+#page-dataupload .ssub { font-size: 10px; margin-top: 1px; }
+#page-dataupload .dcr-mini-stat { padding: 6px 10px; }
+#page-dataupload .dcr-mini-stat.hero { padding: 8px 10px; }
+#page-dataupload .dms-label { font-size: 9.5px; margin-bottom: 2px; }
+#page-dataupload .dms-val { font-size: 12.5px; }
+#page-dataupload .dcr-mini-stat.hero .dms-val { font-size: 15px; }
+#page-dataupload .dcr-reconcile-btn { margin-top: 8px; }
+
+/* Reconciliation Summary: 6 bordered KPI cards -> 6 slim chip rows (2 per
+   line), each just a label and a value — the colour-stripe-card treatment
+   makes sense on a dashboard, not crammed into the dropzone's neighbour
+   column. */
+#page-dataupload .dcr-recon-head { margin-bottom: 6px; }
+#page-dataupload .dcr-recon-head .dcr-col-label { font-size: 11.5px; }
+#page-dataupload .dcr-recon-tiles.stats {
+  display: flex; flex-wrap: wrap; gap: 4px 8px; grid-template-columns: unset; margin-bottom: 6px;
+}
+#page-dataupload .dcr-recon-tiles .scard {
+  flex: 1 1 30%; display: flex; align-items: center; justify-content: space-between; gap: 6px;
+  border: none; box-shadow: none; background: var(--surface-2); padding: 2px 7px; border-radius: 5px;
+}
+#page-dataupload .dcr-recon-tiles .scard::before { display: none; }
+#page-dataupload .dcr-recon-tiles .slabel { margin-bottom: 0; font-size: 9.5px; white-space: nowrap; }
+#page-dataupload .dcr-recon-tiles .sval { font-size: 12px !important; }
+#page-dataupload .dcr-recon-actions { margin-top: 2px; }
+
+/* Uploaded-files tables: tighter rows, and a capped height with its own
+   scrollbar once a table has more than a handful of rows — a quarter's
+   worth of DCR uploads or register refreshes shouldn't make the officer
+   scroll past the whole page just to reach the next section. */
+#page-dataupload .dcr-files-wrap { padding-top: 6px; margin-bottom: 6px; }
+#page-dataupload .dcr-files-wrap .table-scroll { max-height: 150px; overflow-y: auto; }
+#page-dataupload .dcr-files-wrap th, #page-dataupload .dcr-files-wrap td { padding: 6px 10px; font-size: 12px; white-space: nowrap; }
+#page-dataupload .dcr-files-wrap .icon-btn-outline, #page-dataupload .dcr-files-wrap .icon-btn-danger { width: 22px; height: 22px; font-size: 10px; }
+#page-dataupload .empty { padding: 8px 20px; }
+#page-dataupload .empty-icon { margin-bottom: 2px; }
+#page-dataupload .empty-icon i { font-size: 20px !important; }
+#page-dataupload .empty-title { font-size: 13px; margin-bottom: 2px; }
+#page-dataupload .dcr-export-row { margin-bottom: 6px; }
+#page-dataupload .dcr-info-note { padding: 5px 10px; font-size: 11px; }
+
+#page-dataupload .tpreg-zones { gap: 8px; margin-bottom: 6px; }
+#page-dataupload .tpreg-zone { padding: 5px 7px; }
+#page-dataupload .tpreg-zone-label { margin-bottom: 4px; font-size: 11px; }
+#page-dataupload .tpreg-dropzone { padding: 6px 8px; gap: 4px 8px; }
+#page-dataupload .tpreg-dropzone i.fa-cloud-arrow-up { font-size: 14px; }
+#page-dataupload .tpreg-zone-format { margin-top: 0; }
+#page-dataupload .tpreg-choose-btn.btn { height: 26px; padding: 0 10px; font-size: 11px; }
+
+#page-dataupload .wizard-ready-banner { padding: 8px 14px; margin-bottom: 10px; }
 
 /* ---- Ready-to-generate banner (shown once both uploads succeed) ---- */
 .wizard-ready-banner {
