@@ -4,6 +4,13 @@
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
+/* Bakes in the "80% browser zoom" density as the default — the whole
+   page (fonts, padding, layout) scales down uniformly, same as the
+   officer manually zooming out, so 100% zoom already looks like what
+   used to need 80%. All sizing in this app is px-based (no rem/em), so
+   zoom is the one CSS property that scales everything together without
+   re-tuning every size by hand. */
+html { zoom: 0.8; }
 html, body { height: 100%; }
 button, input, select, textarea { font-family: inherit; }
 
