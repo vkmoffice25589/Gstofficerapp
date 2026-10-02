@@ -163,8 +163,8 @@ function readFileAsArrayBuffer(file) {
 /* Accepts a FileList/array of files (the 3-zone UI normally sends one file
    at a time, but this still accepts several — e.g. drag-dropping all three
    onto one zone still works). Every row gets tagged with the id of the file
-   it came from, so a file can later be individually removed the same way a
-   DCR file can. */
+   it came from, so a fresh upload for the same status can replace the
+   previous one's rows (see below) instead of merging on top of them. */
 async function handleTaxpayerRegisterFiles(fileList) {
   var files = Array.prototype.slice.call(fileList || []);
   if (!files.length) return;
@@ -184,6 +184,22 @@ async function handleTaxpayerRegisterFiles(fileList) {
       var buf = await readFileAsArrayBuffer(file);
       var result = parseTaxpayerRegisterWorkbook(buf, file.name);
       if (result.error) { fileSummaries.push('❌ ' + xe(file.name) + ' — ' + xe(result.error)); continue; }
+
+      // Each zone represents the CURRENT full list for that status (Active/
+      // Cancelled/Suspended), not an incremental delta — so a fresh upload
+      // replaces whatever was previously loaded for that same status, rather
+      // than merging on top of it. Without this, a taxpayer dropped from
+      // this quarter's list (e.g. no longer Active) would stay stuck under
+      // their old status forever, since nothing else ever removes a GSTIN.
+      var priorFiles = AppState.taxpayerRegisterFiles.filter(function (f) { return f.status === result.status; });
+      if (priorFiles.length) {
+        var priorIds = {};
+        priorFiles.forEach(function (f) { priorIds[f.id] = true; });
+        Object.keys(AppState.addressCache).forEach(function (gstin) {
+          if (priorIds[AppState.addressCache[gstin].sourceFileId]) delete AppState.addressCache[gstin];
+        });
+        AppState.taxpayerRegisterFiles = AppState.taxpayerRegisterFiles.filter(function (f) { return f.status !== result.status; });
+      }
 
       var fileId = uid('tpregfile');
       result.rows.forEach(function (rec) {
@@ -232,9 +248,9 @@ function handleTaxpayerRegisterFile(file) {
 }
 
 /* ===== Full section renderer — header, three status-coloured upload zones,
-   import log, uploaded-files table, register summary + export. Mirrors
-   renderDCRSection() in import-dcr.js so the two halves of the Data Upload
-   page follow the same structure. Called from renderWizardStepper(). ===== */
+   import log, register summary (figures only, no per-file table) + export.
+   Mirrors renderDCRSection() in import-dcr.js so the two halves of the Data
+   Upload page follow the same structure. Called from renderWizardStepper(). ===== */
 function renderTpRegSection() {
   var el = document.getElementById('wizard-tpreg-section');
   if (!el) return;
@@ -245,7 +261,6 @@ function renderTpRegSection() {
     + tpRegZonesRow()
     + '<div id="tp-reg-log" class="import-log" style="display:none;"></div>'
     + '<div id="tp-reg-status" style="margin-top:6px;font-size:12px;color:var(--green);"></div>'
-    + taxpayerRegisterFilesTable()
     + '<div id="tp-reg-summary"></div>'
     + '</div>'; // closes .tpreg-panel opened in tpRegPanelHead()
 
@@ -315,62 +330,6 @@ function tpRegStatusPill(status) {
   var s = (status || '').toLowerCase();
   var cls = s.startsWith('active') ? 'green' : s.startsWith('cancel') ? 'red' : s.startsWith('suspend') ? 'orange' : 'gray';
   return '<span class="pill pill-' + cls + '">' + xe(status || 'Unknown') + '</span>';
-}
-
-function taxpayerRegisterFilesTable() {
-  var files = (AppState.taxpayerRegisterFiles || []).slice().sort(function (a, b) { return new Date(b.uploadedAt) - new Date(a.uploadedAt); });
-  var body;
-  if (!files.length) {
-    body = '<div class="empty"><div class="empty-sub">No Taxpayer Register files uploaded yet.</div></div>';
-  } else {
-    var rows = files.map(function (f) {
-      return '<tr>'
-        + '<td>' + tpRegStatusPill(f.status) + '</td>'
-        + '<td><i class="fa-solid fa-file-excel" style="color:var(--success);margin-right:6px;"></i>' + xe(f.fileName) + '</td>'
-        + '<td>' + fmt0(f.records) + '</td>'
-        + '<td>' + fmtDateTime(f.uploadedAt) + '</td>'
-        + '<td><span class="pill pill-green"><i class="fa-solid fa-check"></i> Uploaded</span></td>'
-        + '<td><div class="row-actions">'
-        + '<button type="button" class="icon-btn-outline" title="View file details" onclick="wizViewTaxpayerRegisterFile(\'' + f.id + '\')"><i class="fa-solid fa-eye"></i></button>'
-        + '<button type="button" class="icon-btn-danger" title="Delete this file" onclick="wizDeleteTaxpayerRegisterFile(\'' + f.id + '\')"><i class="fa-solid fa-trash"></i></button>'
-        + '</div></td>'
-        + '</tr>';
-    }).join('');
-    body = '<div class="table-wrap"><div class="table-scroll"><table><thead><tr><th>Type</th><th>File Name</th><th>Records</th><th>Uploaded On</th><th>Status</th><th>Action</th></tr></thead><tbody>' + rows + '</tbody></table></div></div>';
-  }
-  return '<div class="dcr-files-wrap"><div class="dcr-col-label">Uploaded Taxpayer Register Files</div>' + body + '</div>';
-}
-
-function wizViewTaxpayerRegisterFile(fileId) {
-  var f = (AppState.taxpayerRegisterFiles || []).find(function (x) { return x.id === fileId; });
-  if (!f) return;
-  showToast('📄 ' + f.fileName + ' — ' + f.status + ' — ' + fmt0(f.records) + ' records — uploaded ' + fmtDateTime(f.uploadedAt));
-}
-
-/* Removes one uploaded file's rows from the register. Unlike DCR files, a
-   GSTIN only ever appears in exactly one Active/Cancelled/Suspended file at
-   a time, so this can simply drop every addressCache entry tagged with this
-   file's id — no cross-file reference counting needed. */
-function wizDeleteTaxpayerRegisterFile(fileId) {
-  var file = (AppState.taxpayerRegisterFiles || []).find(function (f) { return f.id === fileId; });
-  if (!file) return;
-  if (!confirm('Delete "' + file.fileName + '" (' + file.status + ') from the Taxpayer Register?\n\n' + file.records + ' taxpayer record(s) will be removed. This cannot be undone.')) return;
-
-  AppState.taxpayerRegisterFiles = AppState.taxpayerRegisterFiles.filter(function (f) { return f.id !== fileId; });
-  Object.keys(AppState.addressCache).forEach(function (gstin) {
-    if (AppState.addressCache[gstin].sourceFileId === fileId) delete AppState.addressCache[gstin];
-  });
-
-  if (!AppState.taxpayerRegisterFiles.length) {
-    AppState.lastRegisterImportAt = null; AppState.lastRegisterImportFileName = null; AppState.lastRegisterImportFileSize = null;
-  }
-
-  persist();
-  updateSidebar();
-  if (typeof renderWizardStepper === 'function') renderWizardStepper();
-  if (typeof renderReports === 'function') renderReports();
-  if (typeof renderDashboard === 'function' && document.getElementById('page-dashboard').classList.contains('active')) renderDashboard();
-  showToast('🗑 Taxpayer Register file removed');
 }
 
 function renderTaxpayerRegisterSummary() {

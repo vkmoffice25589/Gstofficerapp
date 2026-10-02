@@ -209,29 +209,13 @@
 .dcr-upload-summary-recon .dcr-recon-tiles { grid-template-columns: repeat(2, 1fr); }
 .btn-link { background: none; border: none; padding: 0; color: var(--primary-blue); font-size: 12.5px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
 .btn-link:hover { text-decoration: underline; }
-
-.dcr-files-wrap { border-top: 1px solid var(--border); padding-top: 20px; margin-bottom: 18px; }
-.dcr-files-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; }
-.icon-btn-danger {
-  width: 30px; height: 30px; border-radius: var(--radius-sm); border: 1px solid var(--danger-border);
-  background: var(--surface); color: var(--danger); cursor: pointer; display: flex; align-items: center;
-  justify-content: center; font-size: 12.5px; transition: background 0.12s;
-}
-.icon-btn-danger:hover { background: var(--danger-dim); }
+.btn-link-danger { color: var(--danger); }
 
 .dcr-info-note {
   display: flex; align-items: center; gap: 8px; background: var(--primary-blue-dim); border: 1px solid var(--primary-blue-border);
   border-radius: var(--radius-md); padding: 10px 14px; font-size: 12.5px; color: var(--navy-text);
 }
 .dcr-info-note i { color: var(--primary-blue); }
-
-.icon-btn-outline {
-  width: 30px; height: 30px; border-radius: var(--radius-sm); border: 1px solid var(--border-strong);
-  background: var(--surface); color: var(--muted-text); cursor: pointer; display: inline-flex; align-items: center;
-  justify-content: center; font-size: 12.5px; transition: background 0.12s, color 0.12s;
-}
-.icon-btn-outline:hover { background: var(--surface-2); color: var(--primary-blue); }
-.row-actions { display: flex; align-items: center; gap: 4px; }
 
 /* ---- Data Upload page — DCR panel, then Taxpayer Register panel below it ---- */
 /* DCR and Taxpayer Register stack (DCR on top) rather than sitting side by
@@ -359,20 +343,6 @@
 #page-dataupload .dcr-recon-tiles .sval { font-size: 12px !important; }
 #page-dataupload .dcr-recon-actions { margin-top: 2px; }
 
-/* Uploaded-files tables: tighter rows, and a capped height with its own
-   scrollbar once a table has more than a handful of rows — a quarter's
-   worth of DCR uploads or register refreshes shouldn't make the officer
-   scroll past the whole page just to reach the next section. */
-#page-dataupload .dcr-files-wrap { padding-top: 6px; margin-bottom: 6px; }
-#page-dataupload .dcr-files-head { margin-bottom: 6px; }
-#page-dataupload .dcr-files-head .btn { height: 26px; padding: 0 9px; font-size: 11px; }
-#page-dataupload .dcr-files-wrap .table-scroll { max-height: 150px; overflow-y: auto; }
-#page-dataupload .dcr-files-wrap th, #page-dataupload .dcr-files-wrap td { padding: 6px 10px; font-size: 12px; white-space: nowrap; }
-#page-dataupload .dcr-files-wrap .icon-btn-outline, #page-dataupload .dcr-files-wrap .icon-btn-danger { width: 22px; height: 22px; font-size: 10px; }
-#page-dataupload .empty { padding: 8px 20px; }
-#page-dataupload .empty-icon { margin-bottom: 2px; }
-#page-dataupload .empty-icon i { font-size: 20px !important; }
-#page-dataupload .empty-title { font-size: 13px; margin-bottom: 2px; }
 #page-dataupload .dcr-info-note { padding: 5px 10px; font-size: 11px; }
 
 #page-dataupload .tpreg-zones { gap: 8px; margin-bottom: 6px; }

@@ -328,7 +328,6 @@ function renderDCRSection() {
   el.innerHTML =
     dcrPanelHead(hasDCR)
     + dcrUploadRow()
-    + dcrFilesTable()
     + '<div class="dcr-info-note"><i class="fa-solid fa-circle-info"></i> After successful reconciliation, the consolidated DCR will be used for notice generation and recovery proceedings.</div>'
     + '</div>'; // closes .dcr-panel opened in dcrPanelHead()
 
@@ -430,41 +429,9 @@ function dcrReconciliationSummary() {
     + '<div class="dcr-recon-actions">'
     + '<button type="button" class="btn-link" onclick="exportDCRExcel()"><i class="fa-solid fa-file-excel"></i> Export DCR (Excel)</button>'
     + '<button type="button" class="btn-link" onclick="wizDownloadReconciliationReport()"><i class="fa-solid fa-download"></i> Download Reconciliation Report (Excel)</button>'
+    + '<button type="button" class="btn-link btn-link-danger" onclick="wizClearDCR()"><i class="fa-solid fa-trash"></i> Clear / Delete DCR</button>'
     + '</div>'
     + '</div>';
-}
-
-function dcrKnownOrPill(val) {
-  if (!val || val === 'Unknown') return '<span class="pill pill-gray">Unknown</span>';
-  return xe(val);
-}
-
-function dcrFilesTable() {
-  var files = AppState.dcrFiles.slice().sort(function (a, b) { return new Date(b.uploadedAt) - new Date(a.uploadedAt); });
-  var body;
-  if (!files.length) {
-    body = '<div class="empty"><div class="empty-sub">No DCR files uploaded yet.</div></div>';
-  } else {
-    var rows = files.map(function (f) {
-      return '<tr>'
-        + '<td><i class="fa-solid fa-file-excel" style="color:var(--success);margin-right:6px;"></i>' + xe(f.fileName) + '</td>'
-        + '<td>' + dcrKnownOrPill(f.fy) + '</td>'
-        + '<td>' + dcrKnownOrPill(f.quarterLabel || f.quarter) + '</td>'
-        + '<td>' + fmt0(f.records) + '</td>'
-        + '<td>' + fmtDateTime(f.uploadedAt) + '</td>'
-        + '<td><span class="pill pill-green"><i class="fa-solid fa-check"></i> Uploaded</span></td>'
-        + '<td><button type="button" class="icon-btn-danger" title="Delete this DCR file" onclick="wizDeleteDCRFile(\'' + f.id + '\')"><i class="fa-solid fa-trash"></i></button></td>'
-        + '</tr>';
-    }).join('');
-    body = '<div class="table-wrap"><div class="table-scroll"><table><thead><tr><th>File Name</th><th>Financial Year</th><th>Quarter</th><th>Records</th><th>Uploaded On</th><th>Status</th><th>Action</th></tr></thead><tbody>' + rows + '</tbody></table></div></div>';
-  }
-  var hasDCR = AppState.cases.length > 0;
-  return '<div class="dcr-files-wrap">'
-    + '<div class="dcr-files-head">'
-    + '<div class="dcr-col-label" style="margin:0;">Uploaded DCR Files</div>'
-    + '<button type="button" class="btn btn-danger-outline btn-sm"' + (hasDCR ? '' : ' disabled') + ' onclick="wizClearDCR()"><i class="fa-solid fa-trash"></i> Clear / Delete DCR</button>'
-    + '</div>'
-    + body + '</div>';
 }
 
 /* Full consolidated DCR (every valid case currently held), not just the
@@ -504,37 +471,6 @@ function wizWireDCRUploadZone() {
   zone.addEventListener('drop', function (e) {
     if (e.dataTransfer.files.length) handleDCRFiles(e.dataTransfer.files);
   });
-}
-
-/* Removes one uploaded DCR file's row. A demand is only actually dropped from
-   the consolidated DCR if no OTHER remaining file also touched it — this
-   avoids deleting data a later upload already refreshed. */
-function wizDeleteDCRFile(fileId) {
-  var file = AppState.dcrFiles.find(function (f) { return f.id === fileId; });
-  if (!file) return;
-  if (!confirm('Delete "' + file.fileName + '" from the consolidated DCR?\n\nDemand records that only came from this file will be removed. This cannot be undone.')) return;
-
-  AppState.dcrFiles = AppState.dcrFiles.filter(function (f) { return f.id !== fileId; });
-
-  var stillReferenced = {};
-  AppState.dcrFiles.forEach(function (f) { f.demandIds.forEach(function (id) { stillReferenced[id] = true; }); });
-  var toRemove = {};
-  (file.demandIds || []).forEach(function (id) { if (!stillReferenced[id]) toRemove[id] = true; });
-  AppState.cases = AppState.cases.filter(function (c) { return !toRemove[c.demandId]; });
-
-  if (!AppState.dcrFiles.length) {
-    AppState.lastImportAt = null; AppState.lastImportFileName = null; AppState.lastImportFileSize = null;
-  } else {
-    var latest = AppState.dcrFiles.slice().sort(function (a, b) { return new Date(b.uploadedAt) - new Date(a.uploadedAt); })[0];
-    AppState.lastImportAt = latest.uploadedAt;
-    AppState.lastImportFileName = latest.fileName;
-  }
-
-  persist();
-  updateSidebar();
-  if (typeof renderWizardStepper === 'function') renderWizardStepper();
-  if (typeof renderDashboard === 'function' && document.getElementById('page-dashboard').classList.contains('active')) renderDashboard();
-  showToast('🗑 DCR file removed');
 }
 
 /* Top-level "Clear / Delete DCR" — wipes the entire consolidated DCR dataset. */
