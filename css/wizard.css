@@ -53,7 +53,7 @@
 #page-bulknotice .wizard-card-sub { font-size: 13.5px; margin-top: 4px; }
 
 #page-bulknotice .wizard-card .fg label { color: var(--navy-text); font-weight: 700; font-size: 12.5px; letter-spacing: 0.2px; }
-#page-bulknotice #wiz-gstin-input { height: 46px; border-radius: 10px; font-size: 14.5px; padding: 10px 34px 10px 14px; }
+#page-bulknotice #wiz-gstin-input, #page-bulknotice #wiz2-gstin-input { height: 46px; border-radius: 10px; font-size: 14.5px; padding: 10px 34px 10px 14px; }
 #page-bulknotice .wizard-card .btn-blue { height: 46px; border-radius: 10px; padding: 0 22px; font-size: 14px; }
 
 /* ---- Upload DCR / Upload Taxpayer Register — clean outlined pill
@@ -542,9 +542,9 @@
 .btn-reset-link:hover { color: var(--primary-blue); }
 
 /* ---- Bottom action bar — fixed to the browser viewport, not just the scroll container ---- */
-#bulk-tab-notice { padding-bottom: 88px; }
+#bulk-tab-notice, #bulk-tab-notice2 { padding-bottom: 88px; }
 .wizard-action-bar {
-  position: fixed; left: 224px; right: 0; bottom: 0; background: var(--surface); border-top: 1px solid var(--border); border-radius: 0;
+  position: fixed; left: 256px; right: 0; bottom: 0; background: var(--surface); border-top: 1px solid var(--border); border-radius: 0;
   padding: 14px 32px; display: flex; align-items: center; gap: 18px; box-shadow: 0 -4px 14px rgba(15,23,42,0.08); flex-wrap: wrap; z-index: 100;
 }
 .wab-left { display: flex; flex-direction: column; gap: 3px; }

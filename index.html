@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>GST Recovery Management System</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"/>
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700;900&display=swap" rel="stylesheet"/>
 <link rel="stylesheet" href="css/variables.css"/>
 <link rel="stylesheet" href="css/base.css"/>
 <link rel="stylesheet" href="css/dashboard.css"/>
@@ -169,6 +169,7 @@
         <div class="tab" data-tab="bankrelease" onclick="bulkTab('bankrelease', this)"><i class="fa-solid fa-lock-open"></i> Release Attachment</div>
         <div class="tab" data-tab="thirdparty" onclick="bulkTab('thirdparty', this)"><i class="fa-solid fa-user-group"></i> Third-Party Notice</div>
         <div class="tab" data-tab="property" onclick="bulkTab('property', this)"><i class="fa-solid fa-house-lock"></i> Property Attachment</div>
+        <div class="tab" data-tab="notice2" onclick="bulkTab('notice2', this)"><i class="fa-solid fa-clone"></i> Issue Notice (Copy)</div>
       </div>
 
       <!-- Issue Notice — wizard -->
@@ -277,6 +278,126 @@
             <button class="btn btn-outline" onclick="previewWizardNotice()"><i class="fa-solid fa-eye"></i> Preview Notice</button>
             <button class="btn btn-red" id="wiz-generate-notice-btn" onclick="wizGenerateNotice()"><i class="fa-solid fa-paper-plane"></i> Generate Notice</button>
             <button class="btn btn-outline" onclick="wizClearAllFilters()"><i class="fa-solid fa-rotate-left"></i> Reset</button>
+          </div>
+          <div class="wab-note">
+            <i class="fa-solid fa-circle-info"></i>
+            <span>Only eligible and selected demands will be included in the notice.</span>
+          </div>
+        </div>
+
+        <div class="wiz-upload-actions">
+          <button class="btn btn-outline" onclick="document.getElementById('dcr-file-input').click()"><i class="fa-solid fa-upload"></i> Upload DCR</button>
+          <button class="btn btn-outline" onclick="nav('dataupload');wizChevronGoToTaxpayerRegister();"><i class="fa-solid fa-upload"></i> Upload Taxpayer Register</button>
+        </div>
+      </div>
+
+      <!-- Issue Notice (Copy) — independent duplicate of Issue Notice above (js/wizard-copy.js),
+           for the officer to remodify separately without touching the original. -->
+      <div class="bulk-tab-panel" id="bulk-tab-notice2" style="display:none;">
+
+        <div class="wizard-card">
+          <div class="wizard-card-head">
+            <div class="wizard-num">1</div>
+            <div><div class="wizard-card-title">Search GSTIN</div><div class="wizard-card-sub">Enter GSTIN to find taxpayer. Legal and trade name will be auto populated.</div></div>
+          </div>
+          <div class="form-grid">
+            <div class="fg full" style="display:flex;flex-direction:row;gap:8px;align-items:flex-end;">
+              <div style="flex:1;position:relative;">
+                <label>GSTIN *</label>
+                <input type="text" id="wiz2-gstin-input" style="text-transform:uppercase;padding-right:32px;" placeholder="Enter GSTIN" onkeydown="if(event.key==='Enter')wiz2SearchGSTIN();"/>
+                <button type="button" class="input-clear-btn" title="Clear" onclick="wiz2ClearGSTIN()"><i class="fa-solid fa-xmark"></i></button>
+              </div>
+              <button class="btn btn-blue" onclick="wiz2SearchGSTIN()"><i class="fa-solid fa-magnifying-glass"></i> Search</button>
+            </div>
+          </div>
+          <div id="wiz2-gstin-hint" style="margin-top:6px;font-size:12px;color:var(--warning);"></div>
+          <div id="wiz2-taxpayer-details" class="taxpayer-details-bar" style="display:none;"></div>
+        </div>
+
+        <div class="wizard-card" id="wiz2-demand-section" style="display:none;">
+          <div class="wizard-card-head">
+            <div class="wizard-num">2</div>
+            <div><div class="wizard-card-title">Demands to Include in Notice</div><div class="wizard-card-sub">All demands are shown. Flagged rows (Excluded / Section 62) are unchecked by default — tick to include anyway.</div></div>
+            <div class="wizard-card-head-right">
+              <span class="pill pill-green" id="wiz2-head-count">0 of 0 selected</span>
+              <div style="margin-top:6px;"><div class="wchr-label">Total Selected Arrear (₹)</div><div class="wchr-val" id="wiz2-head-total">₹0</div></div>
+            </div>
+          </div>
+
+          <div class="quick-filter-bar" id="wiz2-quick-filter-bar">
+            <button type="button" class="qf-chip active" data-qf="all" onclick="quickFilterAll2()">All Demands <span class="qf-count" id="qf2-count-all">0</span></button>
+            <button type="button" class="qf-chip" data-qf="intimation" onclick="quickFilterIntimation2()">Intimation &lt; 90 Days <span class="qf-count" id="qf2-count-intimation">0</span></button>
+            <button type="button" class="qf-chip" data-qf="urgent" onclick="quickFilterUrgent2()">Urgent &ge; 90 Days <span class="qf-count" id="qf2-count-urgent">0</span></button>
+            <button type="button" class="qf-chip" data-qf="section62" onclick="toggleSection62Included2()" title="Section 62 (best-judgment) demands are excluded by default — click to include them">Include Section 62 <span class="qf-count" id="qf2-count-section62">0</span></button>
+            <div class="qf-spacer"></div>
+            <button type="button" class="btn btn-outline btn-sm filters-btn" onclick="openWizFilterDrawer2()"><i class="fa-solid fa-sliders"></i> Advanced Filters<span class="filters-badge" id="wiz2-filters-badge" style="display:none;">0</span></button>
+          </div>
+
+          <div class="wiz-flag-legend">
+            <span class="pill pill-orange wiz-excluded-badge">Excluded</span> = higher forum / closed / refund demand &nbsp;&nbsp;
+            <span class="pill pill-gold wiz-excluded-badge">Section 62</span> = best-judgment assessment &nbsp;&nbsp;
+            <span>— both stay unchecked until you tick them.</span>
+            <button type="button" class="wiz-flag-legend-link" onclick="openWizExclusionGuide()">View full list &rsaquo;</button>
+          </div>
+
+          <div id="wiz2-active-filter-tags" class="active-filter-tags" style="display:none;"></div>
+
+          <div id="wiz2-demand-table-wrap"></div>
+        </div>
+
+        <!-- Advanced Filters — right-side drawer -->
+        <div class="filter-drawer-overlay" id="wiz2-filter-drawer-overlay" onclick="cancelWizFilterDrawer2()"></div>
+        <div class="filter-drawer" id="wiz2-filter-drawer">
+          <div class="filter-drawer-head">
+            <div class="filter-drawer-title"><i class="fa-solid fa-sliders"></i> Advanced Filters</div>
+            <button class="mclose" onclick="cancelWizFilterDrawer2()">&times;</button>
+          </div>
+          <div class="filter-drawer-body">
+            <label class="wizard-col-label">Notice Type</label>
+            <div class="notice-type-cards">
+              <div class="notice-type-card type-intimation" data-type="intimation" onclick="selectWizNoticeType2('intimation', this)"><i class="fa-solid fa-envelope"></i><div class="ntc-text"><div class="ntc-title">Intimation Notice</div><div class="ntc-sub">&lt; 90 days</div></div></div>
+              <div class="notice-type-card type-urgent" data-type="urgent" onclick="selectWizNoticeType2('urgent', this)"><i class="fa-solid fa-triangle-exclamation"></i><div class="ntc-text"><div class="ntc-title">Urgent Notice</div><div class="ntc-sub">&ge; 90 days</div></div></div>
+              <div class="notice-type-card type-both selected" data-type="both" onclick="selectWizNoticeType2('both', this)"><i class="fa-solid fa-layer-group"></i><div class="ntc-text"><div class="ntc-title">Both Notices</div><div class="ntc-sub">Generate both notices where applicable</div><div class="ntc-sub2">&lt; 90 days &rarr; Intimation &nbsp;|&nbsp; &ge; 90 days &rarr; Urgent</div></div></div>
+            </div>
+
+            <label class="wizard-col-label" style="margin-top:22px;">Section Filter</label>
+            <div class="filter-cards">
+              <div class="filter-card selected" data-mode="exclude" onclick="selectWizSectionFilter2('exclude', this)"><div class="fc-radio"></div><div><div class="fc-title">Exclude Section 62 (default)</div><div class="fc-sub">Section 62 (best-judgment) demands are not treated as arrears</div></div></div>
+              <div class="filter-card" data-mode="all" onclick="selectWizSectionFilter2('all', this)"><div class="fc-radio"></div><div><div class="fc-title">Include All Sections</div><div class="fc-sub">Include Section 62 demands as well, if the officer wants to pursue them</div></div></div>
+            </div>
+
+            <label class="wizard-col-label" style="margin-top:22px;">Other Filters</label>
+            <div class="wizard-filters-panel">
+              <div class="fg"><label>Demand Type</label>
+                <select class="fsel" id="wiz2-demand-type">
+                  <option>All</option><option>Tax</option><option>Interest</option><option>Penalty</option><option>Other</option>
+                </select>
+              </div>
+              <div class="wizard-filters-panel-row">
+                <div class="fg"><label>Order Date From</label><input type="date" id="wiz2-order-date-from"/></div>
+                <div class="fg"><label>Order Date To</label><input type="date" id="wiz2-order-date-to"/></div>
+              </div>
+              <div class="wizard-filters-panel-row">
+                <div class="fg"><label>Tax Period From</label><input type="text" id="wiz2-tax-period-from" placeholder="e.g. 01/2025"/></div>
+                <div class="fg"><label>Tax Period To</label><input type="text" id="wiz2-tax-period-to" placeholder="e.g. 03/2025"/></div>
+              </div>
+            </div>
+          </div>
+          <div class="filter-drawer-foot">
+            <button class="btn btn-outline" onclick="wizResetDrawerFilters2()"><i class="fa-solid fa-rotate-left"></i> Reset Filters</button>
+            <button class="btn btn-red" onclick="wizApplyFilters2()"><i class="fa-solid fa-check"></i> Apply Filters</button>
+          </div>
+        </div>
+
+        <div class="wizard-action-bar">
+          <div class="wab-left">
+            <div class="selection-summary" id="wiz2-bar-summary">0 of 0 selected</div>
+            <div class="selection-summary">Total Selected Arrear (₹)<span class="selection-total" id="wiz2-bar-total">₹0</span></div>
+          </div>
+          <div class="wab-center">
+            <button class="btn btn-outline" onclick="previewWizardNotice2()"><i class="fa-solid fa-eye"></i> Preview Notice</button>
+            <button class="btn btn-red" id="wiz2-generate-notice-btn" onclick="wizGenerateNotice2()"><i class="fa-solid fa-paper-plane"></i> Generate Notice</button>
+            <button class="btn btn-outline" onclick="wizClearAllFilters2()"><i class="fa-solid fa-rotate-left"></i> Reset</button>
           </div>
           <div class="wab-note">
             <i class="fa-solid fa-circle-info"></i>
@@ -582,6 +703,21 @@
         </div>
       </div>
 
+      <div class="table-wrap ar-cal-card">
+        <div class="ar-panel-title ar-cal-head">
+          <span><i class="fa-solid fa-calendar-days"></i> Action Calendar</span>
+          <div class="ar-cal-nav">
+            <button type="button" class="ar-page-btn" onclick="arCalShift(-1)" title="Previous month"><i class="fa-solid fa-chevron-left"></i></button>
+            <span class="ar-cal-month" id="ar-cal-month"></span>
+            <button type="button" class="ar-page-btn" onclick="arCalShift(1)" title="Next month"><i class="fa-solid fa-chevron-right"></i></button>
+            <button type="button" class="btn btn-outline btn-sm" onclick="arCalToday()">Today</button>
+          </div>
+        </div>
+        <div class="ar-cal-legend" id="ar-cal-legend"></div>
+        <div class="ar-cal-grid" id="ar-cal-grid"></div>
+        <div class="ar-cal-day-list" id="ar-cal-day-list"></div>
+      </div>
+
       <!-- Case Detail Drawer -->
       <div class="ar-drawer-backdrop" id="ar-drawer-backdrop" onclick="arCloseDrawer()"></div>
       <div class="ar-drawer" id="ar-drawer">
@@ -759,6 +895,7 @@
 <script src="js/arrear-action-register.js"></script>
 <script src="js/settings.js"></script>
 <script src="js/wizard.js"></script>
+<script src="js/wizard-copy.js"></script>
 <script src="js/notice-history.js"></script>
 <script src="js/downloads.js"></script>
 <script src="js/dashboard.js"></script>
