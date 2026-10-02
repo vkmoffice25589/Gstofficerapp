@@ -118,6 +118,7 @@ function wiz2LoadGSTIN(gstin) {
   );
   updateQuickFilterCounts2();
   applyWizardFiltersAndRender2();
+  document.getElementById('wiz2-demand-section').scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 function wiz2ClearGSTIN() {

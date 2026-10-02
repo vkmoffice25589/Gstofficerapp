@@ -139,6 +139,7 @@ function baLoadGSTIN(gstin) {
   _baSelectedDemandIds = new Set(eligibleCases.filter(function (c) { return !baIsFlagged(c); }).map(function (c) { return c.demandId; }));
   baUpdateQuickFilterCounts();
   baApplyFiltersAndRender();
+  document.getElementById('ba-demand-section').scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 function baClearGSTIN() {

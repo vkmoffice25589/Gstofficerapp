@@ -136,6 +136,7 @@ function tpLoadGSTIN(gstin) {
   _tpSelectedDemandIds = new Set(eligibleCases.filter(function (c) { return !tpIsFlagged(c); }).map(function (c) { return c.demandId; }));
   tpUpdateQuickFilterCounts();
   tpApplyFiltersAndRender();
+  document.getElementById('tp-demand-section').scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 function tpClearGSTIN() {
