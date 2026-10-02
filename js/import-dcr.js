@@ -329,7 +329,6 @@ function renderDCRSection() {
     dcrPanelHead(hasDCR)
     + dcrUploadRow()
     + dcrFilesTable()
-    + dcrExportButtons(hasDCR)
     + '<div class="dcr-info-note"><i class="fa-solid fa-circle-info"></i> After successful reconciliation, the consolidated DCR will be used for notice generation and recovery proceedings.</div>'
     + '</div>'; // closes .dcr-panel opened in dcrPanelHead()
 
@@ -438,7 +437,10 @@ function dcrReconciliationSummary() {
     + '<div class="stats dcr-recon-tiles">' + tiles.map(function (t) {
       return '<div class="scard ' + t.cls + '"><div class="slabel"><i class="fa-solid ' + t.icon + '"></i> ' + t.label + '</div><div class="sval ' + t.cls + '" style="font-size:16px;">' + t.val + '</div></div>';
     }).join('') + '</div>'
-    + '<div class="dcr-recon-actions"><button type="button" class="btn-link" onclick="wizDownloadReconciliationReport()"><i class="fa-solid fa-download"></i> Download Reconciliation Report (Excel)</button></div>'
+    + '<div class="dcr-recon-actions">'
+    + '<button type="button" class="btn-link" onclick="exportDCRExcel()"><i class="fa-solid fa-file-excel"></i> Export DCR (Excel)</button>'
+    + '<button type="button" class="btn-link" onclick="wizDownloadReconciliationReport()"><i class="fa-solid fa-download"></i> Download Reconciliation Report (Excel)</button>'
+    + '</div>'
     + '</div>';
 }
 
@@ -467,13 +469,6 @@ function dcrFilesTable() {
     body = '<div class="table-wrap"><div class="table-scroll"><table><thead><tr><th>File Name</th><th>Financial Year</th><th>Quarter</th><th>Records</th><th>Uploaded On</th><th>Status</th><th>Action</th></tr></thead><tbody>' + rows + '</tbody></table></div></div>';
   }
   return '<div class="dcr-files-wrap"><div class="dcr-col-label">Uploaded DCR Files</div>' + body + '</div>';
-}
-
-function dcrExportButtons(hasDCR) {
-  return '<div class="dcr-export-row">'
-    + '<button type="button" class="btn btn-blue"' + (hasDCR ? '' : ' disabled') + ' onclick="exportDCRExcel()"><i class="fa-solid fa-file-excel"></i> Export DCR (Excel)</button>'
-    + '<button type="button" class="btn btn-green"' + (AppState.lastReconciliation ? '' : ' disabled') + ' onclick="wizDownloadReconciliationReport()"><i class="fa-solid fa-file-excel"></i> Export Reconciled DCR (Excel)</button>'
-    + '</div>';
 }
 
 /* Full consolidated DCR (every valid case currently held), not just the

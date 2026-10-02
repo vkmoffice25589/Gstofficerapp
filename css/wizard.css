@@ -198,7 +198,7 @@
 .dcr-recon-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; }
 .dcr-recon-tiles { grid-template-columns: repeat(3, 1fr); margin-bottom: 12px; }
 .dcr-recon-tiles .slabel { display: flex; align-items: center; gap: 5px; }
-.dcr-recon-actions { display: flex; }
+.dcr-recon-actions { display: flex; gap: 16px; flex-wrap: wrap; }
 
 /* Reconciliation Summary nested in the upload row's right column (next to
    the dropzone) instead of as its own full-width section below it — that
@@ -224,7 +224,6 @@
 }
 .dcr-info-note i { color: var(--primary-blue); }
 
-.dcr-export-row { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 18px; }
 .icon-btn-outline {
   width: 30px; height: 30px; border-radius: var(--radius-sm); border: 1px solid var(--border-strong);
   background: var(--surface); color: var(--muted-text); cursor: pointer; display: inline-flex; align-items: center;
@@ -371,7 +370,6 @@
 #page-dataupload .empty-icon { margin-bottom: 2px; }
 #page-dataupload .empty-icon i { font-size: 20px !important; }
 #page-dataupload .empty-title { font-size: 13px; margin-bottom: 2px; }
-#page-dataupload .dcr-export-row { margin-bottom: 6px; }
 #page-dataupload .dcr-info-note { padding: 5px 10px; font-size: 11px; }
 
 #page-dataupload .tpreg-zones { gap: 8px; margin-bottom: 6px; }
