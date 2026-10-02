@@ -328,7 +328,6 @@ function renderDCRSection() {
   el.innerHTML =
     dcrPanelHead(hasDCR)
     + dcrUploadRow()
-    + dcrReconciliationSummary()
     + dcrFilesTable()
     + dcrExportButtons(hasDCR)
     + '<div class="dcr-info-note"><i class="fa-solid fa-circle-info"></i> After successful reconciliation, the consolidated DCR will be used for notice generation and recovery proceedings.</div>'
@@ -371,7 +370,7 @@ function dcrUploadRow() {
     + '</div>'
     + dcrPendingFileChips()
     + '</div>'
-    + dcrUploadSummaryPanel()
+    + dcrUploadRightPanel()
     + '</div>';
 }
 
@@ -385,7 +384,7 @@ function dcrPendingFileChips() {
 
 function dcrUploadSummaryPanel() {
   var n = _dcrPendingFiles.length;
-  if (!n) return dcrConsolidatedSnapshot();
+  if (!n) return '';
 
   var totalRecords = _dcrPendingFiles.reduce(function (s, f) { return s + f.recordCount; }, 0);
   var fys = Array.from(new Set(_dcrPendingFiles.map(function (f) { return f.fy; }))).sort();
@@ -404,34 +403,16 @@ function dcrUploadSummaryPanel() {
     + '</div>';
 }
 
-/* Idle state of the summary column — while no file is staged for upload,
-   show what the consolidated DCR currently holds instead of an empty
-   prompt box. Total Pending is the one number an officer actually cares
-   about here, so it gets its own full-width hero tile (same pattern as
-   the Arrear Action Register's Balance Arrear tile) instead of sitting at
-   equal visual weight with Financial Years in a flat label/value list. */
-function dcrConsolidatedSnapshot() {
-  var valid = AppState.cases.filter(isValidCase);
-  if (!valid.length) {
-    return '<div class="dcr-upload-summary dcr-upload-summary-empty">'
-      + '<i class="fa-regular fa-folder-open"></i>'
-      + '<div class="dcr-summary-empty-text">Select or drag DCR file(s) to see a summary before reconciling.</div>'
-      + '</div>';
-  }
-  var uniqueGstins = new Set(valid.map(function (c) { return c.gstin; })).size;
-  var totalPending = valid.reduce(function (s, c) { return s + (Number(c.pend_total) || 0); }, 0);
-  var fys = Array.from(new Set(valid.map(function (c) { return c.fy; }).filter(function (f) { return f && f !== 'Unknown'; }))).sort();
-
-  return '<div class="dcr-upload-summary">'
-    + '<div class="dcr-col-label">Consolidated DCR Snapshot</div>'
-    + '<div class="dcr-mini-stats">'
-    + dcrMiniStat('Total Pending', fmt(totalPending), 'red', true)
-    + dcrMiniStat('Total Records', fmt0(valid.length), 'blue')
-    + dcrMiniStat('Unique Taxpayers', fmt0(uniqueGstins), 'purple')
-    + dcrMiniStat('Financial Years', xe(fys.join(', ')) || '<span class="dms-muted">Not detected</span>', 'gold')
-    + '</div>'
-    + '<div class="dcr-summary-hint">Select or drag DCR file(s) above to add more quarters/years.</div>'
-    + '</div>';
+/* Right column of the upload row: while a file is staged, the Upload
+   Summary (above) takes that slot. Otherwise it shows the Reconciliation
+   Summary from the last completed upload, right next to the dropzone
+   instead of as a separate full-width block below it. Before any DCR has
+   ever been uploaded there's nothing to reconcile yet, so the slot is
+   simply left empty rather than showing a placeholder box. */
+function dcrUploadRightPanel() {
+  if (_dcrPendingFiles.length) return dcrUploadSummaryPanel();
+  if (!AppState.lastReconciliation) return '';
+  return '<div class="dcr-upload-summary dcr-upload-summary-recon">' + dcrReconciliationSummary() + '</div>';
 }
 
 function dcrMiniStat(label, val, color, hero) {

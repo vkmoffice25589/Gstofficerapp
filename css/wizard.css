@@ -153,9 +153,6 @@
 .dcr-chip-remove:hover { color: var(--danger); }
 
 .dcr-upload-summary { background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 16px; display: flex; flex-direction: column; }
-.dcr-upload-summary-empty { justify-content: center; align-items: center; text-align: center; gap: 10px; }
-.dcr-upload-summary-empty i { font-size: 26px; color: var(--primary-blue-border); }
-.dcr-summary-empty-text { font-size: 12px; color: var(--muted-text); max-width: 200px; line-height: 1.4; }
 .dcr-summary-hint { font-size: 11px; color: var(--ink3); margin-top: 10px; line-height: 1.4; }
 
 /* Stat tiles for the summary column — same "colour stripe + label + value"
@@ -202,6 +199,14 @@
 .dcr-recon-tiles { grid-template-columns: repeat(3, 1fr); margin-bottom: 12px; }
 .dcr-recon-tiles .slabel { display: flex; align-items: center; gap: 5px; }
 .dcr-recon-actions { display: flex; }
+
+/* Reconciliation Summary nested in the upload row's right column (next to
+   the dropzone) instead of as its own full-width section below it — that
+   half-width space is too narrow for the 3-tile row, so it drops to 2, and
+   the wrap's own top border/spacing is dropped since the card around it
+   (.dcr-upload-summary) already provides that separation. */
+.dcr-upload-summary-recon .dcr-recon-wrap { border-top: none; padding-top: 0; margin-bottom: 0; }
+.dcr-upload-summary-recon .dcr-recon-tiles { grid-template-columns: repeat(2, 1fr); }
 .btn-link { background: none; border: none; padding: 0; color: var(--primary-blue); font-size: 12.5px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
 .btn-link:hover { text-decoration: underline; }
 
