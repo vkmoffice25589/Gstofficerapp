@@ -440,7 +440,7 @@
 }
 .filter-drawer-overlay.show { opacity: 1; pointer-events: auto; }
 .filter-drawer {
-  position: fixed; top: 0; right: 0; height: 100vh; width: 430px; max-width: 92vw; background: var(--surface);
+  position: fixed; top: 0; right: 0; height: 100%; width: 430px; max-width: 92vw; background: var(--surface);
   box-shadow: var(--shadow-lg); transform: translateX(100%); transition: transform 0.22s ease; z-index: 490;
   display: flex; flex-direction: column;
 }

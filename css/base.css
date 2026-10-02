@@ -31,14 +31,18 @@ body {
 ::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: var(--radius-sm); }
 ::-webkit-scrollbar-thumb:hover { background: var(--ink3); }
 
-/* ===== LAYOUT — dark sidebar (full height) + light header/content column ===== */
-.layout { display: flex; height: 100vh; overflow: hidden; } /* never let the document scroll sideways (it drags the sidebar off-screen) */
-.main-col { flex: 1; min-width: 0; display: flex; flex-direction: column; height: 100vh; }
+/* ===== LAYOUT — dark sidebar (full height) + light header/content column =====
+   height:100% (not 100vh) deliberately — vh is tied to the raw physical
+   viewport and doesn't scale with the page's zoom:0.8 above, which left a
+   gap of unstyled background below the sidebar/content. % chains through
+   html/body's own height:100% instead, which scales correctly with zoom. */
+.layout { display: flex; height: 100%; overflow: hidden; } /* never let the document scroll sideways (it drags the sidebar off-screen) */
+.main-col { flex: 1; min-width: 0; display: flex; flex-direction: column; height: 100%; }
 .main { flex: 1; overflow-y: auto; }
 
 /* ===== SIDEBAR ===== */
 .sidebar {
-  width: 224px; min-width: 224px; height: 100vh; background: var(--sidebar-navy);
+  width: 224px; min-width: 224px; height: 100%; background: var(--sidebar-navy);
   padding: 0 0 10px; display: flex; flex-direction: column; overflow-y: auto;
 }
 .sidebar-brand { display: flex; align-items: center; gap: 11px; padding: 18px 20px 16px; border-bottom: 1px solid rgba(255,255,255,0.08); margin-bottom: 6px; }
