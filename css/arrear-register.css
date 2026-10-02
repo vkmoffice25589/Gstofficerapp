@@ -97,21 +97,21 @@
 #page-arrearactions .ar-cases-card table { font-family: var(--font-ui); }
 #page-arrearactions .ar-cases-card table thead tr { background: var(--ar-surface-2); }
 #page-arrearactions .ar-cases-card table th {
-  font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--ar-ink-2);
-  padding: 12px 16px; border-bottom: 1px solid var(--ar-border); background: var(--ar-surface-2); white-space: nowrap;
+  font-size: 12.5px; font-weight: 600; letter-spacing: 0; text-transform: none; color: #334155;
+  padding: 9px 12px; border-bottom: 1px solid var(--ar-border); background: #F8FAFC; white-space: nowrap;
 }
 /* top-align, not middle: the Action Status cell stacks 4 rows and is far
    taller than the other cells, so middle-aligning them left GSTIN/Trader
    Name/Total Arrear floating in the vertical centre of the row instead of
    sitting level with "Notice" (the top of that stack). */
-#page-arrearactions .ar-cases-card table td { padding: 14px 16px; font-size: 13px; border-bottom: 1px solid var(--ar-border-soft); color: #1E293B; vertical-align: top; }
+#page-arrearactions .ar-cases-card table td { padding: 9px 12px; font-size: 13px; border-bottom: 1px solid var(--ar-border-soft); color: #1E293B; vertical-align: top; }
 #page-arrearactions .ar-cases-card table tr:last-child td { border-bottom: none; }
 #page-arrearactions .ar-cases-card table tr:hover td { background: var(--ar-surface-2); }
 #page-arrearactions .ar-cases-card .ar-case-row { cursor: pointer; transition: background 0.1s; }
 
 #page-arrearactions .ar-cases-card .gstin-cell { color: var(--ar-accent); font-weight: 500; background: none; text-decoration: none; }
 #page-arrearactions .ar-cases-card .gstin-cell:hover { text-decoration: underline; }
-#page-arrearactions .ar-cases-card .amount-cell { font-size: 13.5px; font-weight: 400; color: var(--ar-ink); font-family: var(--mono); font-variant-numeric: tabular-nums; }
+#page-arrearactions .ar-cases-card .amount-cell { font-size: 13px; font-weight: 600; color: var(--ar-ink); font-family: var(--mono); font-variant-numeric: tabular-nums; }
 
 /* Slim, tidy scrollbar so a wide table never feels like raw Excel */
 .table-scroll { scrollbar-width: thin; scrollbar-color: #CBD5E1 transparent; }

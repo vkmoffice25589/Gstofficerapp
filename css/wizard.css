@@ -466,7 +466,7 @@
 .input-clear-btn:hover { background: var(--border-strong); color: var(--navy-text); }
 
 /* ---- Day badges ---- */
-.day-badge { display: inline-flex; align-items: center; justify-content: center; min-width: 24px; height: 20px; padding: 0 6px; border-radius: 10px; font-size: 11.5px; font-weight: 700; font-family: var(--font-mono); }
+.day-badge { display: inline-flex; align-items: center; justify-content: center; min-width: 56px; height: 22px; padding: 0 6px; border-radius: 5px; font-size: 12px; font-weight: 500; font-family: var(--font-ui); }
 .day-badge.d-green { background: var(--success-dim); color: var(--success); }
 .day-badge.d-orange { background: var(--warning-dim); color: var(--warning); }
 .day-badge.d-red { background: var(--danger-dim); color: var(--danger); }
@@ -573,28 +573,13 @@
   .upload-cards { grid-template-columns: 1fr; }
 }
 
-/* ===== Compact grid-style tables — Issue Notice (Copy) demands, bulk notice results + bulk demand editor ===== */
-:is(#wiz2-demand-table-wrap, #bulk-all-results, #bde-table-wrap) .table-scroll { border: 1px solid var(--border); border-radius: 8px; }
-:is(#wiz2-demand-table-wrap, #bulk-all-results, #bde-table-wrap) table { font-size: 13px; }
-:is(#wiz2-demand-table-wrap, #bulk-all-results, #bde-table-wrap) th {
-  padding: 9px 12px; font-size: 12.5px; font-weight: 600; color: #334155;
-  text-transform: none; letter-spacing: 0; background: #F8FAFC;
-}
-:is(#wiz2-demand-table-wrap, #bulk-all-results, #bde-table-wrap) td { padding: 6px 12px; color: #1E293B; font-weight: 400; white-space: nowrap; }
-:is(#wiz2-demand-table-wrap, #bulk-all-results, #bde-table-wrap) th + th, :is(#wiz2-demand-table-wrap, #bulk-all-results, #bde-table-wrap) td + td { border-left: 1px solid var(--border); }
-:is(#wiz2-demand-table-wrap, #bulk-all-results, #bde-table-wrap) th:nth-child(1), :is(#wiz2-demand-table-wrap, #bulk-all-results, #bde-table-wrap) td:nth-child(1) { width: 40px; text-align: center; }
-:is(#wiz2-demand-table-wrap, #bulk-all-results, #bde-table-wrap) input[type="checkbox"] { width: 15px; height: 15px; vertical-align: middle; cursor: pointer; }
-:is(#wiz2-demand-table-wrap, #bulk-all-results, #bde-table-wrap) .demand-id { font-size: 13px; font-weight: 400; color: #1E293B; letter-spacing: 0; }
-:is(#wiz2-demand-table-wrap, #bulk-all-results, #bde-table-wrap) .gstin-cell { font-size: 13px; font-weight: 500; color: var(--primary-blue); }
-:is(#wiz2-demand-table-wrap, #bulk-all-results, #bde-table-wrap) .day-badge { min-width: 56px; height: 22px; border-radius: 5px; font-size: 12px; font-weight: 500; font-family: var(--font-ui); }
-:is(#wiz2-demand-table-wrap, #bulk-all-results, #bde-table-wrap) .pill { border-radius: 5px; font-size: 12px; font-weight: 500; padding: 2px 9px; }
-:is(#wiz2-demand-table-wrap, #bulk-all-results, #bde-table-wrap) .amount-cell,
-:is(#wiz2-demand-table-wrap, #bulk-all-results, #bde-table-wrap) .amount-cell.pending { font-size: 13px; font-weight: 600; color: #0F172A; text-decoration: none; }
-:is(#wiz2-demand-table-wrap, #bulk-all-results, #bde-table-wrap) .amount-cell.clickable:hover { color: var(--primary-blue); text-decoration: underline; }
-:is(#wiz2-demand-table-wrap, #bulk-all-results, #bde-table-wrap) tbody tr:has(input[type="checkbox"]:checked) td { background: #EAF2FE; }
-#wiz2-demand-table-wrap th:nth-child(7), #bde-table-wrap th:nth-child(7) { text-align: center; }
-#wiz2-demand-table-wrap th:last-child, #bde-table-wrap th:last-child { text-align: right; }
+/* ===== Notice demand/result tables — one-line rows + column alignment
+   (the compact grid look itself is the app-wide table default in base.css) ===== */
+:is(#wiz-demand-table-wrap, #wiz2-demand-table-wrap, #bulk-all-results, #bde-table-wrap) td { white-space: nowrap; }
+:is(#wiz-demand-table-wrap, #wiz2-demand-table-wrap, #bde-table-wrap) th:nth-child(7) { text-align: center; }
+:is(#wiz-demand-table-wrap, #wiz2-demand-table-wrap, #bde-table-wrap) th:last-child { text-align: right; }
+:is(#wiz-demand-table-wrap, #wiz2-demand-table-wrap, #bulk-all-results, #bde-table-wrap) th:nth-child(1), :is(#wiz-demand-table-wrap, #wiz2-demand-table-wrap, #bulk-all-results, #bde-table-wrap) td:nth-child(1) { width: 40px; text-align: center; }
 #bulk-all-results th:nth-child(8) { text-align: right; }
 #bulk-all-results td:nth-child(7), #bulk-all-results th:nth-child(7) { text-align: center; }
-#bulk-all-results td { white-space: normal; }
-#bulk-all-results td:nth-child(n+4) { white-space: nowrap; }
+#bulk-all-results td:nth-child(-n+3) { white-space: normal; }
+:is(#wiz-demand-table-wrap, #wiz2-demand-table-wrap, #bde-table-wrap) .table-scroll { border: 1px solid var(--border); border-radius: 8px; }
