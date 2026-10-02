@@ -388,12 +388,19 @@
 .wizard-card-head-right { margin-left: auto; text-align: right; }
 .wizard-card-head-right .wchr-label { font-size: 11px; color: var(--ink3); letter-spacing: 0.3px; text-transform: uppercase; font-weight: 700; }
 .wizard-card-head-right .wchr-val { font-family: var(--font-mono); font-weight: 700; font-size: 17.5px; color: var(--danger); }
-.wizard-card-head-right .wchr-taxpayer { font-size: 13px; font-weight: 700; color: var(--navy-text); margin-bottom: 6px; }
 
 /* scrollIntoView(block:'start') targets land right under the sticky tab
    bar (#bulknotice-tabs-section > .tabs) otherwise, hiding the card's own
    title/number under it. */
 #page-bulknotice .wizard-card { scroll-margin-top: 76px; }
+
+/* Sticky taxpayer-name strip — pinned just below the sticky tab bar for as
+   long as the demand card (and its table) is in view, so the officer can
+   confirm which taxpayer they're reviewing no matter how far down a long
+   (multi-page) demand table they've scrolled, not just right after the
+   auto-scroll lands. Trade name only (taxpayerDisplayName() already falls
+   back to legal name when no trade name is on file) — no GSTIN. */
+.wiz-taxpayer-sticky { position: sticky; top: 62px; z-index: 39; margin-bottom: 14px; padding: 7px 16px; border-radius: 8px; background: var(--primary-blue-dim); border: 1px solid var(--primary-blue-border); text-align: center; font-size: 13px; font-weight: 700; color: var(--primary-blue); }
 
 /* ---- Quick filter bar (above the demand table) ---- */
 .quick-filter-bar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 16px 0; }

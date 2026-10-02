@@ -135,7 +135,9 @@ function baLoadGSTIN(gstin) {
   }
 
   document.getElementById('ba-demand-section').style.display = 'block';
-  document.getElementById('ba-head-taxpayer').textContent = displayName + ' · ' + gstin;
+  var baSticky = document.getElementById('ba-sticky-taxpayer');
+  baSticky.textContent = displayName;
+  baSticky.style.display = 'block';
   _baSection62 = 'exclude';
   _baSelectedDemandIds = new Set(eligibleCases.filter(function (c) { return !baIsFlagged(c); }).map(function (c) { return c.demandId; }));
   baUpdateQuickFilterCounts();
@@ -487,7 +489,7 @@ function baClearAll() {
   baHideSuggest();
   document.getElementById('ba-taxpayer-details').innerHTML = BA_EMPTY_DETAILS;
   document.getElementById('ba-demand-section').style.display = 'none';
-  document.getElementById('ba-head-taxpayer').textContent = '';
+  document.getElementById('ba-sticky-taxpayer').style.display = 'none';
   document.getElementById('ba-bank-status').textContent = '';
   document.getElementById('ba-date').value = todayISO();
   baUpdateSelectionSummary();
