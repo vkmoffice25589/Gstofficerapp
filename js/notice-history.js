@@ -1,10 +1,42 @@
-/* ===== Notice History page ===== */
+/* ===== Notice History page — Notice / Bank / Release / Others sub-tabs.
+   The latter three used to be inline "ACTIVE ATTACHMENTS"/"RELEASED
+   ATTACHMENTS"/etc. lists at the bottom of their own Generate Arrear
+   Notice sub-tabs; moved here so every past document lives in one place,
+   separate from the forms that create new ones. Those forms (bank
+   attachment creation, release, third-party, property) still live on
+   Generate Arrear Notice — only the "here's what's already been issued"
+   list views moved. */
 
 var _histGSTINFilter = '';
 
 function goToNoticeHistory(gstin) {
   _histGSTINFilter = gstin || '';
   nav('history');
+  var tabEl = document.querySelector('#page-history .tab[data-tab="notices"]');
+  histTab('notices', tabEl);
+}
+
+/* tab: 'notices' | 'bankatt' | 'bankrelease' | 'others'. */
+function histTab(tab, el) {
+  document.querySelectorAll('#page-history .tab').forEach(function (t) { t.classList.remove('active'); });
+  document.querySelectorAll('#page-history .hist-tab-panel').forEach(function (p) { p.style.display = 'none'; });
+  if (el) el.classList.add('active');
+  var panel = document.getElementById('hist-tab-' + tab);
+  if (panel) panel.style.display = 'block';
+  if (tab === 'notices') renderNoticeHistoryPage();
+  else if (tab === 'bankatt') renderBankAtts();
+  else if (tab === 'bankrelease') renderReleasedList();
+  else if (tab === 'others') { renderThirdPartyList(); renderPropertyList(); }
+}
+
+/* Re-renders whichever sub-tab is currently active — called on every
+   nav('history') entry, so switching away and back (without going through
+   goToNoticeHistory()) preserves the officer's last-picked sub-tab,
+   consistent with how Generate Arrear Notice's own sub-tabs behave. */
+function histRenderActiveTab() {
+  var activeTab = document.querySelector('#page-history .tab.active');
+  var tab = activeTab ? activeTab.getAttribute('data-tab') : 'notices';
+  histTab(tab, activeTab);
 }
 
 function histFilterChanged() {

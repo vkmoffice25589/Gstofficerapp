@@ -669,6 +669,7 @@ function brDownloadRelease(id, fmt) {
 /* Jump straight from a card's "Release" button in the Bank Attachment
    tab into the Release Attachment tab, with that attachment pre-selected. */
 function baGoToRelease(id) {
+  nav('bulknotice');
   var tabEl = document.querySelector('#page-bulknotice .tab[data-tab="bankrelease"]');
   bulkTab('bankrelease', tabEl);
   brSelectAttachment(id);

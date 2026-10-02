@@ -4,10 +4,10 @@ var PAGE_RENDERERS = {
   dashboard: function () { renderDashboard(); },
   cases: function () { renderReports(); },
   dataupload: function () { renderWizardStepper(); },
-  bulknotice: function () { renderBulkNoticePage(); updateBulkAllCount(); renderBankAtts(); renderThirdPartyList(); renderPropertyList(); },
+  bulknotice: function () { renderBulkNoticePage(); updateBulkAllCount(); },
   taxpayers: function () { /* profile loads on search */ },
   arrearactions: function () { renderArrearActionList(); },
-  history: function () { renderNoticeHistoryPage(); },
+  history: function () { histRenderActiveTab(); },
   downloads: function () { renderDownloadsPage(); },
   settings: function () { initSettingsPage(); }
 };
