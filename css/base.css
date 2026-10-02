@@ -25,7 +25,7 @@ body {
 ::-webkit-scrollbar-thumb:hover { background: var(--ink3); }
 
 /* ===== LAYOUT — dark sidebar (full height) + light header/content column ===== */
-.layout { display: flex; height: 100vh; }
+.layout { display: flex; height: 100vh; overflow: hidden; } /* never let the document scroll sideways (it drags the sidebar off-screen) */
 .main-col { flex: 1; min-width: 0; display: flex; flex-direction: column; height: 100vh; }
 .main { flex: 1; overflow-y: auto; }
 
@@ -69,19 +69,23 @@ header {
   justify-content: space-between;
   height: 58px;
   flex-shrink: 0;
+  gap: 12px;
+  min-width: 0;
 }
-.header-actions { display: flex; gap: 6px; align-items: center; }
+.header-actions { display: flex; gap: 6px; align-items: center; min-width: 0; }
 
 .office-chip {
   display: flex; align-items: center; gap: 7px; background: var(--surface-2);
   border: 1px solid var(--border); color: var(--navy-text); padding: 7px 12px;
   border-radius: 999px; font-size: 12.5px; font-weight: 600; cursor: pointer; transition: background 0.12s, border-color 0.12s;
+  min-width: 0; max-width: 280px;
 }
+.office-chip span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .office-chip:hover { background: var(--surface-3); border-color: var(--border-strong); }
 .office-chip i:first-child { font-size: 11.5px; color: var(--primary-blue); }
 
 .hbtn-icon {
-  position: relative;
+  position: relative; flex-shrink: 0;
   width: 32px; height: 32px; border-radius: var(--radius-md); border: 1px solid var(--border);
   background: var(--surface); color: var(--muted-text); cursor: pointer;
   display: flex; align-items: center; justify-content: center; font-size: 13.5px; transition: background 0.12s, border-color 0.12s;
@@ -95,7 +99,7 @@ header {
 
 .hdr-divider { width: 1px; height: 22px; background: var(--border); margin: 0 2px; }
 
-.hdr-avatar { display: flex; align-items: center; gap: 8px; cursor: pointer; padding: 3px 8px 3px 3px; border-radius: var(--radius-md); transition: background 0.12s; }
+.hdr-avatar { flex-shrink: 0; display: flex; align-items: center; gap: 8px; cursor: pointer; padding: 3px 8px 3px 3px; border-radius: var(--radius-md); transition: background 0.12s; }
 .hdr-avatar:hover { background: var(--surface-2); }
 .hdr-avatar-circle {
   width: 30px; height: 30px; border-radius: 50%; background: var(--primary-blue);
