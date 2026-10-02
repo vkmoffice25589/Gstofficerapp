@@ -674,8 +674,12 @@ header { display: none; }
    matches against (GSTIN + legal name + trade name together), not real
    per-field filter toggles — no click handlers, GSTIN is always shown as
    the "active" one. ---- */
-.isc-premium { position: relative; overflow: hidden; padding: 24px 26px; border-radius: 20px; background: linear-gradient(135deg, var(--surface) 0%, var(--primary-blue-dim) 140%); box-shadow: var(--shadow-lg); }
-.isc-premium::before { content: ''; position: absolute; top: -60px; right: -60px; width: 220px; height: 220px; border-radius: 50%; background: radial-gradient(circle, rgba(0,82,255,0.14), rgba(0,82,255,0) 70%); pointer-events: none; }
+/* No overflow:hidden here — the autocomplete suggestion dropdown
+   (.isc-suggest) is an absolutely-positioned descendant that needs to
+   render outside this card's box, and overflow:hidden would clip it
+   invisible (the glow is a background layer instead of a clipped
+   pseudo-element, specifically so it doesn't need overflow:hidden). */
+.isc-premium { position: relative; padding: 24px 26px; border-radius: 20px; background: radial-gradient(circle at 100% 0%, rgba(0,82,255,0.16), rgba(0,82,255,0) 55%), linear-gradient(135deg, var(--surface) 0%, var(--primary-blue-dim) 140%); box-shadow: var(--shadow-lg); }
 .isc-premium-top { position: relative; display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-bottom: 18px; }
 .isc-premium-headline { display: flex; align-items: center; gap: 14px; }
 .isc-premium-icon { flex: 0 0 auto; width: 56px; height: 56px; border-radius: 14px; background: var(--primary-blue-dim); color: var(--primary-blue); display: flex; align-items: center; justify-content: center; font-size: 24px; }
