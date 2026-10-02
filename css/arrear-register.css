@@ -28,7 +28,7 @@
 #page-arrearactions.page > .ph { margin-bottom: 22px; }
 #page-arrearactions .ph-title {
   font-size: 21px; font-weight: 700; color: var(--ar-ink); letter-spacing: -0.2px;
-  font-family: 'Inter', -apple-system, system-ui, sans-serif;
+  font-family: var(--font-ui);
 }
 #page-arrearactions .ph-title i {
   display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 34px; border-radius: var(--ar-radius-sm);
@@ -88,13 +88,13 @@
   display: flex; justify-content: space-between; align-items: center; padding: 16px 18px;
   border-bottom: 1px solid var(--ar-border); flex-wrap: wrap; gap: 10px; background: #fff;
 }
-#page-arrearactions .ar-cases-card .ar-list-title { font-weight: 700; font-size: 16px; color: var(--ar-ink); letter-spacing: -0.15px; font-family: 'Inter', -apple-system, system-ui, sans-serif; }
+#page-arrearactions .ar-cases-card .ar-list-title { font-weight: 700; font-size: 16px; color: var(--ar-ink); letter-spacing: -0.15px; font-family: var(--font-ui); }
 #page-arrearactions .ar-cases-card .btn-outline {
   border-radius: var(--ar-radius-sm); height: 34px; font-size: 12.5px; font-weight: 600; border: 1px solid var(--ar-border); color: var(--ar-ink-2); background: #fff;
 }
 #page-arrearactions .ar-cases-card .btn-outline:hover { background: var(--ar-surface-2); border-color: #CBD5E1; color: var(--ar-ink); }
 
-#page-arrearactions .ar-cases-card table { font-family: 'Inter', -apple-system, system-ui, sans-serif; }
+#page-arrearactions .ar-cases-card table { font-family: var(--font-ui); }
 #page-arrearactions .ar-cases-card table thead tr { background: var(--ar-surface-2); }
 #page-arrearactions .ar-cases-card table th {
   font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--ar-ink-2);
@@ -109,9 +109,9 @@
 #page-arrearactions .ar-cases-card table tr:hover td { background: var(--ar-surface-2); }
 #page-arrearactions .ar-cases-card .ar-case-row { cursor: pointer; transition: background 0.1s; }
 
-#page-arrearactions .ar-cases-card .gstin-cell { color: var(--ar-accent); font-weight: 600; background: none; text-decoration: none; }
+#page-arrearactions .ar-cases-card .gstin-cell { color: var(--ar-accent); font-weight: 500; background: none; text-decoration: none; }
 #page-arrearactions .ar-cases-card .gstin-cell:hover { text-decoration: underline; }
-#page-arrearactions .ar-cases-card .amount-cell { font-size: 13.5px; font-weight: 700; color: var(--ar-ink); font-family: var(--mono); font-variant-numeric: tabular-nums; }
+#page-arrearactions .ar-cases-card .amount-cell { font-size: 13.5px; font-weight: 400; color: var(--ar-ink); font-family: var(--mono); font-variant-numeric: tabular-nums; }
 
 /* Slim, tidy scrollbar so a wide table never feels like raw Excel */
 .table-scroll { scrollbar-width: thin; scrollbar-color: #CBD5E1 transparent; }
@@ -189,7 +189,7 @@
 
 .ar-summary-chart { display: flex; align-items: flex-end; gap: 20px; padding: 22px 18px 16px; height: 190px; }
 .ar-summary-bar-wrap { display: flex; flex-direction: column; align-items: center; flex: 1; height: 100%; justify-content: flex-end; }
-.ar-summary-bar-val { font-weight: 700; font-size: 12.5px; margin-bottom: 7px; color: var(--ar-ink); font-family: var(--mono); }
+.ar-summary-bar-val { font-weight: 500; font-size: 12.5px; margin-bottom: 7px; color: var(--ar-ink); font-family: var(--mono); }
 .ar-summary-bar { width: 100%; max-width: 40px; border-radius: 5px 5px 2px 2px; min-height: 4px; }
 .ar-summary-bar-label { font-size: 10.5px; color: var(--ar-ink-3); margin-top: 9px; font-weight: 600; text-align: center; }
 
@@ -251,7 +251,7 @@
 .ar-tl-top { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; }
 .ar-tl-title { font-weight: 600; font-size: 13px; color: #0F172A; }
 .ar-tl-date { font-size: 11px; color: #94A3B8; font-family: var(--mono); white-space: nowrap; }
-.ar-tl-amount { font-family: var(--mono); font-weight: 700; color: #0F172A; margin-top: 6px; font-size: 13px; font-variant-numeric: tabular-nums; }
+.ar-tl-amount { font-family: var(--mono); font-weight: 500; color: #0F172A; margin-top: 6px; font-size: 13px; font-variant-numeric: tabular-nums; }
 .ar-tl-ref { font-size: 12px; color: #475569; margin-top: 4px; }
 .ar-tl-remarks { font-size: 12px; color: #94A3B8; font-style: italic; margin-top: 4px; }
 .ar-tl-module { font-size: 10px; color: #CBD5E1; margin-top: 7px; text-transform: uppercase; letter-spacing: 0.4px; font-weight: 600; }

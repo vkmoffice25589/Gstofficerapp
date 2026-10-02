@@ -171,7 +171,7 @@
 .dcr-mini-stat::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; }
 .dcr-mini-stat.hero { grid-column: 1 / -1; padding: 14px 16px; }
 .dms-label { font-size: 10px; font-weight: 700; color: var(--ink3); text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 5px; }
-.dms-val { font-family: var(--font-mono); font-size: 14px; font-weight: 600; color: var(--navy-text); line-height: 1.2; overflow-wrap: break-word; }
+.dms-val { font-family: var(--font-mono); font-size: 14px; font-weight: 500; color: var(--navy-text); line-height: 1.2; overflow-wrap: break-word; }
 .dcr-mini-stat.hero .dms-val { font-size: 20px; }
 .dms-muted { color: var(--ink3); font-style: italic; font-family: var(--font-ui); font-weight: 500; }
 
@@ -203,7 +203,7 @@
 .drt-head { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; }
 .drt-icon { width: 18px; height: 18px; border-radius: 50%; background: #fff; display: flex; align-items: center; justify-content: center; font-size: 9px; flex-shrink: 0; }
 .drt-label { font-size: 9.5px; font-weight: 700; color: var(--ink3); text-transform: uppercase; letter-spacing: 0.2px; }
-.drt-val { font-size: 13.5px; font-weight: 700; font-family: var(--font-mono); overflow-wrap: break-word; }
+.drt-val { font-size: 13.5px; font-weight: 500; font-family: var(--font-mono); overflow-wrap: break-word; }
 
 .dcr-recon-tile.blue   { background: var(--primary-blue-dim); border-color: var(--primary-blue-border); }
 .dcr-recon-tile.blue .drt-icon, .dcr-recon-tile.blue .drt-val { color: var(--primary-blue); }
@@ -544,7 +544,7 @@
 /* ---- Bottom action bar — fixed to the browser viewport, not just the scroll container ---- */
 #bulk-tab-notice, #bulk-tab-notice2 { padding-bottom: 88px; }
 .wizard-action-bar {
-  position: fixed; left: 256px; right: 0; bottom: 0; background: var(--surface); border-top: 1px solid var(--border); border-radius: 0;
+  position: fixed; left: 224px; right: 0; bottom: 0; background: var(--surface); border-top: 1px solid var(--border); border-radius: 0;
   padding: 14px 32px; display: flex; align-items: center; gap: 18px; box-shadow: 0 -4px 14px rgba(15,23,42,0.08); flex-wrap: wrap; z-index: 100;
 }
 .wab-left { display: flex; flex-direction: column; gap: 3px; }

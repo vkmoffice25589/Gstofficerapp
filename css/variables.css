@@ -75,8 +75,8 @@
   --purple: #6D28D9; --purple-dim: #EDE6FC; --purple-border: #DCCCF7;
 
   /* ---- Typography ---- */
-  --font-ui: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
-  --font-mono: 'IBM Plex Mono', 'SFMono-Regular', Consolas, monospace;
+  --font-ui: 'Roboto', system-ui, -apple-system, 'Segoe UI', Arial, sans-serif;
+  --font-mono: 'Roboto', system-ui, -apple-system, 'Segoe UI', Arial, sans-serif;
   --sans: var(--font-ui);
   --mono: var(--font-mono);
   --display: var(--font-ui);
