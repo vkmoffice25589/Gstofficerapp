@@ -487,6 +487,7 @@ function baClearAll() {
   document.getElementById('ba-demand-section').style.display = 'none';
   document.getElementById('ba-bank-status').textContent = '';
   document.getElementById('ba-date').value = todayISO();
+  baUpdateSelectionSummary();
 }
 
 function renderBankAtts() {
