@@ -394,18 +394,33 @@
 
       <!-- Release Attachment — unified across Bank, Third-Party and Property attachments -->
       <div class="bulk-tab-panel" id="bulk-tab-bankrelease" style="display:none;">
-        <div class="wizard-card">
-          <div class="wizard-card-head">
-            <div class="wizard-num" style="background:#0F766E;">1</div>
-            <div><div class="wizard-card-title">Active Attachments</div><div class="wizard-card-sub">Every active (not yet released) Bank, Third-Party and Property attachment — filter by GSTIN or taxpayer name, then click Release on the one to act on.</div></div>
+        <div class="kpi-grid" id="rel-kpi-grid" style="margin-bottom:16px;"></div>
+
+        <div class="rel-filter-bar">
+          <div class="fg" style="flex:1 1 220px;"><label>Search GSTIN / Taxpayer</label><input type="text" id="rel-gstin-filter" oninput="relSearchChanged()" placeholder="Enter GSTIN or Taxpayer Name..."/></div>
+          <div class="fg"><label>Attachment Type</label><select class="fsel" id="rel-type-filter">
+            <option value="">All</option>
+            <option value="bank">Bank</option>
+            <option value="thirdparty">Third-Party</option>
+            <option value="property">Property</option>
+          </select></div>
+          <div class="fg"><label>Status</label><select class="fsel" id="rel-status-filter">
+            <option value="active" selected>Active</option>
+            <option value="released">Released</option>
+            <option value="">All</option>
+          </select></div>
+          <div class="fg"><label>From Date</label><input type="date" id="rel-from-date"/></div>
+          <div class="fg"><label>To Date</label><input type="date" id="rel-to-date"/></div>
+          <div class="fg rel-filter-btn-fg"><button class="btn btn-blue" onclick="relApplyFilters()">Apply Filters</button></div>
+          <div class="fg rel-filter-btn-fg"><button class="btn btn-outline" onclick="relResetFilters()">Reset</button></div>
+        </div>
+
+        <div class="table-wrap">
+          <div class="rel-bulk-bar" id="rel-bulk-bar" style="display:none;">
+            <span id="rel-bulk-count">0 selected</span>
+            <button class="btn btn-orange btn-sm" onclick="relOpenBulkModal()"><i class="fa-solid fa-unlock"></i> Release Selected</button>
           </div>
-          <div class="form-grid">
-            <div class="fg full">
-              <label>Filter by GSTIN or Taxpayer Name</label>
-              <input type="text" id="rel-gstin-filter" oninput="relFilterChanged()" placeholder="Type a GSTIN or name to narrow the list..."/>
-            </div>
-          </div>
-          <div class="table-wrap" id="rel-list-wrap" style="margin-top:10px;"></div>
+          <div id="rel-list-wrap"></div>
         </div>
       </div>
 
@@ -796,7 +811,7 @@
         <div class="fg"><label>Release Reason</label><select id="rel-reason" class="fsel" onchange="relReasonChanged()"></select></div>
         <div class="fg"><label>Release Date</label><input type="date" id="rel-release-date"/></div>
         <div class="fg"><label>Taxpayer's Petition Date</label><input type="date" id="rel-petition-date"/></div>
-        <div class="fg full"><label>Address (for the letter &amp; "Copy to")</label><input type="text" id="rel-addr"/></div>
+        <div class="fg full" id="rel-addr-fg"><label>Address (for the letter &amp; "Copy to")</label><input type="text" id="rel-addr"/></div>
         <div class="fg full"><label>Case Details (what the taxpayer submitted, orders complied with, deposits made, etc.)</label><textarea id="rel-narrative" rows="4"></textarea></div>
       </div>
     </div>
