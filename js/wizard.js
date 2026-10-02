@@ -166,8 +166,10 @@ function tdb(label, val) { return '<div class="tdb-item"><div class="tdb-label">
    sync with what the table actually flags. */
 function openWizExclusionGuide() {
   document.getElementById('wiz-exclusion-guide-body').innerHTML =
-    '<h4>Zero or negative pending amount</h4>'
-    + '<ul><li>Nothing left to recover on that demand.</li></ul>'
+    '<h3>1. Not shown in the table at all</h3>'
+    + '<ul><li>Zero or negative pending amount — nothing left to recover on that demand.</li></ul>'
+    + '<h3>2. Shown in the table, but highlighted and left unticked</h3>'
+    + '<p class="wiz-guide-sub">These rows are still listed — just flagged and unchecked until you tick them yourself.</p>'
     + '<h4>Higher forum / closed / refund status <span class="pill pill-orange wiz-excluded-badge">Excluded</span></h4>'
     + '<ul>' + EXCLUDED_STATUSES.map(function (s) { return '<li>' + xe(s) + '</li>'; }).join('') + '</ul>'
     + '<h4>Section 62 best-judgment assessment <span class="pill pill-gold wiz-excluded-badge">Section 62</span></h4>'

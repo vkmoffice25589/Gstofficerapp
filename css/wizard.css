@@ -379,6 +379,9 @@
   font-size: 13px; font-weight: 700; padding: 0; margin-left: auto;
 }
 .wiz-flag-legend-link:hover { text-decoration: underline; }
+.wiz-exclusion-guide-body h3 { font-size: 14.5px; font-weight: 700; margin: 20px 0 6px; color: var(--navy-text); padding-top: 14px; border-top: 1px solid var(--border); }
+.wiz-exclusion-guide-body h3:first-child { margin-top: 0; padding-top: 0; border-top: none; }
+.wiz-exclusion-guide-body .wiz-guide-sub { font-size: 12px; color: var(--muted-text); margin: 0 0 10px; }
 .wiz-exclusion-guide-body h4 { font-size: 13px; margin: 14px 0 6px; color: var(--navy-text); }
 .wiz-exclusion-guide-body h4:first-child { margin-top: 0; }
 .wiz-exclusion-guide-body ul { margin: 0; padding-left: 20px; font-size: 13px; color: var(--muted-text); }
