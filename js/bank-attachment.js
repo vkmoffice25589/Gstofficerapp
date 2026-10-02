@@ -12,6 +12,8 @@ var _baGSTIN = null;
 var _baSection62 = 'exclude'; // 'all' | 'exclude'
 var _baFilteredCases = [];
 var _baSelectedDemandIds = new Set();
+var _baPageSize = 10;          // number, or 'all'
+var _baCurrentPage = 1;
 var _ifscCache = {};
 
 var BA_EMPTY_DETAILS = '<div class="isc-empty"><i class="fa-solid fa-building-columns"></i> Taxpayer details will appear here after you search. Only demands &ge; 90 days old (Section 79(1)(a)) are shown.</div>';
@@ -188,6 +190,7 @@ function baSyncSection62Selection() {
 function baApplyFiltersAndRender() {
   if (!_baGSTIN) return;
   _baFilteredCases = baBaseCases();
+  _baCurrentPage = 1;
   baRenderDemandTable();
   baUpdateQuickFilterActiveState();
   baUpdateQuickFilterCounts();
@@ -201,7 +204,15 @@ function baRenderDemandTable() {
     baUpdateSelectionSummary();
     return;
   }
-  var rows = cases.map(function (c, i) {
+
+  var pageSize = _baPageSize === 'all' ? cases.length : _baPageSize;
+  var totalPages = Math.max(1, Math.ceil(cases.length / pageSize));
+  if (_baCurrentPage > totalPages) _baCurrentPage = totalPages;
+  if (_baCurrentPage < 1) _baCurrentPage = 1;
+  var startIdx = (_baCurrentPage - 1) * pageSize;
+  var pageCases = cases.slice(startIdx, startIdx + pageSize);
+
+  var rows = pageCases.map(function (c, i) {
     var age = getDemandAgeDays(c);
     var checked = _baSelectedDemandIds.has(c.demandId) ? ' checked' : '';
     var flagged = baIsFlagged(c);
@@ -211,7 +222,7 @@ function baRenderDemandTable() {
     var statusCell = xe(c.demandStatus) + badge;
     return '<tr' + (flagged ? ' class="wiz-row-excluded"' : '') + '>'
       + '<td><input type="checkbox" class="wiz-case-chk" data-demand="' + xe(c.demandId) + '" data-amt="' + (Number(c.pend_total) || 0) + '"' + checked + ' onchange="baToggleCaseCheck(this)"></td>'
-      + '<td>' + (i + 1) + '</td>'
+      + '<td>' + (startIdx + i + 1) + '</td>'
       + '<td>' + xe(c.taxPeriod) + '</td>'
       + '<td class="demand-id">' + xe(c.demandId) + '</td>'
       + '<td>' + fmtDate(c.dcr_date || c.demandDate) + '</td>'
@@ -221,8 +232,43 @@ function baRenderDemandTable() {
       + '<td><div class="amount-cell pending clickable" onclick="showDemandBreakdown(\'' + xe(c.demandId) + '\')" title="Click for IGST/CGST/SGST/CESS breakdown">' + fmt(c.pend_total) + '</div></td>'
       + '</tr>';
   }).join('');
-  wrap.innerHTML = '<div class="table-scroll"><table><thead><tr><th><input type="checkbox" id="ba-select-all" onchange="baToggleSelectAll(this.checked)"></th><th>Sl.No.</th><th>Tax Period</th><th>Demand ID</th><th>Order Date</th><th>Section</th><th>Days</th><th>Demand Status</th><th>Pending Arrear (₹)</th></tr></thead><tbody>' + rows + '</tbody></table></div>';
+  wrap.innerHTML = '<div class="table-scroll"><table><thead><tr><th><input type="checkbox" id="ba-select-all" onchange="baToggleSelectAll(this.checked)"></th><th>Sl.No.</th><th>Tax Period</th><th>Demand ID</th><th>Order Date</th><th>Section</th><th>Days</th><th>Demand Status</th><th>Pending Arrear (₹)</th></tr></thead><tbody>' + rows + '</tbody></table></div>'
+    + baPaginationHTML(cases.length, totalPages);
   baUpdateSelectionSummary();
+}
+
+function baPaginationHTML(total, totalPages) {
+  var pageBtns = wizPageNumberList(_baCurrentPage, totalPages).map(function (p) {
+    if (p === '...') return '<span class="tp-ellipsis">…</span>';
+    return '<button type="button" class="tp-page' + (p === _baCurrentPage ? ' active' : '') + '" onclick="baGoToPageNum(' + p + ')">' + p + '</button>';
+  }).join('');
+
+  var sizes = [10, 25, 50];
+  var sizeOptions = sizes.map(function (n) { return '<option value="' + n + '"' + (_baPageSize === n ? ' selected' : '') + '>' + n + ' / page</option>'; }).join('')
+    + '<option value="all"' + (_baPageSize === 'all' ? ' selected' : '') + '>All</option>';
+
+  return '<div class="table-pagination">'
+    + '<div class="tp-pages">'
+    + '<button type="button" class="tp-btn" onclick="baGoToPage(-1)"' + (_baCurrentPage <= 1 ? ' disabled' : '') + '><i class="fa-solid fa-chevron-left"></i></button>'
+    + pageBtns
+    + '<button type="button" class="tp-btn" onclick="baGoToPage(1)"' + (_baCurrentPage >= totalPages ? ' disabled' : '') + '><i class="fa-solid fa-chevron-right"></i></button>'
+    + '</div>'
+    + '<select class="tp-size-select" onchange="baSetPageSize(this.value)">' + sizeOptions + '</select>'
+    + '</div>';
+}
+
+function baSetPageSize(val) {
+  _baPageSize = val === 'all' ? 'all' : parseInt(val, 10);
+  _baCurrentPage = 1;
+  baRenderDemandTable();
+}
+function baGoToPage(delta) {
+  _baCurrentPage += delta;
+  baRenderDemandTable();
+}
+function baGoToPageNum(n) {
+  _baCurrentPage = n;
+  baRenderDemandTable();
 }
 
 function baToggleCaseCheck(el) {
