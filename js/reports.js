@@ -1,9 +1,26 @@
-/* ===== Reports page — a single report: Collectible Demands (below). The
-   earlier Top 100 Arrear / Collectible / Non-Collectible taxpayer tables
-   were removed on request; renderReports() is kept as the page entry
-   point (nav.js, and the Taxpayer Register import refreshes through it). ===== */
+/* ===== Reports page — two reports as tabs: "Total Arrear" (Collectible
+   Demands, below) and the Arrear Action Register (arrear-action-register.js,
+   which used to be its own sidebar page). The earlier Top 100 Arrear /
+   Collectible / Non-Collectible tables were removed on request.
+   renderReports() is the page entry point (nav.js, and the Taxpayer
+   Register import refreshes through it). ===== */
+
+var _reportTab = 'total'; // 'total' | 'register'
+
+function reportTab(tab, el) {
+  _reportTab = tab;
+  document.querySelectorAll('#page-cases > .tabs .tab').forEach(function (t) { t.classList.remove('active'); });
+  if (el) el.classList.add('active');
+  renderReports();
+}
 
 function renderReports() {
+  var totalPanel = document.getElementById('rpt-dw-section');
+  var registerPanel = document.getElementById('page-arrearactions');
+  if (totalPanel) totalPanel.style.display = _reportTab === 'total' ? 'block' : 'none';
+  if (registerPanel) registerPanel.style.display = _reportTab === 'register' ? 'block' : 'none';
+
+  if (_reportTab === 'register') { renderArrearActionList(); return; }
   rptDwSyncGroupByUI();
   if (!_rptDwGenerated) rptDwRenderPlaceholder();
   renderDemandWiseReport();

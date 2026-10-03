@@ -6,7 +6,6 @@ var PAGE_RENDERERS = {
   dataupload: function () { renderWizardStepper(); },
   bulknotice: function () { renderBulkNoticePage(); updateBulkAllCount(); },
   taxpayers: function () { /* profile loads on search */ },
-  arrearactions: function () { renderArrearActionList(); },
   history: function () { histRenderActiveTab(); },
   downloads: function () { renderDownloadsPage(); },
   settings: function () { initSettingsPage(); }

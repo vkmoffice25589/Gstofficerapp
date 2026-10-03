@@ -24,18 +24,6 @@
   --ar-radius: 10px; --ar-radius-sm: 8px;
 }
 
-/* ---- Page header ---- */
-#page-arrearactions.page > .ph { margin-bottom: 22px; }
-#page-arrearactions .ph-title {
-  font-size: 21px; font-weight: 700; color: var(--ar-ink); letter-spacing: -0.2px;
-  font-family: var(--font-ui);
-}
-#page-arrearactions .ph-title i {
-  display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 34px; border-radius: var(--ar-radius-sm);
-  background: var(--ar-accent); color: #fff; font-size: 14px; margin-right: 11px; vertical-align: middle;
-}
-#page-arrearactions .ph-sub { font-size: 13px; color: var(--ar-ink-2); margin-top: 5px; max-width: 780px; line-height: 1.5; }
-
 /* ---- KPI strip — quiet tiles, the number is the hero ----
    Flexbox, not grid: a grid's columns are shared across every row, so 7
    tiles (5 + 2) left the last row's 2 tiles stranded under columns 1-2

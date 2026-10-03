@@ -46,7 +46,6 @@
     <div class="sb-item" onclick="nav('cases')" data-page="cases"><span class="sb-icon"><i class="fa-solid fa-chart-bar"></i></span> Reports <span class="sb-badge" id="sb-cases">0</span></div>
 
     <div class="sb-section">Case Management</div>
-    <div class="sb-item" onclick="nav('arrearactions')" data-page="arrearactions"><span class="sb-icon"><i class="fa-solid fa-folder-tree"></i></span> Arrear Action Register</div>
 
     <div class="sb-section">Records</div>
     <div class="sb-item" onclick="nav('taxpayers')" data-page="taxpayers"><span class="sb-icon"><i class="fa-solid fa-user-shield"></i></span> Recovery Profile</div>
@@ -122,6 +121,11 @@
         <div><div class="ph-title"><i class="fa-solid fa-chart-bar"></i>Reports</div><div class="ph-sub">Arrear reports built from the imported DCR</div></div>
       </div>
 
+      <div class="tabs">
+        <div class="tab active" data-tab="total" onclick="reportTab('total', this)"><i class="fa-solid fa-file-invoice"></i> Total Arrear</div>
+        <div class="tab" data-tab="register" onclick="reportTab('register', this)"><i class="fa-solid fa-folder-tree"></i> Arrear Action Register</div>
+      </div>
+
       <!-- ===== Collectible Demands — demand-level (not taxpayer-grouped) report.
            Section 62 and every status in EXCLUDED_STATUSES (higher forum /
            closed / refund — including First Appeal Admitted/Submitted) are
@@ -162,6 +166,64 @@
         <div id="rpt-dw-placeholder" class="rpt-placeholder"></div>
         <div class="rel-bulk-bar" id="rpt-dw-subtotal-bar" style="display:none;justify-content:flex-start;gap:24px;flex-wrap:wrap;"></div>
         <div class="table-wrap" id="rpt-dw-wrap" style="display:none;"></div>
+      </div>
+
+      <!-- ===== Report 2 — Arrear Action Register. Used to be its own sidebar
+           page; now a tab under Reports. The id stays page-arrearactions
+           because every rule in css/arrear-register.css is scoped to it. ===== -->
+      <div id="page-arrearactions" style="display:none;">
+        <div class="rpt-panel-note">Every arrear taxpayer, auto-listed from the DCR — Notice, Bank Attachment, Third Party &amp; Property pulled live from their own modules</div>
+
+      <div class="ar-kpi-grid" id="ar-kpi-grid"></div>
+
+      <div class="ar-filter-bar">
+        <div class="fg"><label>Status</label><select class="fsel" id="ar-status-filter">
+          <option value="">All</option>
+          <option value="fully">Fully Recovered</option>
+          <option value="partly">Partly Recovered</option>
+          <option value="pending">Pending</option>
+        </select></div>
+        <div class="fg"><label>Action Type</label><select class="fsel" id="ar-action-filter">
+          <option value="">All</option>
+          <option value="notice">Notice Issued</option>
+          <option value="bank">Bank Action</option>
+          <option value="thirdparty">Third Party</option>
+          <option value="property">Property Action</option>
+          <option value="followup">Follow-up</option>
+          <option value="none">No Action</option>
+        </select></div>
+        <div class="fg"><label>From Date</label><input type="date" id="ar-from-date"/></div>
+        <div class="fg"><label>To Date</label><input type="date" id="ar-to-date"/></div>
+        <div class="fg" style="flex:1;min-width:220px;"><label>Search</label><div class="search-wrap"><i class="fa-solid fa-magnifying-glass"></i><input type="text" id="ar-filter" oninput="renderArrearActionList()" placeholder="Search GSTIN / Trader..."/></div></div>
+        <div class="fg ar-filter-btn-fg"><button class="btn btn-blue" onclick="arApplyFilters()">Apply</button></div>
+        <div class="fg ar-filter-btn-fg"><button class="btn btn-outline" onclick="arResetFilters()">Reset</button></div>
+      </div>
+
+      <div class="table-wrap ar-cases-card">
+        <div class="ar-list-head-bar">
+          <div class="ar-list-title">Cases (<span id="ar-list-count">0</span>)</div>
+          <button class="btn btn-outline btn-sm" onclick="arExportCSV()"><i class="fa-solid fa-download"></i> Export</button>
+        </div>
+        <div id="ar-table-wrap"></div>
+        <div class="ar-pagination-bar" id="ar-pagination-bar"></div>
+      </div>
+
+      <div class="ar-bottom-grid">
+        <div class="table-wrap ar-upcoming-card">
+          <div class="ar-panel-title"><i class="fa-solid fa-bell"></i> Upcoming Follow-ups (<span id="ar-upcoming-count">0</span>)</div>
+          <div id="ar-upcoming-wrap"></div>
+        </div>
+        <div class="table-wrap ar-summary-card">
+          <div class="ar-panel-title"><i class="fa-solid fa-chart-simple"></i> Action Summary</div>
+          <div class="ar-summary-chart" id="ar-summary-chart"></div>
+        </div>
+      </div>
+
+      <!-- Case Detail Drawer -->
+      <div class="ar-drawer-backdrop" id="ar-drawer-backdrop" onclick="arCloseDrawer()"></div>
+      <div class="ar-drawer" id="ar-drawer">
+        <div id="ar-drawer-content"></div>
+      </div>
       </div>
     </div>
 
@@ -668,64 +730,6 @@
         <div class="table-wrap" id="trp-cases" style="margin-bottom:18px;"></div>
         <div class="ph-sub" style="margin-bottom:8px;">RECOVERY TIMELINE</div>
         <div class="table-wrap" style="padding:14px 18px;" id="trp-timeline"></div>
-      </div>
-    </div>
-
-    <!-- ===== ARREAR ACTION REGISTER ===== -->
-    <div class="page" id="page-arrearactions">
-      <div class="ph">
-        <div><div class="ph-title"><i class="fa-solid fa-folder-tree"></i>Arrear Action Register</div><div class="ph-sub">Every arrear taxpayer, auto-listed from the DCR — Notice, Bank Attachment, Third Party &amp; Property pulled live from their own modules</div></div>
-      </div>
-
-      <div class="ar-kpi-grid" id="ar-kpi-grid"></div>
-
-      <div class="ar-filter-bar">
-        <div class="fg"><label>Status</label><select class="fsel" id="ar-status-filter">
-          <option value="">All</option>
-          <option value="fully">Fully Recovered</option>
-          <option value="partly">Partly Recovered</option>
-          <option value="pending">Pending</option>
-        </select></div>
-        <div class="fg"><label>Action Type</label><select class="fsel" id="ar-action-filter">
-          <option value="">All</option>
-          <option value="notice">Notice Issued</option>
-          <option value="bank">Bank Action</option>
-          <option value="thirdparty">Third Party</option>
-          <option value="property">Property Action</option>
-          <option value="followup">Follow-up</option>
-          <option value="none">No Action</option>
-        </select></div>
-        <div class="fg"><label>From Date</label><input type="date" id="ar-from-date"/></div>
-        <div class="fg"><label>To Date</label><input type="date" id="ar-to-date"/></div>
-        <div class="fg" style="flex:1;min-width:220px;"><label>Search</label><div class="search-wrap"><i class="fa-solid fa-magnifying-glass"></i><input type="text" id="ar-filter" oninput="renderArrearActionList()" placeholder="Search GSTIN / Trader..."/></div></div>
-        <div class="fg ar-filter-btn-fg"><button class="btn btn-blue" onclick="arApplyFilters()">Apply</button></div>
-        <div class="fg ar-filter-btn-fg"><button class="btn btn-outline" onclick="arResetFilters()">Reset</button></div>
-      </div>
-
-      <div class="table-wrap ar-cases-card">
-        <div class="ar-list-head-bar">
-          <div class="ar-list-title">Cases (<span id="ar-list-count">0</span>)</div>
-          <button class="btn btn-outline btn-sm" onclick="arExportCSV()"><i class="fa-solid fa-download"></i> Export</button>
-        </div>
-        <div id="ar-table-wrap"></div>
-        <div class="ar-pagination-bar" id="ar-pagination-bar"></div>
-      </div>
-
-      <div class="ar-bottom-grid">
-        <div class="table-wrap ar-upcoming-card">
-          <div class="ar-panel-title"><i class="fa-solid fa-bell"></i> Upcoming Follow-ups (<span id="ar-upcoming-count">0</span>)</div>
-          <div id="ar-upcoming-wrap"></div>
-        </div>
-        <div class="table-wrap ar-summary-card">
-          <div class="ar-panel-title"><i class="fa-solid fa-chart-simple"></i> Action Summary</div>
-          <div class="ar-summary-chart" id="ar-summary-chart"></div>
-        </div>
-      </div>
-
-      <!-- Case Detail Drawer -->
-      <div class="ar-drawer-backdrop" id="ar-drawer-backdrop" onclick="arCloseDrawer()"></div>
-      <div class="ar-drawer" id="ar-drawer">
-        <div id="ar-drawer-content"></div>
       </div>
     </div>
 
