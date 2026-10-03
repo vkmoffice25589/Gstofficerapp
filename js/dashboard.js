@@ -114,7 +114,7 @@ function renderDashKPIs(cases, groups) {
   grid.innerHTML =
     kpiCard('blue', 'fa-users', 'TOTAL TAXPAYERS', groups.length.toLocaleString('en-IN'), 'Taxpayers with valid DCR records', "nav('cases')")
     + kpiCard('red', 'fa-triangle-exclamation', 'TOTAL OUTSTANDING', fmt(totalOutstanding), 'Across ' + groups.length + ' taxpayers', "nav('cases')")
-    + kpiCard('orange', 'fa-bolt', 'RECOVERABLE ARREAR', fmt(recoverableAmt), recoverableGroups.length + ' recoverable taxpayers', "nav('cases'); document.querySelector('#page-cases .tab[data-tab=collectible]').click();")
+    + kpiCard('orange', 'fa-bolt', 'RECOVERABLE ARREAR', fmt(recoverableAmt), recoverableGroups.length + ' recoverable taxpayers', "nav('cases')")
     + kpiCard('purple', 'fa-envelope-open-text', 'NOTICES ISSUED', noticesInScope.length.toLocaleString('en-IN'), thisMonth + ' this month', "nav('bulknotice')")
     + kpiCard('gold', 'fa-building-columns', 'BANK ATTACHMENTS', activeBanks.length.toLocaleString('en-IN'), fmt(attachedAmt) + ' attached', "nav('bulknotice'); bulkTab('bankatt', document.querySelector('#page-bulknotice .tab[data-tab=bankatt]'))")
     + kpiCard('green', 'fa-hand-holding-dollar', 'RECOVERY / COLLECTION', fmt(recoveredTotal), (recoveredFromRecon > 0 || recoveredFromPayments > 0) ? 'Recorded collections (demand ≠ recovered)' : (noticesInScope.length + ' notices · ' + activeBanks.length + ' bank · ' + AppState.thirdPartyNotices.length + ' third-party · ' + AppState.propertyAttachments.length + ' property actions'), "nav('taxpayers')");

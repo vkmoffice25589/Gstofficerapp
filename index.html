@@ -119,21 +119,8 @@
     <!-- ===== REPORTS ===== -->
     <div class="page" id="page-cases">
       <div class="ph">
-        <div><div class="ph-title"><i class="fa-solid fa-chart-bar"></i>Reports</div><div class="ph-sub">Taxpayers grouped by GSTIN, classified by collectibility</div></div>
+        <div><div class="ph-title"><i class="fa-solid fa-chart-bar"></i>Reports</div><div class="ph-sub">Every collectible demand — click Generate</div></div>
       </div>
-
-      <div class="tabs">
-        <div class="tab active" data-tab="top100" onclick="reportTab('top100', this)">Top 100 Arrear</div>
-        <div class="tab" data-tab="collectible" onclick="reportTab('collectible', this)">Top 100 Collectible</div>
-        <div class="tab" data-tab="noncollectible" onclick="reportTab('noncollectible', this)">Top 100 Non-Collectible</div>
-        <div class="tab" data-tab="demandwise" onclick="reportTab('demandwise', this)">Collectible Demands</div>
-      </div>
-
-      <div id="report-tab-info" style="display:none;margin-bottom:14px;padding:10px 14px;background:var(--orange-dim);border:1px solid var(--orange-border);border-radius:6px;font-size:12px;color:var(--orange);">
-        ⚠️ Taxpayer Register not loaded — collectibility classification is based only on notice eligibility, not registration status.
-      </div>
-
-      <div class="table-wrap" id="report-table-wrap"></div>
 
       <!-- ===== Collectible Demands — demand-level (not taxpayer-grouped) report.
            Section 62 and every status in EXCLUDED_STATUSES (higher forum /
@@ -143,7 +130,7 @@
            what's actually collectable. No search/filter bar — click
            Generate to show every collectible demand; Generate also re-
            reads the latest DCR data, so it doubles as a refresh button. ===== -->
-      <div id="rpt-dw-section" style="display:none;">
+      <div id="rpt-dw-section">
         <div class="rel-filter-bar">
           <div class="fg"><label>Group By</label><select class="fsel" id="rpt-dw-groupby" onchange="rptDwGroupByChanged()">
             <option value="none">None (flat list)</option>
@@ -744,7 +731,7 @@
             <div class="fg full"><label>Address Line 2</label><input type="text" id="cfg-addr2"/></div>
             <div class="fg full"><label>Designation</label><input type="text" id="cfg-desig"/></div>
             <div class="fg full"><label>City</label><input type="text" id="cfg-city"/></div>
-            <div class="fg full"><label>Officer Name</label><input type="text" id="cfg-officer-name" placeholder="e.g. Tmt.S.Anandhajothi — printed as \"Name of Proper Officer\" on signed documents"/></div>
+            <div class="fg full"><label>Officer Name</label><input type="text" id="cfg-officer-name" placeholder="e.g. Tmt.S.Anandhajothi — printed as 'Name of Proper Officer' on signed documents"/></div>
           </div>
           <div style="display:flex;gap:8px;margin-top:16px;align-items:center;">
             <button class="btn btn-red" onclick="saveSettings()"><i class="fa-solid fa-floppy-disk"></i> Save Settings</button>
