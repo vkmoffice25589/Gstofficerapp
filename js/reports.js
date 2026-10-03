@@ -90,6 +90,7 @@ function rptDwBaseCases() {
    data without leaving the page. */
 function rptDwGenerate() {
   _rptDwGenerated = true;
+  if (typeof arInvalidateIndexes === 'function') arInvalidateIndexes(); // register's cached groups/names must reflect the latest DCR
   document.getElementById('rpt-dw-placeholder').style.display = 'none';
   document.getElementById('rpt-dw-subtotal-bar').style.display = 'flex';
   document.getElementById('rpt-dw-wrap').style.display = 'block';
@@ -134,15 +135,20 @@ function rptDwTheadRow() {
     + '<th>GSTIN</th><th>Trade Name</th><th>Tax Period</th><th>Section</th>' + rptDwTh('Days', 'days') + '<th>Reg Status</th>'
     + rptDwTh('IGST (₹)', 'igst') + rptDwTh('CGST (₹)', 'cgst') + rptDwTh('SGST (₹)', 'sgst') + rptDwTh('CESS (₹)', 'cess') + rptDwTh('Total Arrear (₹)', 'total') + '</tr>';
 }
-/* Trade name from the Taxpayer Register. The DCR only carries the legal
-   name, so when the register has no trade name for a GSTIN the legal name
-   is shown instead (app-wide fallback in taxpayerDisplayName) — marked
-   here so it's visible which rows are a fallback, not a real trade name. */
-function rptDwTradeNameCell(c) {
-  var name = xe(taxpayerDisplayName(c.gstin, c.legalName));
-  var reg = AppState.addressCache[c.gstin] || {};
-  if (reg.tradeName) return name;
-  return '<span class="rpt-name-fallback" title="No trade name in the Taxpayer Register for this GSTIN — showing the legal name from the DCR">' + name + '</span>';
+/* Trade name via the Arrear Action Register's own lookup (arGetTraderName:
+   register trade name, else register legal name, else the DCR legal name),
+   so this report and the register can never show different names for the
+   same GSTIN. Shown grey/italic only when there's no register entry with
+   a name at all, i.e. it's just the DCR's legal name. */
+function rptDwTraderName(gstin, legalName) {
+  return (typeof arGetTraderName === 'function' ? arGetTraderName(gstin) : '') || legalName || '—';
+}
+
+function rptDwNameHtml(gstin, legalName) {
+  var name = xe(rptDwTraderName(gstin, legalName));
+  var reg = AppState.addressCache[gstin] || AppState.addressCache[String(gstin || '').toUpperCase()];
+  if (reg && (reg.tradeName || reg.legalName)) return name;
+  return '<span class="rpt-name-fallback" title="No Taxpayer Register entry for this GSTIN — showing the legal name from the DCR">' + name + '</span>';
 }
 
 function rptDwCaseRow(c, idx) {
@@ -155,7 +161,7 @@ function rptDwCaseRow(c, idx) {
     + '<td class="demand-id">' + xe(c.demandId) + '</td>'
     + '<td>' + fmtDate(c.dcr_date || c.demandDate) + '</td>'
     + '<td class="gstin-cell">' + xe(c.gstin) + '</td>'
-    + '<td>' + rptDwTradeNameCell(c) + '</td>'
+    + '<td>' + rptDwNameHtml(c.gstin, c.legalName) + '</td>'
     + '<td>' + xe(c.taxPeriod) + '</td>'
     + '<td style="text-align:center;">' + xe(c.section) + '</td>'
     + '<td style="text-align:center;">' + dayBadge(age) + '</td>'
@@ -168,11 +174,12 @@ function rptDwCaseRow(c, idx) {
     + '</tr>';
 }
 
-/* Excel-style "Data > Subtotal": one row per demand, grouped by taxpayer,
-   a subtotal row after each taxpayer's demands, and a grand total at the
-   end. Shown in full (no pagination) since splitting a taxpayer's group
-   across pages would defeat the point. Groups are ordered by their own
-   subtotal, highest first — same "top arrear" spirit as the default sort. */
+/* Excel-style "Data > Subtotal", but with each taxpayer's subtotal as a
+   header row ABOVE its demands (so the figure is the first thing read,
+   however long the group). Shown in full (no pagination) since splitting a
+   taxpayer's group across pages would defeat the point. Groups are ordered
+   by their own subtotal, highest first. The grand total is the totals bar
+   above the table, so it isn't repeated as a row here. */
 function rptDwRenderGrouped(filtered) {
   var byGstin = {};
   filtered.forEach(function (c) {
@@ -184,32 +191,22 @@ function rptDwRenderGrouped(filtered) {
     return { gstin: gstin, legalName: cases[0].legalName, cases: cases, sub: rptDwSubtotal(cases) };
   }).sort(function (a, b) { return b.sub.total - a.sub.total; });
 
-  var grand = { igst: 0, cgst: 0, sgst: 0, cess: 0, total: 0 };
   var body = groups.map(function (g, gi) {
-    grand.igst += g.sub.igst; grand.cgst += g.sub.cgst; grand.sgst += g.sub.sgst; grand.cess += g.sub.cess; grand.total += g.sub.total;
     var rows = g.cases.map(function (c, i) { return rptDwCaseRow(c, (gi + 1) + '.' + (i + 1)); }).join('');
     var subtotalRow = '<tr class="rpt-dw-subtotal-row">'
-      + '<td colspan="4"></td>'
-      + '<td colspan="5">Subtotal — ' + xe(taxpayerDisplayName(g.gstin, g.legalName)) + ' (' + g.cases.length + ' demand' + (g.cases.length === 1 ? '' : 's') + ')</td>'
+      + '<td>' + (gi + 1) + '</td>'
+      + '<td colspan="3" class="gstin-cell">' + xe(g.gstin) + '</td>'
+      + '<td colspan="5">' + rptDwNameHtml(g.gstin, g.legalName) + ' — Subtotal (' + g.cases.length + ' demand' + (g.cases.length === 1 ? '' : 's') + ')</td>'
       + '<td style="text-align:right;">' + fmt0(g.sub.igst) + '</td>'
       + '<td style="text-align:right;">' + fmt0(g.sub.cgst) + '</td>'
       + '<td style="text-align:right;">' + fmt0(g.sub.sgst) + '</td>'
       + '<td style="text-align:right;">' + fmt0(g.sub.cess) + '</td>'
       + '<td>' + fmt(g.sub.total) + '</td>'
       + '</tr>';
-    return rows + subtotalRow;
+    return subtotalRow + rows;
   }).join('');
 
-  var grandRow = '<tr class="rpt-dw-grandtotal-row">'
-    + '<td colspan="9">GRAND TOTAL — ' + filtered.length + ' demands, ' + groups.length + ' taxpayer' + (groups.length === 1 ? '' : 's') + '</td>'
-    + '<td style="text-align:right;">' + fmt0(grand.igst) + '</td>'
-    + '<td style="text-align:right;">' + fmt0(grand.cgst) + '</td>'
-    + '<td style="text-align:right;">' + fmt0(grand.sgst) + '</td>'
-    + '<td style="text-align:right;">' + fmt0(grand.cess) + '</td>'
-    + '<td>' + fmt(grand.total) + '</td>'
-    + '</tr>';
-
-  return '<div class="table-scroll"><table><thead>' + rptDwTheadRow() + '</thead><tbody>' + body + grandRow + '</tbody></table></div>';
+  return '<div class="table-scroll"><table><thead>' + rptDwTheadRow() + '</thead><tbody>' + body + '</tbody></table></div>';
 }
 
 function renderDemandWiseReport() {
@@ -278,7 +275,7 @@ function rptDwRegLabel(gstin) {
 function rptDwBuildAbstractRows(groups, filtered) {
   var rows = groups.map(function (g, i) {
     return {
-      'Sl.No.': i + 1, GSTIN: g.gstin, 'Trade Name': taxpayerDisplayName(g.gstin, g.legalName), 'Reg Status': rptDwRegLabel(g.gstin),
+      'Sl.No.': i + 1, GSTIN: g.gstin, 'Trade Name': rptDwTraderName(g.gstin, g.legalName), 'Reg Status': rptDwRegLabel(g.gstin),
       Demands: g.cases.length, 'IGST (₹)': g.sub.igst, 'CGST (₹)': g.sub.cgst, 'SGST (₹)': g.sub.sgst, 'CESS (₹)': g.sub.cess, 'Total Arrear (₹)': g.sub.total
     };
   });
@@ -287,29 +284,30 @@ function rptDwBuildAbstractRows(groups, filtered) {
   return rows;
 }
 
+/* Grand total first, then for each taxpayer its subtotal row ABOVE its
+   demands — same top-down order as the on-screen taxpayer-wise view. */
 function rptDwBuildDetailRows(groups, filtered) {
-  var rows = [];
+  var grand = rptDwSubtotal(filtered);
+  var rows = [{
+    'Sl.No.': '', 'Demand ID': '', 'Order Date': '', GSTIN: '', 'Trade Name': 'GRAND TOTAL', 'Tax Period': '', Section: '', Days: '',
+    'Reg Status': filtered.length + ' demands, ' + groups.length + ' taxpayers',
+    'IGST (₹)': grand.igst, 'CGST (₹)': grand.cgst, 'SGST (₹)': grand.sgst, 'CESS (₹)': grand.cess, 'Total Arrear (₹)': grand.total
+  }];
   groups.forEach(function (g, gi) {
+    rows.push({
+      'Sl.No.': gi + 1, 'Demand ID': '', 'Order Date': '', GSTIN: g.gstin, 'Trade Name': 'Subtotal — ' + rptDwTraderName(g.gstin, g.legalName),
+      'Tax Period': '', Section: '', Days: '', 'Reg Status': g.cases.length + ' demands',
+      'IGST (₹)': g.sub.igst, 'CGST (₹)': g.sub.cgst, 'SGST (₹)': g.sub.sgst, 'CESS (₹)': g.sub.cess, 'Total Arrear (₹)': g.sub.total
+    });
     g.cases.forEach(function (c, i) {
       rows.push({
         'Sl.No.': (gi + 1) + '.' + (i + 1), 'Demand ID': c.demandId, 'Order Date': fmtDate(c.dcr_date || c.demandDate), GSTIN: c.gstin,
-        'Trade Name': taxpayerDisplayName(c.gstin, c.legalName), 'Tax Period': c.taxPeriod, Section: c.section,
+        'Trade Name': rptDwTraderName(c.gstin, c.legalName), 'Tax Period': c.taxPeriod, Section: c.section,
         Days: getDemandAgeDays(c), 'Reg Status': rptDwRegLabel(c.gstin),
         'IGST (₹)': Number(c.pend_igst) || 0, 'CGST (₹)': Number(c.pend_cgst) || 0, 'SGST (₹)': Number(c.pend_sgst) || 0,
         'CESS (₹)': Number(c.pend_cess) || 0, 'Total Arrear (₹)': Number(c.pend_total) || 0
       });
     });
-    rows.push({
-      'Sl.No.': '', 'Demand ID': '', 'Order Date': '', GSTIN: '', 'Trade Name': 'Subtotal — ' + taxpayerDisplayName(g.gstin, g.legalName),
-      'Tax Period': '', Section: '', Days: '', 'Reg Status': g.cases.length + ' demands',
-      'IGST (₹)': g.sub.igst, 'CGST (₹)': g.sub.cgst, 'SGST (₹)': g.sub.sgst, 'CESS (₹)': g.sub.cess, 'Total Arrear (₹)': g.sub.total
-    });
-  });
-  var grand = rptDwSubtotal(filtered);
-  rows.push({
-    'Sl.No.': '', 'Demand ID': '', 'Order Date': '', GSTIN: '', 'Trade Name': 'GRAND TOTAL', 'Tax Period': '', Section: '', Days: '',
-    'Reg Status': filtered.length + ' demands, ' + groups.length + ' taxpayers',
-    'IGST (₹)': grand.igst, 'CGST (₹)': grand.cgst, 'SGST (₹)': grand.sgst, 'CESS (₹)': grand.cess, 'Total Arrear (₹)': grand.total
   });
   return rows;
 }
