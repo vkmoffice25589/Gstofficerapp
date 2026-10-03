@@ -51,13 +51,13 @@ var STORAGE_KEYS = {
 };
 
 var defaultSettings = {
-  division: 'Chennai North Division',
+  division: 'Chennai Division',
   circle: 'Villivakkam Assessment Circle',
-  addr1: 'No.1 PAPJM Annex Building, 2nd Floor, Room No. 204,',
-  addr2: 'Greams Road, Chennai 600 006.',
+  addr1: '350 Fifth Avenue, 21st Floor,',
+  addr2: 'New York, NY 10118, USA.',
   desig: 'Assistant Commissioner (ST),(FAC)',
-  city: 'Chennai-6',
-  officerName: ''
+  city: 'New York',
+  officerName: 'Thiru. Sachin Tendulkar'
 };
 
 function getSettings() {
