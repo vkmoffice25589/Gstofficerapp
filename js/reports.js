@@ -134,6 +134,17 @@ function rptDwTheadRow() {
     + '<th>GSTIN</th><th>Trade Name</th><th>Tax Period</th><th>Section</th>' + rptDwTh('Days', 'days') + '<th>Reg Status</th>'
     + rptDwTh('IGST (₹)', 'igst') + rptDwTh('CGST (₹)', 'cgst') + rptDwTh('SGST (₹)', 'sgst') + rptDwTh('CESS (₹)', 'cess') + rptDwTh('Total Arrear (₹)', 'total') + '</tr>';
 }
+/* Trade name from the Taxpayer Register. The DCR only carries the legal
+   name, so when the register has no trade name for a GSTIN the legal name
+   is shown instead (app-wide fallback in taxpayerDisplayName) — marked
+   here so it's visible which rows are a fallback, not a real trade name. */
+function rptDwTradeNameCell(c) {
+  var name = xe(taxpayerDisplayName(c.gstin, c.legalName));
+  var reg = AppState.addressCache[c.gstin] || {};
+  if (reg.tradeName) return name;
+  return '<span class="rpt-name-fallback" title="No trade name in the Taxpayer Register for this GSTIN — showing the legal name from the DCR">' + name + '</span>';
+}
+
 function rptDwCaseRow(c, idx) {
   var age = getDemandAgeDays(c);
   var collectibleReg = isCollectible(c.gstin);
@@ -144,7 +155,7 @@ function rptDwCaseRow(c, idx) {
     + '<td class="demand-id">' + xe(c.demandId) + '</td>'
     + '<td>' + fmtDate(c.dcr_date || c.demandDate) + '</td>'
     + '<td class="gstin-cell">' + xe(c.gstin) + '</td>'
-    + '<td>' + xe(taxpayerDisplayName(c.gstin, c.legalName)) + '</td>'
+    + '<td>' + rptDwTradeNameCell(c) + '</td>'
     + '<td>' + xe(c.taxPeriod) + '</td>'
     + '<td style="text-align:center;">' + xe(c.section) + '</td>'
     + '<td style="text-align:center;">' + dayBadge(age) + '</td>'

@@ -750,3 +750,4 @@ header { display: none; }
 /* ---- Reports page tab bar + the one-line description above Report 2 ---- */
 #page-cases > .tabs { margin-bottom: 18px; }
 .rpt-panel-note { font-size: 13px; color: var(--ink3); margin-bottom: 16px; line-height: 1.5; max-width: 780px; }
+.rpt-name-fallback { font-style: italic; color: var(--ink3); cursor: help; }
