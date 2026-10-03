@@ -82,9 +82,9 @@ function rptDwSubtotal(cases) {
 
 function rptDwTh(label, col) { return '<th style="cursor:pointer;white-space:nowrap;" onclick="rptDwSortBy(\'' + col + '\')">' + label + rptDwSortArrow(col) + '</th>'; }
 function rptDwTheadRow() {
-  return '<tr><th>#</th>' + rptDwTh('Demand ID', 'demandId') + rptDwTh('Order Date', 'orderDate')
+  return '<tr><th>Sl.No.</th>' + rptDwTh('Demand ID', 'demandId') + rptDwTh('Order Date', 'orderDate')
     + '<th>GSTIN</th><th>Trade Name</th><th>Tax Period</th><th>Section</th>' + rptDwTh('Days', 'days') + '<th>Reg Status</th>'
-    + rptDwTh('IGST (₹)', 'igst') + rptDwTh('CGST (₹)', 'cgst') + rptDwTh('SGST (₹)', 'sgst') + rptDwTh('CESS (₹)', 'cess') + rptDwTh('Pending (₹)', 'total') + '</tr>';
+    + rptDwTh('IGST (₹)', 'igst') + rptDwTh('CGST (₹)', 'cgst') + rptDwTh('SGST (₹)', 'sgst') + rptDwTh('CESS (₹)', 'cess') + rptDwTh('Total Arrear (₹)', 'total') + '</tr>';
 }
 function rptDwCaseRow(c, idx) {
   var age = getDemandAgeDays(c);
@@ -126,9 +126,9 @@ function rptDwRenderGrouped(filtered) {
   }).sort(function (a, b) { return b.sub.total - a.sub.total; });
 
   var grand = { igst: 0, cgst: 0, sgst: 0, cess: 0, total: 0 };
-  var body = groups.map(function (g) {
+  var body = groups.map(function (g, gi) {
     grand.igst += g.sub.igst; grand.cgst += g.sub.cgst; grand.sgst += g.sub.sgst; grand.cess += g.sub.cess; grand.total += g.sub.total;
-    var rows = g.cases.map(function (c, i) { return rptDwCaseRow(c, i + 1); }).join('');
+    var rows = g.cases.map(function (c, i) { return rptDwCaseRow(c, (gi + 1) + '.' + (i + 1)); }).join('');
     var subtotalRow = '<tr class="rpt-dw-subtotal-row">'
       + '<td colspan="4"></td>'
       + '<td colspan="5">Subtotal — ' + xe(taxpayerDisplayName(g.gstin, g.legalName)) + ' (' + g.cases.length + ' demand' + (g.cases.length === 1 ? '' : 's') + ')</td>'
@@ -169,7 +169,7 @@ function renderDemandWiseReport() {
       + '<div><div class="wchr-label">CGST</div><div class="wchr-val" style="color:var(--navy-text);">' + fmt(sub.cgst) + '</div></div>'
       + '<div><div class="wchr-label">SGST</div><div class="wchr-val" style="color:var(--navy-text);">' + fmt(sub.sgst) + '</div></div>'
       + '<div><div class="wchr-label">CESS</div><div class="wchr-val" style="color:var(--navy-text);">' + fmt(sub.cess) + '</div></div>'
-      + '<div><div class="wchr-label">Subtotal (Pending)</div><div class="wchr-val">' + fmt(sub.total) + '</div></div>';
+      + '<div><div class="wchr-label">Total Arrear</div><div class="wchr-val">' + fmt(sub.total) + '</div></div>';
   }
 
   if (!filtered.length) {
@@ -219,38 +219,38 @@ function rptDwRegLabel(gstin) {
 function rptDwBuildAbstractRows(groups, filtered) {
   var rows = groups.map(function (g, i) {
     return {
-      '#': i + 1, GSTIN: g.gstin, 'Trade Name': taxpayerDisplayName(g.gstin, g.legalName), 'Reg Status': rptDwRegLabel(g.gstin),
-      Demands: g.cases.length, 'IGST (₹)': g.sub.igst, 'CGST (₹)': g.sub.cgst, 'SGST (₹)': g.sub.sgst, 'CESS (₹)': g.sub.cess, 'Pending (₹)': g.sub.total
+      'Sl.No.': i + 1, GSTIN: g.gstin, 'Trade Name': taxpayerDisplayName(g.gstin, g.legalName), 'Reg Status': rptDwRegLabel(g.gstin),
+      Demands: g.cases.length, 'IGST (₹)': g.sub.igst, 'CGST (₹)': g.sub.cgst, 'SGST (₹)': g.sub.sgst, 'CESS (₹)': g.sub.cess, 'Total Arrear (₹)': g.sub.total
     };
   });
   var grand = rptDwSubtotal(filtered);
-  rows.push({ '#': '', GSTIN: '', 'Trade Name': 'GRAND TOTAL', 'Reg Status': '', Demands: filtered.length, 'IGST (₹)': grand.igst, 'CGST (₹)': grand.cgst, 'SGST (₹)': grand.sgst, 'CESS (₹)': grand.cess, 'Pending (₹)': grand.total });
+  rows.push({ 'Sl.No.': '', GSTIN: '', 'Trade Name': 'GRAND TOTAL', 'Reg Status': '', Demands: filtered.length, 'IGST (₹)': grand.igst, 'CGST (₹)': grand.cgst, 'SGST (₹)': grand.sgst, 'CESS (₹)': grand.cess, 'Total Arrear (₹)': grand.total });
   return rows;
 }
 
 function rptDwBuildDetailRows(groups, filtered) {
   var rows = [];
-  groups.forEach(function (g) {
+  groups.forEach(function (g, gi) {
     g.cases.forEach(function (c, i) {
       rows.push({
-        '#': i + 1, 'Demand ID': c.demandId, 'Order Date': fmtDate(c.dcr_date || c.demandDate), GSTIN: c.gstin,
+        'Sl.No.': (gi + 1) + '.' + (i + 1), 'Demand ID': c.demandId, 'Order Date': fmtDate(c.dcr_date || c.demandDate), GSTIN: c.gstin,
         'Trade Name': taxpayerDisplayName(c.gstin, c.legalName), 'Tax Period': c.taxPeriod, Section: c.section,
         Days: getDemandAgeDays(c), 'Reg Status': rptDwRegLabel(c.gstin),
         'IGST (₹)': Number(c.pend_igst) || 0, 'CGST (₹)': Number(c.pend_cgst) || 0, 'SGST (₹)': Number(c.pend_sgst) || 0,
-        'CESS (₹)': Number(c.pend_cess) || 0, 'Pending (₹)': Number(c.pend_total) || 0
+        'CESS (₹)': Number(c.pend_cess) || 0, 'Total Arrear (₹)': Number(c.pend_total) || 0
       });
     });
     rows.push({
-      '#': '', 'Demand ID': '', 'Order Date': '', GSTIN: '', 'Trade Name': 'Subtotal — ' + taxpayerDisplayName(g.gstin, g.legalName),
+      'Sl.No.': '', 'Demand ID': '', 'Order Date': '', GSTIN: '', 'Trade Name': 'Subtotal — ' + taxpayerDisplayName(g.gstin, g.legalName),
       'Tax Period': '', Section: '', Days: '', 'Reg Status': g.cases.length + ' demands',
-      'IGST (₹)': g.sub.igst, 'CGST (₹)': g.sub.cgst, 'SGST (₹)': g.sub.sgst, 'CESS (₹)': g.sub.cess, 'Pending (₹)': g.sub.total
+      'IGST (₹)': g.sub.igst, 'CGST (₹)': g.sub.cgst, 'SGST (₹)': g.sub.sgst, 'CESS (₹)': g.sub.cess, 'Total Arrear (₹)': g.sub.total
     });
   });
   var grand = rptDwSubtotal(filtered);
   rows.push({
-    '#': '', 'Demand ID': '', 'Order Date': '', GSTIN: '', 'Trade Name': 'GRAND TOTAL', 'Tax Period': '', Section: '', Days: '',
+    'Sl.No.': '', 'Demand ID': '', 'Order Date': '', GSTIN: '', 'Trade Name': 'GRAND TOTAL', 'Tax Period': '', Section: '', Days: '',
     'Reg Status': filtered.length + ' demands, ' + groups.length + ' taxpayers',
-    'IGST (₹)': grand.igst, 'CGST (₹)': grand.cgst, 'SGST (₹)': grand.sgst, 'CESS (₹)': grand.cess, 'Pending (₹)': grand.total
+    'IGST (₹)': grand.igst, 'CGST (₹)': grand.cgst, 'SGST (₹)': grand.sgst, 'CESS (₹)': grand.cess, 'Total Arrear (₹)': grand.total
   });
   return rows;
 }
