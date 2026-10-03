@@ -312,20 +312,31 @@ function rptDwBuildDetailRows(groups, filtered) {
   return rows;
 }
 
+/* The total is split by registration status, each part with its own
+   abstract (one row per taxpayer) and demand-wise detail: Active, then
+   Cancelled. Taxpayers with no Taxpayer Register entry are neither, so
+   they get their own "Unknown" pair of sheets — only when there are any —
+   rather than being folded into Active or Cancelled. A group with no
+   taxpayers gets no sheets. */
 async function rptDwExportExcel() {
   var filtered = rptDwBaseCases();
   if (!filtered.length) { showToast('⚠️ No collectible demands to export'); return; }
   await window.LibsReady;
-  var groups = rptDwGroupedByTaxpayer(filtered);
 
-  var abstractSheet = XLSX.utils.json_to_sheet(rptDwBuildAbstractRows(groups, filtered));
-  var detailSheet = XLSX.utils.json_to_sheet(rptDwBuildDetailRows(groups, filtered));
   var wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, abstractSheet, 'Taxpayer Abstract');
-  XLSX.utils.book_append_sheet(wb, detailSheet, 'Demand Detail');
+  var summary = [];
+  ['Active', 'Cancelled', 'Unknown'].forEach(function (status) {
+    var cases = filtered.filter(function (c) { return rptDwRegLabel(c.gstin) === status; });
+    if (!cases.length) return;
+    var groups = rptDwGroupedByTaxpayer(cases);
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rptDwBuildAbstractRows(groups, cases)), status + ' - Abstract');
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rptDwBuildDetailRows(groups, cases)), status + ' - Detail');
+    summary.push(groups.length + ' ' + status.toLowerCase());
+  });
+
   var out = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
   downloadBlob(new Blob([out], { type: 'application/octet-stream' }), 'Collectible_Demands_' + todayISO() + '.xlsx');
-  showToast('✅ Exported ' + filtered.length + ' demands across ' + groups.length + ' taxpayers');
+  showToast('✅ Exported ' + filtered.length + ' demands — taxpayers: ' + summary.join(', '));
 }
 
 function rptDwPaginationHTML(total, totalPages) {
