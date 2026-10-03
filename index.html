@@ -588,33 +588,82 @@
 
       </div>
 
-      <!-- Property Attachment -->
-      <div class="bulk-tab-panel" id="bulk-tab-property" style="display:none;">
-        <div class="table-wrap" style="padding:18px;margin-bottom:18px;">
-          <div class="ph-sub" style="margin-bottom:12px;">ATTACHMENT OF PROPERTY — Section 79(1)(d)</div>
-          <div class="form-grid">
-            <div class="fg full" style="position:relative;">
-              <label>Defaulter Taxpayer (GSTIN or Name)</label>
-              <input type="text" id="pa-defaulter-search" oninput="paSearchDefaulter(this.value)" placeholder="Search defaulter..."/>
-              <div id="pa-defaulter-results" class="gs-results" style="position:absolute;top:100%;"></div>
-              <input type="hidden" id="pa-defaulter-gstin"/>
+      <!-- Property Attachment — same search/demand-table UX as Third-Party Notice;
+           Generate opens a Properties modal (one order per property, ZIP). -->
+      <div class="bulk-tab-panel" id="bulk-tab-property" style="display:none;padding-bottom:88px;">
+
+        <div class="issue-search-grid">
+          <div class="issue-search-card isc-premium">
+            <div class="isc-premium-top">
+              <div class="isc-premium-headline">
+                <div class="isc-premium-icon"><i class="fa-solid fa-house-lock"></i></div>
+                <div>
+                  <div class="isc-premium-title">Search Defaulter</div>
+                  <div class="isc-premium-sub">Find taxpayer details by GSTIN or Trade Name</div>
+                </div>
+              </div>
+            </div>
+            <div class="isc-row isc-premium-row">
+              <div class="isc-input-wrap">
+                <i class="fa-solid fa-magnifying-glass isc-input-icon"></i>
+                <input type="text" id="pa-gstin-input" class="isc-input isc-input-premium" autocomplete="off" placeholder="Enter GSTIN (e.g. 33AAJCP4412H1ZN) or Trade Name" oninput="paSearchSuggest()" onkeydown="if(event.key==='Enter')paSearchGSTIN();"/>
+                <button type="button" class="isc-clear" title="Clear" onclick="paClearGSTIN()"><i class="fa-solid fa-xmark"></i></button>
+                <div class="isc-suggest" id="pa-suggest"></div>
+              </div>
+              <button type="button" class="isc-btn-premium" onclick="paSearchGSTIN()"><i class="fa-solid fa-magnifying-glass"></i> Search</button>
+            </div>
+            <div id="pa-gstin-hint" class="isc-hint"></div>
+          </div>
+          <div class="issue-search-card">
+            <div id="pa-taxpayer-details" class="isc-details">
+              <div class="isc-empty"><i class="fa-solid fa-house-lock"></i> Defaulter taxpayer details will appear here after you search.</div>
             </div>
           </div>
-          <div id="pa-defaulter-demands" style="margin-top:10px;"></div>
+        </div>
 
-          <hr class="sdiv"/>
-          <div class="form-grid">
-            <div class="fg full"><label>Property Description *</label><input type="text" id="pa-property-description" placeholder="e.g. Commercial building, Survey No. 145, ..."/></div>
-            <div class="fg"><label>Location / Survey No.</label><input type="text" id="pa-property-location"/></div>
-            <div class="fg"><label>Estimated Value (₹)</label><input type="number" id="pa-property-value"/></div>
-            <div class="fg"><label>Attaching Officer</label><input type="text" id="pa-officer"/></div>
-            <div class="fg"><label>Date</label><input type="date" id="pa-date"/></div>
+        <div class="wizard-card" id="pa-demand-section" style="display:none;">
+          <div class="wiz-taxpayer-sticky" id="pa-sticky-taxpayer" style="display:none;"></div>
+          <div class="wizard-card-head">
+            <div class="wizard-num" style="background:#E4572E;">2</div>
+            <div><div class="wizard-card-title">Demands to Cover</div><div class="wizard-card-sub">Flagged rows (Excluded / Section 62) are unchecked by default — tick to include anyway.</div></div>
+            <div class="wizard-card-head-right">
+              <span class="pill pill-orange" id="pa-head-count">0 of 0 selected</span>
+              <div class="wchr-total-row"><span class="wchr-label">Total Selected Arrear (₹)</span><span class="wchr-val" id="pa-head-total" style="color:#E4572E;">₹0</span></div>
+            </div>
           </div>
-          <div style="display:flex;gap:8px;margin-top:14px;">
-            <button class="btn btn-red" onclick="paSaveAndDownload()"><i class="fa-solid fa-file-word"></i> Save &amp; Download Order</button>
-            <button class="btn btn-outline" onclick="paDownloadPDF()"><i class="fa-solid fa-file-pdf"></i> PDF</button>
+
+          <div class="quick-filter-bar" id="pa-quick-filter-bar">
+            <button type="button" class="qf-chip active" data-qf="all" onclick="paQuickFilterAll()">All Demands <span class="qf-count" id="pa-qf-count-all">0</span></button>
+            <button type="button" class="qf-chip" data-qf="section62" onclick="paToggleSection62()" title="Section 62 (best-judgment) demands are excluded by default — click to include them">Include Section 62 <span class="qf-count" id="pa-qf-count-section62">0</span></button>
+          </div>
+
+          <div class="wiz-flag-legend">
+            <span class="pill pill-orange wiz-excluded-badge">Excluded</span> = higher forum / closed / refund demand &nbsp;&nbsp;
+            <span class="pill pill-gold wiz-excluded-badge">Section 62</span> = best-judgment assessment &nbsp;&nbsp;
+            <span>— both stay unchecked until you tick them.</span>
+            <button type="button" class="wiz-flag-legend-link" onclick="openWizExclusionGuide()">View full list &rsaquo;</button>
+          </div>
+
+          <div id="pa-demand-table-wrap"></div>
+        </div>
+
+        <div class="wizard-action-bar">
+          <div class="wab-left">
+            <div class="selection-summary" id="pa-bar-summary">0 of 0 selected</div>
+            <div class="selection-summary">Total Selected Arrear (₹)<span class="selection-total" id="pa-bar-total">₹0</span></div>
+          </div>
+          <div class="wab-center">
+            <button class="btn btn-outline" onclick="paClearAll()"><i class="fa-solid fa-xmark"></i> Clear All</button>
+            <button class="btn btn-outline" onclick="paPreview()"><i class="fa-solid fa-eye"></i> Preview</button>
+            <button class="btn btn-blue" onclick="paGenerate('pdf')"><i class="fa-solid fa-file-pdf"></i> Generate PDF</button>
+            <button class="btn btn-blue" onclick="paGenerate('word')"><i class="fa-solid fa-file-word"></i> Generate Word</button>
+          </div>
+          <div class="wab-note">
+            <i class="fa-solid fa-circle-info"></i>
+            <span>Saves the attachment orders and downloads one order per property.</span>
           </div>
         </div>
+
       </div>
 
       <!-- Bulk Notice / Paste GSTINs — selection action bar (shown once notices are generated) -->
@@ -864,6 +913,30 @@
     <div class="mfoot">
       <button class="btn btn-outline" onclick="tpCloseDebtorModal()">Cancel</button>
       <button class="btn btn-blue" id="tp-bulk-generate-btn" onclick="tpConfirmGenerate()"><i class="fa-solid fa-file-export"></i> Generate</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== Property Attachment — Properties to Attach modal, opened by
+     Generate PDF/Word once demands are selected. Every row gets the same
+     ticked demands and amount; Generate saves one attachment per property
+     and bundles every order into one ZIP. ===== -->
+<div class="overlay" id="pa-property-modal-overlay" onclick="if(event.target===this) paClosePropertyModal()">
+  <div class="modal modal-lg">
+    <div class="mhead">
+      <div><div class="mtitle"><i class="fa-solid fa-house-lock" style="color:#E4572E;margin-right:6px;"></i>Properties to Attach</div><div class="msub" id="pa-bulk-modal-sub">—</div></div>
+      <button class="mclose" onclick="paClosePropertyModal()">&times;</button>
+    </div>
+    <div class="mbody">
+      <div class="form-grid" style="margin-bottom:12px;">
+        <div class="fg"><label>Order Date</label><input type="date" id="pa-bulk-date"/></div>
+      </div>
+      <div id="pa-property-rows-wrap"></div>
+      <button type="button" class="btn btn-outline btn-sm" style="margin-top:10px;" onclick="paAddPropertyRow()"><i class="fa-solid fa-plus"></i> Add Row</button>
+    </div>
+    <div class="mfoot">
+      <button class="btn btn-outline" onclick="paClosePropertyModal()">Cancel</button>
+      <button class="btn btn-blue" id="pa-bulk-generate-btn" onclick="paConfirmGenerate()"><i class="fa-solid fa-file-export"></i> Generate</button>
     </div>
   </div>
 </div>

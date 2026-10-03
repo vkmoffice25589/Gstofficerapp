@@ -685,7 +685,8 @@ header { display: none; }
 .tp-debtor-table input[type="text"] { width: 100%; box-sizing: border-box; height: 32px; border: 1px solid var(--border); border-radius: 6px; font-size: 12.5px; padding: 0 8px; color: var(--navy-text); background: var(--surface); }
 .tp-debtor-table input[type="text"]:focus { outline: none; border-color: var(--primary-blue); box-shadow: 0 0 0 2px var(--primary-blue-dim); }
 .tp-debtor-table td { padding: 5px 6px; }
-#tp-debtor-rows-wrap .table-scroll { max-height: 360px; overflow-y: auto; }
+#tp-debtor-rows-wrap .table-scroll,
+#pa-property-rows-wrap .table-scroll { max-height: 360px; overflow-y: auto; }
 
 /* ---- Premium search card (Issue Notice / Bank Attachment / Third-Party
    Notice — the shared .issue-search-grid's first card): icon, title,

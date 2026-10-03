@@ -68,7 +68,7 @@ document.addEventListener('DOMContentLoaded', function () {
     wireModalCloseOnBackdrop();
 
     var today = todayISO();
-    ['ba-date', 'tp-bulk-date', 'pa-date'].forEach(function (id) {
+    ['ba-date', 'tp-bulk-date', 'pa-bulk-date'].forEach(function (id) {
       var el = document.getElementById(id);
       if (el && !el.value) el.value = today;
     });
