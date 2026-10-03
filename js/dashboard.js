@@ -117,7 +117,7 @@ function renderDashKPIs(cases, groups) {
     + kpiCard('orange', 'fa-bolt', 'RECOVERABLE ARREAR', fmt(recoverableAmt), recoverableGroups.length + ' recoverable taxpayers', "nav('cases')")
     + kpiCard('purple', 'fa-envelope-open-text', 'NOTICES ISSUED', noticesInScope.length.toLocaleString('en-IN'), thisMonth + ' this month', "nav('bulknotice')")
     + kpiCard('gold', 'fa-building-columns', 'BANK ATTACHMENTS', activeBanks.length.toLocaleString('en-IN'), fmt(attachedAmt) + ' attached', "nav('bulknotice'); bulkTab('bankatt', document.querySelector('#page-bulknotice .tab[data-tab=bankatt]'))")
-    + kpiCard('green', 'fa-hand-holding-dollar', 'RECOVERY / COLLECTION', fmt(recoveredTotal), (recoveredFromRecon > 0 || recoveredFromPayments > 0) ? 'Recorded collections (demand ≠ recovered)' : (noticesInScope.length + ' notices · ' + activeBanks.length + ' bank · ' + AppState.thirdPartyNotices.length + ' third-party · ' + AppState.propertyAttachments.length + ' property actions'), "nav('taxpayers')");
+    + kpiCard('green', 'fa-hand-holding-dollar', 'RECOVERY / COLLECTION', fmt(recoveredTotal), (recoveredFromRecon > 0 || recoveredFromPayments > 0) ? 'Recorded collections (demand ≠ recovered)' : (noticesInScope.length + ' notices · ' + activeBanks.length + ' bank · ' + AppState.thirdPartyNotices.length + ' third-party · ' + AppState.propertyAttachments.length + ' property actions'), "nav('cases')");
 }
 
 function kpiCard(color, icon, label, value, sub, onclick) {
@@ -212,7 +212,7 @@ function renderDashTopTaxpayers(groups) {
       + '<td style="text-align:center;">' + g.demands + '</td>'
       + '<td><div class="amount-cell pending">' + fmt(g.total) + '</div></td>'
       + '<td>' + status + '</td>'
-      + '<td><button class="btn btn-outline btn-xs" onclick="nav(\'taxpayers\');document.getElementById(\'trp-gstin-input\').value=\'' + g.gstin + '\';loadRecoveryProfile();">View</button></td></tr>';
+      + '<td><button class="btn btn-outline btn-xs" onclick="goToTaxpayerCase(\'' + g.gstin + '\')">View</button></td></tr>';
   }).join('');
 
   wrap.innerHTML = '<div class="table-scroll"><table><thead><tr><th>#</th><th>GSTIN</th><th>Taxpayer</th><th>Demands</th><th>Arrear</th><th>Status</th><th>Action</th></tr></thead><tbody>' + rows + '</tbody></table></div>';

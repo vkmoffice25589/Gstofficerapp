@@ -30,7 +30,7 @@ function wireGlobalSearch() {
 function globalSearchGo(gstin) {
   document.getElementById('global-search-results').classList.remove('show');
   document.getElementById('global-search').value = '';
-  goToRecoveryProfile(gstin);
+  goToTaxpayerCase(gstin);
 }
 
 function showHelpSupport() {
@@ -43,8 +43,8 @@ function showHelpSupport() {
     + '<ul style="margin:6px 0 0 18px;">'
     + '<li>Upload DCR / Taxpayer Register from the Generate Arrear Notice page</li>'
     + '<li>Issue Notice / Bulk Notice / Bank Attachment / Third-Party Notice / Property Attachment are tabs on that same page</li>'
-    + '<li>Reports shows Top Arrear, Collectible and Non-Collectible taxpayers</li>'
-    + '<li>Notice History and Downloads let you re-download anything already generated</li>'
+    + '<li>Reports has the Total Arrear report (with Excel export) and the Arrear Action Register</li>'
+    + '<li>Notice History lets you re-download anything already generated</li>'
     + '</ul>'
     + '<p style="margin-top:10px;">For issues beyond this, contact your system administrator.</p>'
     + '</div>';

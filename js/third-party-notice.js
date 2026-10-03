@@ -121,7 +121,7 @@ function tpLoadGSTIN(gstin) {
     +   '<div class="isc-meta"><span>Pending <strong>' + fmt(pendTotal) + '</strong></span><span>Demands <strong>' + eligibleCases.length + '</strong></span></div>'
     + '</div>'
     + '<div class="isc-actions">'
-    +   '<button type="button" class="isc-view-btn" onclick="goToRecoveryProfile(\'' + gstin + '\')">View Full Details <i class="fa-solid fa-arrow-right"></i></button>'
+    +   '<button type="button" class="isc-view-btn" onclick="goToTaxpayerCase(\'' + gstin + '\')">View Full Details <i class="fa-solid fa-arrow-right"></i></button>'
     +   '<button type="button" class="isc-link-btn" onclick="goToNoticeHistory(\'' + gstin + '\')"><i class="fa-solid fa-clock-rotate-left"></i> Notice History</button>'
     + '</div>';
 

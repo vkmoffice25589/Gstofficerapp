@@ -181,7 +181,7 @@ function histActionCell(it) {
     btns += '<button class="btn btn-outline btn-xs" onclick="brDownloadRelease(\'' + baseType + '\',\'' + it.id + '\',\'docx\')" title="Release Order (Word)"><i class="fa-solid fa-file-word"></i></button> '
       + '<button class="btn btn-outline btn-xs" onclick="brDownloadRelease(\'' + baseType + '\',\'' + it.id + '\',\'pdf\')" title="Release Order (PDF)"><i class="fa-solid fa-file-pdf"></i></button> ';
   }
-  btns += '<button class="btn btn-outline btn-xs" onclick="goToRecoveryProfile(\'' + it.gstin + '\')" title="Recovery Profile"><i class="fa-solid fa-user-shield"></i></button>';
+  btns += '<button class="btn btn-outline btn-xs" onclick="goToTaxpayerCase(\'' + it.gstin + '\')" title="Case history"><i class="fa-solid fa-user-shield"></i></button>';
   return btns;
 }
 
@@ -296,10 +296,4 @@ function histRedownload(noticeId, format) {
   } else {
     generateNoticePDF(n, cfg);
   }
-}
-
-function goToRecoveryProfile(gstin) {
-  nav('taxpayers');
-  document.getElementById('trp-gstin-input').value = gstin;
-  loadRecoveryProfile();
 }

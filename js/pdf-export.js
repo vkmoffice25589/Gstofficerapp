@@ -151,7 +151,7 @@ function pdfOfficerClosingBlock(ctx, y, b, cfg) {
 }
 
 /* Office masthead used by the notices that don't use the two-column
-   letterhead (Third-Party, Property Attachment, Recovery Profile) — mirrors
+   letterhead (Third-Party, Property Attachment) — mirrors
    officeHeaderBlock() in docx-export.js. */
 function pdfOfficeHeaderBlock(ctx, y, cfg) {
   y = pdfPara(ctx, 'OFFICE OF THE ' + (cfg.desig || '').toUpperCase(), y, { align: 'center', bold: true, size: 12, spacingAfter: 2 });
@@ -641,38 +641,4 @@ async function buildPropertyReleasePdfDoc(pa, cfg) {
 async function generatePropertyReleasePDF(pa, cfg) {
   var doc = await buildPropertyReleasePdfDoc(pa, cfg);
   doc.save(('Property_Release_' + (pa.gstin || 'order')).replace(/[\/\\]/g, '_') + '.pdf');
-}
-
-/* ===== Recovery Profile dossier (PDF) =====
-   Mirrors buildRecoveryProfileDocx() in docx-export.js. */
-async function buildRecoveryProfilePdfDoc(gstin, summary, cfg) {
-  var ctx = await newA4Doc();
-  var y = ctx.top;
-
-  y = pdfOfficeHeaderBlock(ctx, y, cfg);
-  y = pdfHeading(ctx, 'RECOVERY PROFILE', y, { spacingAfter: 10 });
-  y = pdfPara(ctx, summary.legalName || '—', y, { bold: true, spacingAfter: 0 });
-  y = pdfPara(ctx, 'GSTIN: ' + gstin, y, { spacingAfter: 10 });
-
-  y = pdfTable(ctx, {
-    startY: y,
-    head: [['Metric', 'Value']],
-    body: [
-      ['Total Original Demand', fmt0(summary.origTotal)],
-      ['Total Pending', fmt0(summary.pendTotal)],
-      ['Number of Demands', String(summary.demandCount)],
-      ['Notices Issued', String(summary.noticeCount)],
-      ['Bank Attachments', String(summary.bankCount)],
-      ['Recorded Collections', fmt0(summary.recoveredTotal)]
-    ],
-    columnStyles: { 1: { halign: 'right' } }
-  }) + 20;
-
-  y = pdfSignatureBlock(ctx, y, cfg, { showCity: false });
-  return finishPdfDoc(ctx);
-}
-
-async function generateRecoveryProfilePDF(gstin, summary, cfg) {
-  var doc = await buildRecoveryProfilePdfDoc(gstin, summary, cfg);
-  doc.save(('RecoveryProfile_' + gstin).replace(/[\/\\]/g, '_') + '.pdf');
 }

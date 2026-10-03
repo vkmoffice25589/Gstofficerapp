@@ -733,23 +733,3 @@ function buildPropertyReleaseDocx(pa, cfg) {
     + wSignatureBlock(cfg, { showCity: false });
   return buildDocxBlob(body, { headerText: 'Property Release — GSTIN: ' + (pa.gstin || '—') });
 }
-
-/* ===== 5. Recovery Profile dossier ===== */
-function buildRecoveryProfileDocx(gstin, summary, cfg) {
-  var body = officeHeaderBlock(cfg)
-    + wHeading('RECOVERY PROFILE', { align: 'center', size: 13, spacingAfter: 160 })
-    + wPara(summary.legalName || '—', { bold: true, keepNext: true })
-    + wPara('GSTIN: ' + gstin, { spacingAfter: 160 })
-    + wTable([
-      ['Metric', 'Value'],
-      ['Total Original Demand', fmt0(summary.origTotal)],
-      ['Total Pending', fmt0(summary.pendTotal)],
-      ['Number of Demands', String(summary.demandCount)],
-      ['Notices Issued', String(summary.noticeCount)],
-      ['Bank Attachments', String(summary.bankCount)],
-      ['Recorded Collections', fmt0(summary.recoveredTotal)]
-    ], [4500, 4500])
-    + wPara('', { spacingAfter: 300, size: 6 })
-    + wSignatureBlock(cfg, { showCity: false });
-  return buildDocxBlob(body, { headerText: 'Recovery Profile — GSTIN: ' + gstin });
-}

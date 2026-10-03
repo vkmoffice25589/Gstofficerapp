@@ -148,7 +148,7 @@ function arPropertyEvents(gstin) {
   return fromModule.concat(manual).sort(function (a, b) { return (b.date || '').localeCompare(a.date || ''); });
 }
 /* Recovery = auto-detected DCR reconciliation (collection/partial) + manual payment records —
-   the exact same formula dashboard.js and recovery-profile.js already use. */
+   the exact same formula dashboard.js already uses. */
 function arRecoveryEvents(gstin) {
   arEnsureIndexes();
   var gu = String(gstin || '').trim().toUpperCase();
@@ -504,13 +504,16 @@ function arToggleCaseStatus(gstin) {
   showToast(reg.closed ? '📁 Case marked closed' : '📂 Case reopened');
 }
 
-/* ---------- Cross-links into the real modules (View DCR only — Notice/Bank/etc. are never auto-generated from here) ---------- */
+/* ---------- Entry point for the rest of the app ----------
+   Every "show me this taxpayer" link (global search, View Full Details on
+   the Issue Notice/Bank/Third-Party cards, Notice History, Dashboard) lands
+   here: Reports > Arrear Action Register tab, with this GSTIN's case drawer
+   open. This replaced the standalone Recovery Profile page. */
 
-function arViewDCR(gstin) {
-  nav('taxpayers');
-  var input = document.getElementById('trp-gstin-input');
-  if (input) input.value = gstin;
-  if (typeof loadRecoveryProfile === 'function') loadRecoveryProfile();
+function goToTaxpayerCase(gstin) {
+  nav('cases');
+  reportTab('register', document.querySelector('#page-cases > .tabs .tab[data-tab="register"]'));
+  arOpenDrawer(gstin);
 }
 
 /* ---------- Quick actions from the list cells ---------- */
@@ -553,7 +556,6 @@ function arRenderDrawer() {
   var html = '<button type="button" class="ar-drawer-close" onclick="arCloseDrawer()"><i class="fa-solid fa-xmark"></i></button>'
     + '<div class="ar-detail-name">' + xe(summary.traderName || '—') + '</div>'
     + '<div class="gstin-cell" style="margin:4px 0 10px;">' + xe(summary.gstin) + '</div>'
-    + '<button class="btn btn-outline btn-sm" onclick="arViewDCR(\'' + summary.gstin + '\')"><i class="fa-solid fa-eye"></i> View in DCR</button>'
     + '<div class="ar-detail-stats" style="grid-template-columns:repeat(3,1fr);">'
     + '<div class="info-item"><div class="info-label">Total Arrear</div><div class="info-val">' + fmt(summary.arrear) + '</div></div>'
     + '<div class="info-item"><div class="info-label">Total Recovered</div><div class="info-val" style="color:var(--green);">' + fmt(summary.recovered) + '</div></div>'
