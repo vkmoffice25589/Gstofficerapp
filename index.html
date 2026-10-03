@@ -119,7 +119,7 @@
     <!-- ===== REPORTS ===== -->
     <div class="page" id="page-cases">
       <div class="ph">
-        <div><div class="ph-title"><i class="fa-solid fa-chart-bar"></i>Reports</div><div class="ph-sub">Every collectible demand — click Generate</div></div>
+        <div><div class="ph-title"><i class="fa-solid fa-chart-bar"></i>Reports</div><div class="ph-sub">Arrear reports built from the imported DCR</div></div>
       </div>
 
       <!-- ===== Collectible Demands — demand-level (not taxpayer-grouped) report.
@@ -131,14 +131,35 @@
            Generate to show every collectible demand; Generate also re-
            reads the latest DCR data, so it doubles as a refresh button. ===== -->
       <div id="rpt-dw-section">
-        <div class="rel-filter-bar">
-          <div class="fg"><label>Group By</label><select class="fsel" id="rpt-dw-groupby" onchange="rptDwGroupByChanged()">
-            <option value="none">None (flat list)</option>
-            <option value="taxpayer">Taxpayer (with subtotals)</option>
-          </select></div>
-          <div class="fg rel-filter-btn-fg"><button class="btn btn-blue" onclick="rptDwGenerate()"><i class="fa-solid fa-play"></i> Generate</button></div>
-          <div class="fg rel-filter-btn-fg" id="rpt-dw-export-wrap" style="display:none;"><button class="btn btn-outline" onclick="rptDwExportExcel()" title="Sheet 1: taxpayer-wise totals. Sheet 2: full demand-wise breakup with subtotals."><i class="fa-solid fa-file-excel"></i> Export to Excel</button></div>
+        <div class="rpt-card">
+          <div class="rpt-card-head">
+            <div class="rpt-card-icon"><i class="fa-solid fa-file-invoice"></i></div>
+            <div class="rpt-card-titles">
+              <div class="rpt-card-kicker">Report 1</div>
+              <div class="rpt-card-title">Total Arrear — Collectible Demands</div>
+              <div class="rpt-card-sub">Demand-wise and taxpayer-wise arrear that can actually be collected</div>
+            </div>
+          </div>
+          <div class="rpt-rules">
+            <span class="rpt-rule"><i class="fa-solid fa-circle-check"></i> Section 62 excluded</span>
+            <span class="rpt-rule"><i class="fa-solid fa-circle-check"></i> Appeal / closed / refund statuses excluded</span>
+            <span class="rpt-rule"><i class="fa-solid fa-circle-check"></i> Pending arrear above zero only</span>
+          </div>
+          <div class="rpt-card-actions">
+            <div class="rpt-seg-wrap">
+              <div class="rpt-seg-label">View</div>
+              <div class="rpt-seg">
+                <button type="button" id="rpt-seg-none" class="active" onclick="rptDwSetGroupBy('none')"><i class="fa-solid fa-list"></i> Demand-wise</button>
+                <button type="button" id="rpt-seg-taxpayer" onclick="rptDwSetGroupBy('taxpayer')"><i class="fa-solid fa-layer-group"></i> Taxpayer-wise (with subtotals)</button>
+              </div>
+            </div>
+            <div class="rpt-btn-row">
+              <button type="button" class="btn btn-blue rpt-gen-btn" onclick="rptDwGenerate()"><i class="fa-solid fa-play"></i> Generate Report</button>
+              <div id="rpt-dw-export-wrap" style="display:none;"><button type="button" class="btn btn-outline rpt-gen-btn" onclick="rptDwExportExcel()" title="Sheet 1: taxpayer-wise totals. Sheet 2: full demand-wise breakup with subtotals."><i class="fa-solid fa-file-excel"></i> Export to Excel</button></div>
+            </div>
+          </div>
         </div>
+        <div id="rpt-dw-placeholder" class="rpt-placeholder"></div>
         <div class="rel-bulk-bar" id="rpt-dw-subtotal-bar" style="display:none;justify-content:flex-start;gap:24px;flex-wrap:wrap;"></div>
         <div class="table-wrap" id="rpt-dw-wrap" style="display:none;"></div>
       </div>

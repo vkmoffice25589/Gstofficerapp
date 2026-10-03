@@ -4,6 +4,8 @@
    point (nav.js, and the Taxpayer Register import refreshes through it). ===== */
 
 function renderReports() {
+  rptDwSyncGroupByUI();
+  if (!_rptDwGenerated) rptDwRenderPlaceholder();
   renderDemandWiseReport();
 }
 
@@ -23,10 +25,38 @@ var _rptDwCurrentPage = 1;
 var _rptDwGroupBy = 'none'; // 'none' | 'taxpayer'
 var _rptDwGenerated = false;
 
-function rptDwGroupByChanged() {
-  _rptDwGroupBy = document.getElementById('rpt-dw-groupby').value;
+function rptDwSetGroupBy(value) {
+  _rptDwGroupBy = value;
   _rptDwCurrentPage = 1;
+  rptDwSyncGroupByUI();
   if (_rptDwGenerated) renderDemandWiseReport();
+}
+
+function rptDwSyncGroupByUI() {
+  ['none', 'taxpayer'].forEach(function (v) {
+    var b = document.getElementById('rpt-seg-' + v);
+    if (b) b.classList.toggle('active', _rptDwGroupBy === v);
+  });
+}
+
+/* Empty state shown until Generate is clicked: says what the report will
+   be built from (the imported DCR) instead of leaving a blank page. */
+function rptDwRenderPlaceholder() {
+  var box = document.getElementById('rpt-dw-placeholder');
+  if (!box) return;
+  var valid = AppState.cases.filter(isValidCase);
+  if (!valid.length) {
+    box.innerHTML = '<div class="rpt-ph-icon warn"><i class="fa-solid fa-triangle-exclamation"></i></div>'
+      + '<div class="rpt-ph-title">No DCR data imported yet</div>'
+      + '<div class="rpt-ph-sub">Import the DCR first — the report is built from it.</div>'
+      + '<button type="button" class="btn btn-outline btn-sm" onclick="nav(\'dataupload\')"><i class="fa-solid fa-cloud-arrow-up"></i> Go to DCR / Taxpayer Register</button>';
+    return;
+  }
+  var taxpayers = new Set(valid.map(function (c) { return c.gstin; })).size;
+  box.innerHTML = '<div class="rpt-ph-icon"><i class="fa-solid fa-chart-column"></i></div>'
+    + '<div class="rpt-ph-title">Report not generated yet</div>'
+    + '<div class="rpt-ph-sub">Choose a view above and click <strong>Generate Report</strong>.</div>'
+    + '<div class="rpt-ph-meta">DCR loaded: <strong>' + valid.length.toLocaleString('en-IN') + '</strong> demands across <strong>' + taxpayers.toLocaleString('en-IN') + '</strong> taxpayers</div>';
 }
 
 function rptDwBaseCases() {
@@ -43,6 +73,7 @@ function rptDwBaseCases() {
    data without leaving the page. */
 function rptDwGenerate() {
   _rptDwGenerated = true;
+  document.getElementById('rpt-dw-placeholder').style.display = 'none';
   document.getElementById('rpt-dw-subtotal-bar').style.display = 'flex';
   document.getElementById('rpt-dw-wrap').style.display = 'block';
   document.getElementById('rpt-dw-export-wrap').style.display = '';
@@ -155,7 +186,7 @@ function rptDwRenderGrouped(filtered) {
 
 function renderDemandWiseReport() {
   if (!_rptDwGenerated) return; // nothing shows until "Generate" is clicked
-  var gb = document.getElementById('rpt-dw-groupby'); if (gb) gb.value = _rptDwGroupBy;
+  rptDwSyncGroupByUI();
 
   var wrap = document.getElementById('rpt-dw-wrap');
   var subtotalBar = document.getElementById('rpt-dw-subtotal-bar');

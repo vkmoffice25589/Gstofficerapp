@@ -719,3 +719,30 @@ header { display: none; }
   .isc-premium-row .isc-input-wrap { border-right: none; border-bottom: 1px solid var(--border); flex: 1 1 100%; }
   .isc-btn-premium { flex: 1 1 100%; justify-content: center; }
 }
+
+/* ---- Reports page: report card (title, rules applied, view toggle,
+   Generate/Export) + empty state shown until Generate is clicked ---- */
+.rpt-card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; box-shadow: var(--shadow-sm); padding: 22px 26px; margin-bottom: 18px; }
+.rpt-card-head { display: flex; align-items: center; gap: 16px; }
+.rpt-card-icon { flex: 0 0 auto; width: 52px; height: 52px; border-radius: 13px; background: var(--primary-blue-dim); color: var(--primary-blue); display: flex; align-items: center; justify-content: center; font-size: 22px; }
+.rpt-card-kicker { font-size: 10.5px; font-weight: 800; letter-spacing: 0.8px; text-transform: uppercase; color: var(--primary-blue); }
+.rpt-card-title { font-size: 20px; font-weight: 800; color: var(--navy-text); letter-spacing: -0.2px; margin-top: 1px; }
+.rpt-card-sub { font-size: 13px; color: var(--ink3); margin-top: 2px; }
+.rpt-rules { display: flex; flex-wrap: wrap; gap: 8px; margin: 18px 0 20px; padding-top: 16px; border-top: 1px solid var(--border); }
+.rpt-rule { display: inline-flex; align-items: center; gap: 7px; font-size: 12px; font-weight: 600; color: var(--navy-text); background: var(--surface-2); border: 1px solid var(--border); border-radius: 999px; padding: 5px 12px; }
+.rpt-rule i { color: var(--success); font-size: 12px; }
+.rpt-card-actions { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 18px; }
+.rpt-seg-label { font-size: 10px; font-weight: 700; letter-spacing: 0.4px; text-transform: uppercase; color: var(--ink3); margin-bottom: 6px; }
+.rpt-seg { display: inline-flex; background: var(--surface-2); border: 1px solid var(--border); border-radius: 10px; padding: 3px; gap: 3px; }
+.rpt-seg button { border: none; background: transparent; padding: 8px 16px; border-radius: 8px; font-size: 12.5px; font-weight: 600; color: var(--ink3); cursor: pointer; display: inline-flex; align-items: center; gap: 7px; font-family: inherit; }
+.rpt-seg button:hover { color: var(--navy-text); }
+.rpt-seg button.active { background: var(--surface); color: var(--primary-blue); box-shadow: 0 1px 3px rgba(15,23,42,0.12); }
+.rpt-btn-row { display: flex; gap: 10px; align-items: center; }
+.rpt-gen-btn { height: 40px; padding: 0 22px; border-radius: 10px; font-weight: 700; font-size: 13px; display: inline-flex; align-items: center; gap: 8px; }
+.rpt-placeholder { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 6px; padding: 56px 20px; background: var(--surface); border: 1.5px dashed var(--border-strong); border-radius: 14px; }
+.rpt-ph-icon { width: 60px; height: 60px; border-radius: 16px; background: var(--primary-blue-dim); color: var(--primary-blue); display: flex; align-items: center; justify-content: center; font-size: 26px; margin-bottom: 8px; }
+.rpt-ph-icon.warn { background: var(--warning-dim); color: var(--warning); }
+.rpt-ph-title { font-size: 16px; font-weight: 700; color: var(--navy-text); }
+.rpt-ph-sub { font-size: 13px; color: var(--ink3); margin-bottom: 4px; }
+.rpt-ph-meta { font-size: 12px; color: var(--ink3); background: var(--surface-2); border: 1px solid var(--border); border-radius: 999px; padding: 5px 14px; margin-top: 8px; }
+.rpt-ph-meta strong { color: var(--navy-text); }
