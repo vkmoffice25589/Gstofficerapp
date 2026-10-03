@@ -312,12 +312,13 @@ function rptDwBuildDetailRows(groups, filtered) {
   return rows;
 }
 
-/* The total is split by registration status, each part with its own
-   abstract (one row per taxpayer) and demand-wise detail: Active, then
-   Cancelled. Taxpayers with no Taxpayer Register entry are neither, so
-   they get their own "Unknown" pair of sheets — only when there are any —
-   rather than being folded into Active or Cancelled. A group with no
-   taxpayers gets no sheets. */
+/* Every taxpayer first ("Total"), then the same total split by
+   registration status — Active, Cancelled — each with its own abstract
+   (one row per taxpayer) and demand-wise detail. Taxpayers with no
+   Taxpayer Register entry are neither, so they get their own "Unknown"
+   pair of sheets — only when there are any — rather than being folded
+   into Active or Cancelled. A status group with no taxpayers gets no
+   sheets. */
 async function rptDwExportExcel() {
   var filtered = rptDwBaseCases();
   if (!filtered.length) { showToast('⚠️ No collectible demands to export'); return; }
@@ -325,18 +326,18 @@ async function rptDwExportExcel() {
 
   var wb = XLSX.utils.book_new();
   var summary = [];
-  ['Active', 'Cancelled', 'Unknown'].forEach(function (status) {
-    var cases = filtered.filter(function (c) { return rptDwRegLabel(c.gstin) === status; });
+  ['Total', 'Active', 'Cancelled', 'Unknown'].forEach(function (part) {
+    var cases = part === 'Total' ? filtered : filtered.filter(function (c) { return rptDwRegLabel(c.gstin) === part; });
     if (!cases.length) return;
     var groups = rptDwGroupedByTaxpayer(cases);
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rptDwBuildAbstractRows(groups, cases)), status + ' - Abstract');
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rptDwBuildDetailRows(groups, cases)), status + ' - Detail');
-    summary.push(groups.length + ' ' + status.toLowerCase());
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rptDwBuildAbstractRows(groups, cases)), part + ' - Abstract');
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rptDwBuildDetailRows(groups, cases)), part + ' - Detail');
+    summary.push(groups.length + ' ' + part.toLowerCase());
   });
 
   var out = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
   downloadBlob(new Blob([out], { type: 'application/octet-stream' }), 'Collectible_Demands_' + todayISO() + '.xlsx');
-  showToast('✅ Exported ' + filtered.length + ' demands — taxpayers: ' + summary.join(', '));
+  showToast('✅ Exported ' + filtered.length + ' demands — taxpayers: ' + summary.join(' · '));
 }
 
 function rptDwPaginationHTML(total, totalPages) {
