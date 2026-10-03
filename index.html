@@ -140,26 +140,20 @@
            closed / refund — including First Appeal Admitted/Submitted) are
            hard-excluded from the base set, same definition of "collectible"
            as elsewhere in the app, since this report exists purely to show
-           what's actually collectable. Filters narrow the table AND the
-           subtotal together (not a separate selection mechanism). ===== -->
+           what's actually collectable. No search/filter bar — click
+           Generate to show every collectible demand; Generate also re-
+           reads the latest DCR data, so it doubles as a refresh button. ===== -->
       <div id="rpt-dw-section" style="display:none;">
         <div class="rel-filter-bar">
-          <div class="fg" style="flex:1 1 200px;"><label>Search GSTIN / Trade Name</label><input type="text" id="rpt-dw-search" oninput="rptDwSearchChanged()" placeholder="Enter GSTIN or Trade Name..."/></div>
           <div class="fg"><label>Group By</label><select class="fsel" id="rpt-dw-groupby" onchange="rptDwGroupByChanged()">
             <option value="none">None (flat list)</option>
             <option value="taxpayer">Taxpayer (with subtotals)</option>
           </select></div>
-          <div class="fg"><label>Section</label><select class="fsel" id="rpt-dw-sectionf"><option value="">All</option></select></div>
-          <div class="fg"><label>Reg Status</label><select class="fsel" id="rpt-dw-regstatus"><option value="">All</option><option value="active">Active</option><option value="cancelled">Cancelled</option></select></div>
-          <div class="fg"><label>Order Date From</label><input type="date" id="rpt-dw-from"/></div>
-          <div class="fg"><label>Order Date To</label><input type="date" id="rpt-dw-to"/></div>
-          <div class="fg rel-filter-btn-fg"><button class="btn btn-blue" onclick="rptDwApplyFilters()">Apply Filters</button></div>
-          <div class="fg rel-filter-btn-fg"><button class="btn btn-outline" onclick="rptDwResetFilters()">Reset</button></div>
-          <div class="fg rel-filter-btn-fg"><button class="btn btn-outline" onclick="renderDemandWiseReport()" title="Re-reads the latest DCR data — use after importing a new DCR without leaving this page"><i class="fa-solid fa-arrows-rotate"></i> Generate</button></div>
-          <div class="fg rel-filter-btn-fg"><button class="btn btn-outline" onclick="rptDwExportExcel()" title="Sheet 1: taxpayer-wise totals. Sheet 2: full demand-wise breakup with subtotals."><i class="fa-solid fa-file-excel"></i> Export to Excel</button></div>
+          <div class="fg rel-filter-btn-fg"><button class="btn btn-blue" onclick="rptDwGenerate()"><i class="fa-solid fa-play"></i> Generate</button></div>
+          <div class="fg rel-filter-btn-fg" id="rpt-dw-export-wrap" style="display:none;"><button class="btn btn-outline" onclick="rptDwExportExcel()" title="Sheet 1: taxpayer-wise totals. Sheet 2: full demand-wise breakup with subtotals."><i class="fa-solid fa-file-excel"></i> Export to Excel</button></div>
         </div>
-        <div class="rel-bulk-bar" id="rpt-dw-subtotal-bar" style="display:flex;justify-content:flex-start;gap:24px;flex-wrap:wrap;"></div>
-        <div class="table-wrap" id="rpt-dw-wrap"></div>
+        <div class="rel-bulk-bar" id="rpt-dw-subtotal-bar" style="display:none;justify-content:flex-start;gap:24px;flex-wrap:wrap;"></div>
+        <div class="table-wrap" id="rpt-dw-wrap" style="display:none;"></div>
       </div>
     </div>
 

@@ -106,18 +106,20 @@ function renderReports() {
    covers "First Appeal Application Admitted" and "...Submitted"), since
    the report's whole purpose is to show only what's actually collectable
    — unlike Issue Notice/Bank Attachment, there's no tick-to-override here.
-   Filters narrow both the table and the subtotal together (no separate
-   checkbox-selection mechanism). ===== */
-var _rptDwFilters = { search: '', section: '', regStatus: '', from: '', to: '' };
+   No search/filter bar — per explicit request, the report shows nothing
+   until "Generate" is clicked, then shows every collectible demand (no
+   narrowing), with sorting via clickable column headers and an optional
+   taxpayer grouping as the only controls. ===== */
 var _rptDwSort = { col: 'total', dir: 'desc' };
 var _rptDwPageSize = 25;
 var _rptDwCurrentPage = 1;
 var _rptDwGroupBy = 'none'; // 'none' | 'taxpayer'
+var _rptDwGenerated = false;
 
 function rptDwGroupByChanged() {
   _rptDwGroupBy = document.getElementById('rpt-dw-groupby').value;
   _rptDwCurrentPage = 1;
-  renderDemandWiseReport();
+  if (_rptDwGenerated) renderDemandWiseReport();
 }
 
 function rptDwBaseCases() {
@@ -129,23 +131,15 @@ function rptDwBaseCases() {
   });
 }
 
-function rptDwFilteredCases() {
-  var cases = rptDwBaseCases();
-  var f = _rptDwFilters;
-  if (f.search) cases = cases.filter(function (c) {
-    return (c.gstin || '').toUpperCase().indexOf(f.search) !== -1 || taxpayerDisplayName(c.gstin, c.legalName).toUpperCase().indexOf(f.search) !== -1;
-  });
-  if (f.section) cases = cases.filter(function (c) { return String(c.section || '') === f.section; });
-  if (f.regStatus) cases = cases.filter(function (c) {
-    var col = isCollectible(c.gstin);
-    return f.regStatus === 'active' ? col === true : col === false;
-  });
-  /* Compare parsed Date objects on both sides, not raw strings — DCR
-     dates aren't guaranteed to be in the same YYYY-MM-DD format the date
-     input produces, so a naive string compare would silently misfilter. */
-  if (f.from) { var fromD = parseDcrDate(f.from); cases = cases.filter(function (c) { var d = parseDcrDate(c.dcr_date || c.demandDate); return d && fromD && d >= fromD; }); }
-  if (f.to) { var toD = parseDcrDate(f.to); cases = cases.filter(function (c) { var d = parseDcrDate(c.dcr_date || c.demandDate); return d && toD && d <= toD; }); }
-  return cases;
+/* Also doubles as "Refresh" — re-reads AppState.cases fresh every time,
+   so clicking it again after importing a new DCR picks up the latest
+   data without leaving the page. */
+function rptDwGenerate() {
+  _rptDwGenerated = true;
+  document.getElementById('rpt-dw-subtotal-bar').style.display = 'flex';
+  document.getElementById('rpt-dw-wrap').style.display = 'block';
+  document.getElementById('rpt-dw-export-wrap').style.display = '';
+  renderDemandWiseReport();
 }
 
 function rptDwSortCases(cases) {
@@ -177,40 +171,6 @@ function rptDwSubtotal(cases) {
     s.cess += Number(c.pend_cess) || 0; s.total += Number(c.pend_total) || 0;
     return s;
   }, { igst: 0, cgst: 0, sgst: 0, cess: 0, total: 0 });
-}
-
-function rptDwPopulateSectionFilter() {
-  var sel = document.getElementById('rpt-dw-sectionf');
-  if (!sel) return;
-  var current = sel.value;
-  var sections = Array.from(new Set(rptDwBaseCases().map(function (c) { return String(c.section || '').trim(); }).filter(Boolean))).sort();
-  sel.innerHTML = '<option value="">All</option>' + sections.map(function (s) { return '<option value="' + xe(s) + '">' + xe(s) + '</option>'; }).join('');
-  sel.value = current;
-}
-
-function rptDwSearchChanged() {
-  _rptDwFilters.search = (document.getElementById('rpt-dw-search').value || '').trim().toUpperCase();
-  _rptDwCurrentPage = 1;
-  renderDemandWiseReport();
-}
-
-function rptDwApplyFilters() {
-  _rptDwFilters.search = (document.getElementById('rpt-dw-search').value || '').trim().toUpperCase();
-  _rptDwFilters.section = document.getElementById('rpt-dw-sectionf').value;
-  _rptDwFilters.regStatus = document.getElementById('rpt-dw-regstatus').value;
-  _rptDwFilters.from = document.getElementById('rpt-dw-from').value;
-  _rptDwFilters.to = document.getElementById('rpt-dw-to').value;
-  _rptDwCurrentPage = 1;
-  renderDemandWiseReport();
-}
-
-function rptDwResetFilters() {
-  _rptDwFilters = { search: '', section: '', regStatus: '', from: '', to: '' };
-  ['rpt-dw-search', 'rpt-dw-sectionf', 'rpt-dw-regstatus', 'rpt-dw-from', 'rpt-dw-to'].forEach(function (id) {
-    var el = document.getElementById(id); if (el) el.value = '';
-  });
-  _rptDwCurrentPage = 1;
-  renderDemandWiseReport();
 }
 
 function rptDwTh(label, col) { return '<th style="cursor:pointer;white-space:nowrap;" onclick="rptDwSortBy(\'' + col + '\')">' + label + rptDwSortArrow(col) + '</th>'; }
@@ -287,19 +247,14 @@ function rptDwRenderGrouped(filtered) {
 }
 
 function renderDemandWiseReport() {
-  rptDwPopulateSectionFilter();
-  var g = document.getElementById('rpt-dw-search'); if (g) g.value = _rptDwFilters.search;
-  var sf = document.getElementById('rpt-dw-sectionf'); if (sf) sf.value = _rptDwFilters.section;
-  var rs = document.getElementById('rpt-dw-regstatus'); if (rs) rs.value = _rptDwFilters.regStatus;
-  var fd = document.getElementById('rpt-dw-from'); if (fd) fd.value = _rptDwFilters.from;
-  var td = document.getElementById('rpt-dw-to'); if (td) td.value = _rptDwFilters.to;
+  if (!_rptDwGenerated) return; // nothing shows until "Generate" is clicked
   var gb = document.getElementById('rpt-dw-groupby'); if (gb) gb.value = _rptDwGroupBy;
 
   var wrap = document.getElementById('rpt-dw-wrap');
   var subtotalBar = document.getElementById('rpt-dw-subtotal-bar');
   if (!wrap) return;
 
-  var filtered = rptDwFilteredCases();
+  var filtered = rptDwBaseCases();
   var sub = rptDwSubtotal(filtered);
   if (subtotalBar) {
     subtotalBar.innerHTML = '<div><div class="wchr-label">Demands</div><div class="wchr-val" style="color:var(--navy-text);">' + filtered.length + '</div></div>'
@@ -311,7 +266,7 @@ function renderDemandWiseReport() {
   }
 
   if (!filtered.length) {
-    wrap.innerHTML = '<div class="empty"><div class="empty-icon"><i class="fa-solid fa-chart-bar" style="font-size:40px;color:var(--blue);opacity:0.4;"></i></div><div class="empty-title">No Demands Found</div><div class="empty-sub">No collectible demands match the current filters</div></div>';
+    wrap.innerHTML = '<div class="empty"><div class="empty-icon"><i class="fa-solid fa-chart-bar" style="font-size:40px;color:var(--blue);opacity:0.4;"></i></div><div class="empty-title">No Demands Found</div><div class="empty-sub">No collectible demands in the imported DCR data</div></div>';
     return;
   }
 
@@ -333,13 +288,13 @@ function renderDemandWiseReport() {
     + rptDwPaginationHTML(sorted.length, totalPages);
 }
 
-/* ===== Export to Excel — two sheets built from whatever's currently
-   filtered (same data the on-screen table/subtotal reflect):
-   "Taxpayer Abstract" (one row per taxpayer, e.g. "Sree Satya Traders,
-   8 demands, ₹X") and "Demand Detail" (the full demand-wise breakup with
-   the same per-taxpayer subtotal rows + grand total as the grouped
-   on-screen view). Reuses the XLSX json_to_sheet/book_new pattern already
-   used for DCR exports (import-dcr.js). ===== */
+/* ===== Export to Excel — two sheets built from every collectible demand
+   (same data the on-screen table/subtotal reflect): "Taxpayer Abstract"
+   (one row per taxpayer, e.g. "Sree Satya Traders, 8 demands, ₹X") and
+   "Demand Detail" (the full demand-wise breakup with the same per-
+   taxpayer subtotal rows + grand total as the grouped on-screen view).
+   Reuses the XLSX json_to_sheet/book_new pattern already used for DCR
+   exports (import-dcr.js). ===== */
 function rptDwGroupedByTaxpayer(filtered) {
   var byGstin = {};
   filtered.forEach(function (c) { (byGstin[c.gstin] = byGstin[c.gstin] || []).push(c); });
@@ -394,8 +349,8 @@ function rptDwBuildDetailRows(groups, filtered) {
 }
 
 async function rptDwExportExcel() {
-  var filtered = rptDwFilteredCases();
-  if (!filtered.length) { showToast('⚠️ No demands match the current filters'); return; }
+  var filtered = rptDwBaseCases();
+  if (!filtered.length) { showToast('⚠️ No collectible demands to export'); return; }
   await window.LibsReady;
   var groups = rptDwGroupedByTaxpayer(filtered);
 
