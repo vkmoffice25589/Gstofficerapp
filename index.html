@@ -18,7 +18,7 @@
 </style>
 <link rel="stylesheet" href="css/variables.css"/>
 <link rel="stylesheet" href="css/base.css"/>
-<link rel="stylesheet" href="css/dashboard.css"/>
+<link rel="stylesheet" href="css/kpi-cards.css"/>
 <link rel="stylesheet" href="css/wizard.css"/>
 <link rel="stylesheet" href="css/arrear-register.css"/>
 </head>
@@ -33,9 +33,6 @@
         <div class="logo-sub">Arrear Notice &amp; Recovery Management System</div>
       </div>
     </div>
-
-    <div class="sb-section">Overview</div>
-    <div class="sb-item active" onclick="nav('dashboard')" data-page="dashboard"><span class="sb-icon"><i class="fa-solid fa-gauge-high"></i></span> Dashboard</div>
 
     <div class="sb-section">Data</div>
     <div class="sb-item" onclick="nav('dataupload')" data-page="dataupload"><span class="sb-icon"><i class="fa-solid fa-cloud-arrow-up"></i></span> DCR / Taxpayer Register</div>
@@ -72,12 +69,12 @@
 
         <button class="hbtn-icon" title="Export Backup" onclick="Storage.backup()"><i class="fa-solid fa-download"></i></button>
         <button class="hbtn-icon" title="Restore Backup" onclick="document.getElementById('restore-file-input').click()"><i class="fa-solid fa-upload"></i></button>
-        <input type="file" id="restore-file-input" accept=".json" style="display:none;" onchange="if(this.files[0]){var r=new FileReader();r.onload=function(e){try{Storage.restoreFromObject(JSON.parse(e.target.result));nav('dashboard');}catch(err){showToast('❌ Invalid backup file');}};r.readAsText(this.files[0]);}this.value='';"/>
+        <input type="file" id="restore-file-input" accept=".json" style="display:none;" onchange="if(this.files[0]){var r=new FileReader();r.onload=function(e){try{Storage.restoreFromObject(JSON.parse(e.target.result));navHome();}catch(err){showToast('❌ Invalid backup file');}};r.readAsText(this.files[0]);}this.value='';"/>
         <button class="hbtn-icon" title="Clear All Data" onclick="Storage.clear()"><i class="fa-solid fa-trash"></i></button>
 
         <div class="hdr-divider"></div>
 
-        <button class="hbtn-icon hbtn-bell" title="Action items needing attention" onclick="nav('dashboard')">
+        <button class="hbtn-icon hbtn-bell" title="Action items needing attention" onclick="nav('bulknotice')">
           <i class="fa-solid fa-bell"></i>
           <span class="hbtn-badge" id="hdr-notif-badge" style="display:none;">0</span>
         </button>
@@ -93,24 +90,6 @@
     </header>
 
     <main class="main">
-
-    <!-- ===== DASHBOARD ===== -->
-    <div class="page active" id="page-dashboard">
-      <div class="dash-header">
-        <div>
-          <div class="ph-title"><i class="fa-solid fa-gauge-high"></i>GST Recovery Dashboard</div>
-          <div class="ph-sub">Overview of outstanding arrears, recovery actions and taxpayer enforcement status</div>
-        </div>
-        <div class="dash-header-right">
-          <div class="dash-office-chip"><i class="fa-solid fa-building" style="color:var(--blue);"></i> <strong id="dash-office-name">—</strong> · <span id="dash-office-division">—</span></div>
-          <select class="fsel" id="dash-fy-select" onchange="setDashboardFY(this.value)"><option value="all">All Financial Years</option></select>
-          <button class="btn btn-outline btn-sm" onclick="refreshDashboard()"><i class="fa-solid fa-rotate"></i> Refresh</button>
-        </div>
-      </div>
-
-      <div class="kpi-grid" id="dash-kpi-grid"></div>
-      <div id="dash-body"></div>
-    </div>
 
     <!-- ===== REPORTS ===== -->
     <div class="page" id="page-cases">
@@ -968,7 +947,6 @@
 <script src="js/wizard.js"></script>
 <script src="js/wizard-copy.js"></script>
 <script src="js/notice-history.js"></script>
-<script src="js/dashboard.js"></script>
 <script src="js/nav.js"></script>
 <script src="js/app.js"></script>
 </body>

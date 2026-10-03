@@ -83,7 +83,6 @@ function paSaveAndDownload() {
   persist();
   renderPropertyList();
   updateSidebar();
-  if (typeof renderDashboard === 'function' && document.getElementById('page-dashboard').classList.contains('active')) renderDashboard();
   buildPropertyAttachmentDocx(pa, getSettings()).then(function (blob) { downloadBlob(blob, 'PropertyAttachment_' + pa.gstin + '_' + todayISO() + '.docx'); });
   showToast('✅ Property attachment recorded');
 }

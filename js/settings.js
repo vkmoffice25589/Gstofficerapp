@@ -52,7 +52,6 @@ function saveSettings() {
   setTimeout(function () { statusEl.textContent = ''; }, 2500);
   updateSettingsPreview(s);
   updateSidebarOfficeCard(s);
-  if (typeof renderDashboard === 'function' && document.getElementById('page-dashboard').classList.contains('active')) renderDashboard();
 }
 
 function loadDefaultSettings() {

@@ -413,7 +413,6 @@ async function tpConfirmGenerate() {
   persist();
   renderThirdPartyList();
   updateSidebar();
-  if (typeof renderDashboard === 'function' && document.getElementById('page-dashboard').classList.contains('active')) renderDashboard();
 
   tpCloseDebtorModal();
   tpClearAll();

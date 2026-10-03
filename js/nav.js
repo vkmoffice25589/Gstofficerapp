@@ -1,13 +1,17 @@
 /* ===== Single canonical navigation dispatcher ===== */
 
 var PAGE_RENDERERS = {
-  dashboard: function () { renderDashboard(); },
   cases: function () { renderReports(); },
   dataupload: function () { renderWizardStepper(); },
   bulknotice: function () { renderBulkNoticePage(); updateBulkAllCount(); },
   history: function () { histRenderActiveTab(); },
   settings: function () { initSettingsPage(); }
 };
+
+/* Landing page: Generate Arrear Notice once a DCR is loaded, else the DCR upload page. */
+function navHome() {
+  nav(AppState.cases.some(isValidCase) ? 'bulknotice' : 'dataupload');
+}
 
 function nav(page) {
   document.querySelectorAll('.page').forEach(function (p) { p.classList.remove('active'); });

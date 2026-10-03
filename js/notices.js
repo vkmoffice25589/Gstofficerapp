@@ -546,7 +546,6 @@ function generateSelectedBulkNotices() {
   persist();
   updateSidebar();
   if (typeof renderHistoryTable === 'function') renderHistoryTable();
-  if (typeof renderDashboard === 'function' && document.getElementById('page-dashboard').classList.contains('active')) renderDashboard();
 
   var cfg = getSettings();
   Promise.all(selected.map(function (n) {
@@ -710,7 +709,6 @@ function saveAllBulkNotices() {
   document.getElementById('bulk-all-results') && (document.getElementById('bulk-all-results').innerHTML = '');
   var bar = document.getElementById('bulk-action-bar');
   if (bar) bar.style.display = 'none';
-  if (typeof renderDashboard === 'function' && document.getElementById('page-dashboard').classList.contains('active')) renderDashboard();
   showToast('✅ ' + count + ' notices saved');
 }
 

@@ -237,7 +237,6 @@ async function handleTaxpayerRegisterFiles(fileList) {
   updateSidebar();
   if (typeof renderWizardStepper === 'function') renderWizardStepper();
   if (typeof renderReports === 'function') renderReports();
-  if (typeof renderDashboard === 'function' && document.getElementById('page-dashboard').classList.contains('active')) renderDashboard();
 }
 
 /* Kept as a thin single-file wrapper for any external caller expecting the

@@ -526,7 +526,6 @@ function wiz2FinalizeNotices() {
   persist();
   updateSidebar();
   renderWizardStepper();
-  if (typeof renderDashboard === 'function' && document.getElementById('page-dashboard').classList.contains('active')) renderDashboard();
   return noticesToSave;
 }
 

@@ -413,7 +413,6 @@ function baFinalizeAttachment() {
   persist();
   renderBankAtts();
   updateSidebar();
-  if (typeof renderDashboard === 'function' && document.getElementById('page-dashboard').classList.contains('active')) renderDashboard();
   return b;
 }
 
@@ -612,6 +611,15 @@ function relFilteredAttachments() {
   if (f.from) items = items.filter(function (it) { return it.date && it.date >= f.from; });
   if (f.to) items = items.filter(function (it) { return it.date && it.date <= f.to; });
   return items.sort(function (a, b) { return new Date(b.date) - new Date(a.date); });
+}
+
+function kpiCard(color, icon, label, value, sub, onclick) {
+  return '<div class="kpi-card ' + color + '" onclick="' + onclick + '">'
+    + '<div class="kpi-icon"><i class="fa-solid ' + icon + '"></i></div>'
+    + '<div class="kpi-label">' + label + '</div>'
+    + '<div class="kpi-value ' + color + '">' + value + '</div>'
+    + '<div class="kpi-sub">' + xe(sub) + '</div>'
+    + '</div>';
 }
 
 function renderReleaseSummaryCards() {
@@ -917,7 +925,6 @@ function relConfirmRelease() {
   renderThirdPartyList();
   renderPropertyList();
   updateSidebar();
-  if (typeof renderDashboard === 'function' && document.getElementById('page-dashboard').classList.contains('active')) renderDashboard();
   _relPending = null;
 }
 

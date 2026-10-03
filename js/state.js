@@ -341,7 +341,7 @@ var Storage = {
     AppState.lastRegisterImportAt = null; AppState.lastRegisterImportFileName = null; AppState.lastRegisterImportFileSize = null;
     AppState.dcrFiles = []; AppState.taxpayerRegisterFiles = []; AppState.lastReconciliation = null;
     showToast('🗑 All data cleared');
-    nav('dashboard');
+    nav('dataupload');
   }
 };
 

@@ -38,11 +38,11 @@ function showHelpSupport() {
   document.getElementById('help-modal-body').innerHTML =
     '<div style="font-size:13px;line-height:1.7;color:var(--ink2);">'
     + '<p><strong>Office on record:</strong> ' + xe(s.desig) + ', ' + xe(s.circle) + ' (' + xe(s.division) + '). Update this under <a href="#" onclick="closeHelpSupport();nav(\'settings\');return false;">Settings</a>.</p>'
-    + '<p style="margin-top:10px;"><strong>Where is my data stored?</strong> Everything (DCR cases, notices, bank attachments, taxpayer register) is saved locally in this browser only, via <code>localStorage</code> — nothing is sent to any server. Use <strong>Export Backup</strong> regularly and keep the file safe.</p>'
+    + '<p style="margin-top:10px;"><strong>Where is my data stored?</strong> Everything (DCR cases, notices, bank attachments, taxpayer register) is saved locally in this browser only (IndexedDB) — nothing is sent to any server. Use <strong>Export Backup</strong> regularly and keep the file safe.</p>'
     + '<p style="margin-top:10px;"><strong>Quick reference:</strong></p>'
     + '<ul style="margin:6px 0 0 18px;">'
-    + '<li>Upload DCR / Taxpayer Register from the Generate Arrear Notice page</li>'
-    + '<li>Issue Notice / Bulk Notice / Bank Attachment / Third-Party Notice / Property Attachment are tabs on that same page</li>'
+    + '<li>Upload the DCR and Taxpayer Register from the DCR / Taxpayer Register page</li>'
+    + '<li>Issue Notice / Bulk Notice / Bank Attachment / Third-Party Notice / Property Attachment are tabs on the Generate Arrear Notice page</li>'
     + '<li>Reports has the Total Arrear report (with Excel export) and the Arrear Action Register</li>'
     + '<li>Notice History lets you re-download anything already generated</li>'
     + '</ul>'
@@ -60,7 +60,7 @@ function wireModalCloseOnBackdrop() {
 
 document.addEventListener('DOMContentLoaded', function () {
   /* Storage.load() is async now (IndexedDB) — everything that assumes
-     AppState is already populated (nav('dashboard') first of all) has to
+     AppState is already populated (navHome() first of all) has to
      wait for it, so the whole bootstrap sequence lives inside .then(). */
   Storage.load().then(function () {
     wireImportPage();
@@ -73,11 +73,7 @@ document.addEventListener('DOMContentLoaded', function () {
       if (el && !el.value) el.value = today;
     });
 
-    nav('dashboard');
-
-    window.LibsReady.then(function () {
-      if (document.getElementById('page-dashboard').classList.contains('active')) renderDashboard();
-    });
+    navHome();
 
     setInterval(function () { Storage.save(); }, 30000);
 

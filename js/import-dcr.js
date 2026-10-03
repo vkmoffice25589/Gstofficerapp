@@ -244,7 +244,6 @@ function wizUploadAndReconcileDCR() {
   persist();
   updateSidebar();
   if (typeof renderWizardStepper === 'function') renderWizardStepper();
-  if (typeof renderDashboard === 'function' && document.getElementById('page-dashboard').classList.contains('active')) renderDashboard();
   showToast('✅ Reconciled successfully — ' + fileNames.length + ' file(s) processed');
 }
 
@@ -490,7 +489,6 @@ function wizClearDCR() {
   persist();
   updateSidebar();
   if (typeof renderWizardStepper === 'function') renderWizardStepper();
-  if (typeof renderDashboard === 'function' && document.getElementById('page-dashboard').classList.contains('active')) renderDashboard();
   showToast('🗑 DCR data cleared');
 }
 
