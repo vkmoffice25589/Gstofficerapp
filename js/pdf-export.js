@@ -83,7 +83,9 @@ function pdfTable(ctx, opts) {
     tableWidth: 'auto',
     rowPageBreak: 'avoid'
   };
-  ctx.doc.autoTable(Object.assign(base, opts));
+  var rest = Object.assign({}, opts);
+  delete rest.styles; delete rest.headStyles; // already merged into base above — don't let the raw copies overwrite it
+  ctx.doc.autoTable(Object.assign(base, rest));
   return ctx.doc.lastAutoTable.finalY;
 }
 
@@ -160,6 +162,74 @@ function pdfOfficeHeaderBlock(ctx, y, cfg) {
   return y;
 }
 
+/* Notice typography — Times 14pt at 1.5 line spacing (21pt), mirroring
+   NOTICE_SIZE / NOTICE_LINE in docx-export.js. The 8-column demand table keeps
+   its smaller shared size so every column fits on one line. */
+var PDF_NOTICE_SIZE = 14;
+var PDF_NOTICE_LINE = 21;
+function pdfNoticePara(ctx, text, y, opts) {
+  return pdfPara(ctx, text, y, Object.assign({ size: PDF_NOTICE_SIZE, lineHeight: PDF_NOTICE_LINE }, opts));
+}
+
+/* Grey reference bar — "GSTIN:<gstin>/<FY>" left, "dated:<DD.MM.YYYY>" right
+   (mirrors noticeRefBar() in docx-export.js). */
+function pdfNoticeRefBar(ctx, y, notice) {
+  var doc = ctx.doc;
+  var barH = PDF_NOTICE_LINE + 2;
+  y = pdfEnsureSpace(ctx, y, barH + 14);
+  doc.setFillColor(192, 192, 192);
+  doc.rect(ctx.marginX, y, ctx.rightX - ctx.marginX, barH, 'F');
+  doc.setFont(PDF_FONT, 'normal'); doc.setFontSize(PDF_NOTICE_SIZE); doc.setTextColor(0, 0, 0);
+  var base = y + PDF_NOTICE_LINE - 6;
+  doc.text(noticeRefLeft(notice), ctx.marginX + 3, base);
+  doc.text('dated:' + fmtDateDot(notice.date), ctx.rightX - 3, base, { align: 'right' });
+  return y + barH + 14;
+}
+
+/* Small filled arrow-head used as the Note bullet (the built-in Times font
+   has no arrow glyph). */
+function pdfArrowBullet(ctx, x, baseY) {
+  var h = PDF_NOTICE_SIZE * 0.55, w = PDF_NOTICE_SIZE * 0.6;
+  ctx.doc.setFillColor(0, 0, 0);
+  ctx.doc.triangle(x, baseY - h, x, baseY, x + w, baseY - h / 2, 'F');
+}
+
+/* "Note:" (bold, underlined) + arrow bullets with a hanging indent. */
+function pdfNoticeNoteBlock(ctx, y) {
+  var doc = ctx.doc;
+  y = pdfEnsureSpace(ctx, y, 2 * PDF_NOTICE_LINE);
+  doc.setFont(PDF_FONT, 'bold'); doc.setFontSize(PDF_NOTICE_SIZE);
+  var w = doc.getTextWidth('Note:');
+  doc.text('Note:', ctx.marginX, y);
+  doc.setDrawColor(0, 0, 0); doc.setLineWidth(0.7);
+  doc.line(ctx.marginX, y + 2, ctx.marginX + w, y + 2);
+  y += PDF_NOTICE_LINE + 2;
+  var indent = 36;
+  noticeNoteItems.forEach(function (t) {
+    doc.setFont(PDF_FONT, 'normal'); doc.setFontSize(PDF_NOTICE_SIZE);
+    var lines = doc.splitTextToSize(t, ctx.rightX - ctx.marginX - indent);
+    y = pdfEnsureSpace(ctx, y, lines.length * PDF_NOTICE_LINE);
+    pdfArrowBullet(ctx, ctx.marginX + 14, y);
+    doc.text(lines, ctx.marginX + indent, y);
+    y += lines.length * PDF_NOTICE_LINE + 3;
+  });
+  return y + 14;
+}
+
+/* Officer block — bold, centred lines in a right-hand column (mirrors
+   noticeSignatureBlock() in docx-export.js). */
+function pdfNoticeSignatureBlock(ctx, y, cfg) {
+  var doc = ctx.doc;
+  y = pdfEnsureSpace(ctx, y, 3 * PDF_NOTICE_LINE + 10);
+  var centerX = ctx.rightX - 131;
+  doc.setFont(PDF_FONT, 'bold'); doc.setFontSize(PDF_NOTICE_SIZE);
+  ['desig', 'circle', 'city'].forEach(function (k) {
+    doc.text(cfg[k] || '', centerX, y, { align: 'center' });
+    y += PDF_NOTICE_LINE;
+  });
+  return y + 20;
+}
+
 /* ===== 1. Arrear Notice (Intimation / Urgent) =====
    Mirrors buildNoticeDocx() in docx-export.js. Builds the jsPDF document
    object without saving it, so both the single-notice download
@@ -172,24 +242,25 @@ async function buildNoticePdfDoc(notice, cfg) {
   var legalName = notice.legalName || '—';
   var gstin = notice.gstin || '—';
   var y = ctx.top;
+  var P = function (text, yy, o) { return pdfNoticePara(ctx, text, yy, o); };
+  var bigTable = { fontSize: PDF_NOTICE_SIZE };
 
   y = pdfPara(ctx, 'Office of the ' + (cfg.desig || ''), y, { align: 'right', bold: true, size: 11, spacingAfter: 0 });
   y = pdfPara(ctx, cfg.circle || '', y, { align: 'right', bold: true, size: 11, spacingAfter: 0 });
   y = pdfPara(ctx, cfg.addr1 || '', y, { align: 'right', size: 10, spacingAfter: 0 });
   y = pdfPara(ctx, cfg.addr2 || '', y, { align: 'right', size: 10, spacingAfter: 14 });
 
-  var noticeNoY = y;
-  pdfPara(ctx, 'Notice No: ' + (notice.num || '—'), noticeNoY, { spacingAfter: 0 });
-  y = pdfPara(ctx, 'Dated : ' + fmtDateDot(notice.date), noticeNoY, { align: 'right', spacingAfter: 14 });
+  y = pdfNoticeRefBar(ctx, y, notice);
 
-  y = pdfHeading(ctx, isUrgent ? 'URGENT NOTICE' : 'INTIMATION NOTICE', y, { spacingAfter: 4 });
-  y = pdfPara(ctx, 'NON-PAYMENT OF GST ARREARS', y, { align: 'center', bold: true, size: 11, spacingAfter: 14 });
+  y = pdfHeading(ctx, isUrgent ? 'URGENT NOTICE' : 'INTIMATION NOTICE', y, { size: PDF_NOTICE_SIZE, lineHeight: PDF_NOTICE_LINE, spacingAfter: 2 });
+  y = P('NON-PAYMENT OF GST ARREARS', y, { align: 'center', bold: true, spacingAfter: 14 });
 
-  y = pdfPara(ctx, 'To', y, { spacingAfter: 2 });
+  y = P('To', y, { spacingAfter: 2 });
   y = pdfTable(ctx, {
     startY: y,
     body: [['GSTIN', ': ' + gstin], ['Legal Name of the Business', ': ' + legalName]],
-    theme: 'plain'
+    theme: 'plain',
+    styles: bigTable
   }) + 8;
 
   var subText = 'TNGST Act 2017 – ' + (cfg.circle || '') + ' – Tvl.' + legalName + ', GSTIN : ' + gstin
@@ -202,11 +273,12 @@ async function buildNoticePdfDoc(notice, cfg) {
       [{ content: 'Ref', styles: { fontStyle: 'bold' } }, refText]
     ],
     theme: 'plain',
-    columnStyles: { 0: { cellWidth: 35 } }
+    styles: bigTable,
+    columnStyles: { 0: { cellWidth: 45 } }
   }) + 10;
 
-  y = pdfPara(ctx, '*******', y, { align: 'center', spacingAfter: 6 });
-  y = pdfPara(ctx, 'Tvl.' + legalName + ', registered with the office of the ' + (cfg.desig || '') + ', ' + (cfg.circle || '')
+  y = P('*******', y, { align: 'center', spacingAfter: 6 });
+  y = P('Tvl.' + legalName + ', registered with the office of the ' + (cfg.desig || '') + ', ' + (cfg.circle || '')
     + ' is hereby informed they are in arrears of Goods and Services Tax as detailed below:', y, { spacingAfter: 8 });
 
   var rows = (notice.cases || []).map(function (c) {
@@ -232,34 +304,27 @@ async function buildNoticePdfDoc(notice, cfg) {
   }) + 12;
 
   y = pdfPara(ctx, '(AMOUNT IN RS)', y, { align: 'right', size: 8, spacingAfter: 4 });
-  y = pdfPara(ctx, 'Total Amount Payable: Rs. ' + fmt0(sums.total) + ' (Rupees ' + numToWords(sums.total) + ' Only)', y, { bold: true, spacingAfter: 8 });
-  if (notice.details) y = pdfPara(ctx, 'Remarks: ' + notice.details, y, { spacingAfter: 8 });
+  y = P('Total Amount Payable: Rs. ' + fmt0(sums.total) + ' (Rupees ' + numToWords(sums.total) + ' Only)', y, { bold: true, spacingAfter: 8 });
+  if (notice.details) y = P('Remarks: ' + notice.details, y, { spacingAfter: 8 });
 
   var leadIn = isUrgent
     ? 'The Taxpayer is informed that the arrears have not been paid even after the expiry of 90 days from the date of the order. If the above amount is not paid immediately on receipt of this notice, recovery action will be initiated to realise the arrears in accordance with the provisions of the GST Act, 2017 by:'
     : 'The taxpayer is hereby informed that arrears are pending. If the arrears remain unpaid after the expiry of 90 days from the date of the order and no appeal has been filed, recovery action will be initiated to realise the dues in accordance with the provisions of the GST Act, 2017, by:';
-  y = pdfPara(ctx, leadIn, y, { spacingAfter: 6 });
+  y = P(leadIn, y, { spacingAfter: 6 });
 
-  noticeActionList.forEach(function (t) { y = pdfPara(ctx, '•  ' + t, y, { spacingAfter: 2 }); });
+  noticeActionList.forEach(function (t) { y = P('•  ' + t, y, { spacingAfter: 2 }); });
   y += 8;
 
-  y = pdfPara(ctx, 'Payment Gateway:', y, { bold: true, spacingAfter: 2 });
-  y = pdfPara(ctx, 'The Taxpayer is advised to pay the above said arrears through GSTIN Portal by selecting the option "Payment towards demand".', y, { spacingAfter: 10 });
+  y = P('Payment Gateway:', y, { bold: true, spacingAfter: 2 });
+  y = P('The Taxpayer is advised to pay the above said arrears through GSTIN Portal by selecting the option "Payment towards demand".', y, { spacingAfter: 10 });
 
-  y = pdfPara(ctx, 'Note:', y, { bold: true, spacingAfter: 2 });
-  [
-    'If the tax has already been paid, you are requested to submit the payment details to this office immediately, otherwise it will be presumed that the balance still exists.',
-    'If the case is pending before any appellate forum, you are requested to submit the details to this office immediately.',
-    'Other than above no representation, in person or through postal.'
-  ].forEach(function (t) { y = pdfPara(ctx, '•  ' + t, y, { spacingAfter: 2 }); });
-  y += 14;
+  y = pdfNoticeNoteBlock(ctx, y);
+  y = pdfNoticeSignatureBlock(ctx, y, cfg);
 
-  y = pdfSignatureBlock(ctx, y, cfg, { spacingAfter: 20 });
-
-  y = pdfEnsureSpace(ctx, y, 3 * PDF_LINE_HEIGHT + 10);
-  y = pdfPara(ctx, 'To,', y, { spacingAfter: 0 });
-  y = pdfPara(ctx, legalName, y, { bold: true, spacingAfter: 0 });
-  if (notice.address) y = pdfPara(ctx, notice.address, y, { spacingAfter: 0 });
+  y = pdfEnsureSpace(ctx, y, 3 * PDF_NOTICE_LINE + 10);
+  y = P('To,', y, { spacingAfter: 0 });
+  y = P(legalName, y, { bold: true, spacingAfter: 0 });
+  if (notice.address) y = P(notice.address, y, { spacingAfter: 0 });
 
   return finishPdfDoc(ctx);
 }

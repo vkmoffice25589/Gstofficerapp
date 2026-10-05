@@ -52,7 +52,8 @@ function wRunProps(opts) {
   var italic = opts.italic ? '<w:i/>' : '';
   var color = opts.color ? '<w:color w:val="' + opts.color + '"/>' : '';
   var size = '<w:sz w:val="' + ((opts.size || DOCX_BODY_SIZE) * 2) + '"/>';
-  return '<w:rPr>' + bold + italic + DOCX_FONT + size + color + '</w:rPr>';
+  var underline = opts.underline ? '<w:u w:val="single"/>' : '';
+  return '<w:rPr>' + bold + italic + DOCX_FONT + size + color + underline + '</w:rPr>';
 }
 
 /* opts: align, bold, italic, size, spacingBefore, spacingAfter, line, color,
@@ -61,7 +62,11 @@ function wRunProps(opts) {
    this paragraph's own wrapped lines split across a page break), runs
    (mixed bold/plain segments within one paragraph), firstLineIndent (0.5in
    indent on the first line only — the office's convention for numbered
-   narrative body paragraphs, not for headings/labels/table cells). */
+   narrative body paragraphs, not for headings/labels/table cells),
+   underline (all runs), shade (paragraph fill, hex), tabRight (right-aligned
+   tab stop at this twip position — a tab character in the text jumps to it),
+   hanging ({left, hang} twips — bullet paragraphs whose wrapped lines align
+   under the text, not under the bullet). */
 function wPara(text, opts) {
   opts = opts || {};
   var align = normJc(opts.align || 'left');
@@ -72,11 +77,15 @@ function wPara(text, opts) {
   var spacing = '<w:spacing w:after="' + spacingAfter + '"' + spacingBefore + ' w:line="' + line + '" w:lineRule="auto"/>';
   var keepNext = opts.keepNext ? '<w:keepNext/>' : '';
   var keepLines = opts.keepLines ? '<w:keepLines/>' : '';
-  var indent = opts.firstLineIndent ? '<w:ind w:firstLine="' + DOCX_FIRST_LINE_INDENT + '"/>' : '';
+  var indent = opts.hanging ? '<w:ind w:left="' + opts.hanging.left + '" w:hanging="' + opts.hanging.hang + '"/>'
+    : (opts.firstLineIndent ? '<w:ind w:firstLine="' + DOCX_FIRST_LINE_INDENT + '"/>' : '');
+  var shd = opts.shade ? '<w:shd w:val="clear" w:color="auto" w:fill="' + opts.shade + '"/>' : '';
+  var tabs = opts.tabRight ? '<w:tabs><w:tab w:val="right" w:pos="' + opts.tabRight + '"/></w:tabs>' : '';
   var runs = (opts.runs || [{ text: text, bold: opts.bold, italic: opts.italic }]).map(function (run) {
-    return '<w:r>' + wRunProps({ bold: run.bold, italic: run.italic, size: size, color: opts.color }) + '<w:t xml:space="preserve">' + xmlEsc(run.text) + '</w:t></w:r>';
+    var parts = String(run.text == null ? '' : run.text).split('\t').map(function (t) { return '<w:t xml:space="preserve">' + xmlEsc(t) + '</w:t>'; }).join('<w:tab/>');
+    return '<w:r>' + wRunProps({ bold: run.bold, italic: run.italic, size: size, color: opts.color, underline: opts.underline }) + parts + '</w:r>';
   }).join('');
-  return '<w:p><w:pPr>' + keepNext + keepLines + indent + spacing + '<w:jc w:val="' + align + '"/></w:pPr>' + runs + '</w:p>';
+  return '<w:p><w:pPr>' + keepNext + keepLines + shd + tabs + indent + spacing + '<w:jc w:val="' + align + '"/></w:pPr>' + runs + '</w:p>';
 }
 
 /* A heading paragraph is just wPara with keepNext baked in — used for every
@@ -129,7 +138,7 @@ function wKeepTogetherBlock(innerXml, width) {
     + '</w:tcMar></w:tcPr>' + innerXml + (needsTrailingPara ? wSpacer(2) : '') + '</w:tc></w:tr></w:tbl>';
 }
 
-/* opts: noBorder, noHeaderShade, colWidths given in dxa. Every table:
+/* opts: noBorder, noHeaderShade, size/line (cell font pt / line spacing; default is the shared table size), colWidths given in dxa. Every table:
      - repeats its header row on every page it spans (w:tblHeader)
      - never splits a single row across a page break (w:cantSplit)
      - gets real cell padding (w:tcMar) instead of Word's bare default
@@ -156,8 +165,8 @@ function wTable(rows, colWidths, opts) {
       var shade = isHeaderRow ? '<w:shd w:val="clear" w:fill="EDF1F7"/>' : '';
       var vAlign = '<w:vAlign w:val="center"/>';
       return '<w:tc><w:tcPr><w:tcW w:w="' + widths[ci] + '" w:type="dxa"/>' + shade + cellMar + vAlign + '</w:tcPr>'
-        + '<w:p><w:pPr><w:spacing w:after="0" w:line="' + DOCX_LINE + '" w:lineRule="auto"/><w:jc w:val="' + align + '"/></w:pPr>'
-        + '<w:r>' + wRunProps({ bold: bold, size: DOCX_TABLE_SIZE }) + '<w:t xml:space="preserve">' + xmlEsc(cell.text) + '</w:t></w:r></w:p></w:tc>';
+        + '<w:p><w:pPr><w:spacing w:after="0" w:line="' + (opts.line || DOCX_LINE) + '" w:lineRule="auto"/><w:jc w:val="' + align + '"/></w:pPr>'
+        + '<w:r>' + wRunProps({ bold: bold, size: opts.size || DOCX_TABLE_SIZE }) + '<w:t xml:space="preserve">' + xmlEsc(cell.text) + '</w:t></w:r></w:p></w:tc>';
     }).join('');
     var trPr = '<w:trPr><w:cantSplit/>' + (isHeaderRow ? '<w:tblHeader/>' : '') + '</w:trPr>';
     return '<w:tr>' + trPr + tcs + '</w:tr>';
@@ -211,7 +220,8 @@ function docxHeaderXml(headerText) {
 /* opts.headerText — short identifying line (e.g. "Notice No: NOT/2026/0004")
    shown in the running header on every page; omit for documents where the
    body's own letterhead already makes this obvious on page 1 and a repeat
-   isn't meaningful. */
+   isn't meaningful. opts.noHeader omits the running header (text and rule)
+   altogether. */
 async function buildDocxBlob(bodyXml, opts) {
   opts = opts || {};
   await window.LibsReady;
@@ -232,7 +242,7 @@ async function buildDocxBlob(bodyXml, opts) {
     + '<Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>'
     + '<Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/>'
     + '<Override PartName="/word/settings.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.settings+xml"/>'
-    + '<Override PartName="/word/header1.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.header+xml"/>'
+    + (opts.noHeader ? '' : '<Override PartName="/word/header1.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.header+xml"/>')
     + '<Override PartName="/word/footer1.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.footer+xml"/>'
     + '</Types>');
 
@@ -247,7 +257,7 @@ async function buildDocxBlob(bodyXml, opts) {
     + '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
     + '<Relationship Id="rIdStyles" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>'
     + '<Relationship Id="rIdSettings" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/settings" Target="settings.xml"/>'
-    + '<Relationship Id="rIdHeader" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/header" Target="header1.xml"/>'
+    + (opts.noHeader ? '' : '<Relationship Id="rIdHeader" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/header" Target="header1.xml"/>')
     + '<Relationship Id="rIdFooter" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/footer" Target="footer1.xml"/>'
     + '</Relationships>');
 
@@ -264,7 +274,7 @@ async function buildDocxBlob(bodyXml, opts) {
     + '<w:settings xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">'
     + '<w:updateFields w:val="true"/></w:settings>');
 
-  zip.file('word/header1.xml', docxHeaderXml(opts.headerText));
+  if (!opts.noHeader) zip.file('word/header1.xml', docxHeaderXml(opts.headerText));
   zip.file('word/footer1.xml', docxFooterXml());
 
   zip.folder('word').file('document.xml',
@@ -272,7 +282,7 @@ async function buildDocxBlob(bodyXml, opts) {
     + '<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">'
     + '<w:body>' + bodyXml
     + '<w:sectPr>'
-    + '<w:headerReference w:type="default" r:id="rIdHeader"/>'
+    + (opts.noHeader ? '' : '<w:headerReference w:type="default" r:id="rIdHeader"/>')
     + '<w:footerReference w:type="default" r:id="rIdFooter"/>'
     + '<w:pgSz w:w="' + DOCX_PAGE_W + '" w:h="' + DOCX_PAGE_H + '"/>'
     + '<w:pgMar w:top="' + DOCX_MARGIN + '" w:right="' + DOCX_MARGIN + '" w:bottom="' + DOCX_MARGIN + '" w:left="' + DOCX_MARGIN_LEFT + '" w:header="' + DOCX_HF_DIST + '" w:footer="' + DOCX_HF_DIST + '" w:gutter="0"/>'
@@ -415,6 +425,59 @@ function wSignatureBlock(cfg, opts) {
   return wKeepTogetherBlock(inner) + wSpacer(opts.spacingAfter != null ? opts.spacingAfter : 8);
 }
 
+/* Notice typography — Times New Roman 14pt body at 1.5 line spacing (360 =
+   1.5 x 240), set per paragraph so the other documents keep the shared
+   12pt / 1.15 house style. The 8-column demand table stays at the shared
+   table size: at 14pt its headers and amounts would not fit on one line. */
+var NOTICE_SIZE = 14;
+var NOTICE_LINE = 360;
+function nPara(text, opts) { return wPara(text, Object.assign({ size: NOTICE_SIZE, line: NOTICE_LINE }, opts)); }
+function nHeading(text, opts) { return wHeading(text, Object.assign({ size: NOTICE_SIZE, line: NOTICE_LINE }, opts)); }
+
+/* Financial year (April-March) a notice date falls in, e.g. 05.10.2026 -> "2026-27". */
+function noticeFinancialYear(d) {
+  var m = String(d || '').match(/^(\d{4})-(\d{2})/);
+  var dt = null;
+  if (m) dt = { y: +m[1], mo: +m[2] };
+  else { var x = new Date(d); if (!isNaN(x)) dt = { y: x.getFullYear(), mo: x.getMonth() + 1 }; }
+  if (!dt) return '';
+  var start = dt.mo >= 4 ? dt.y : dt.y - 1;
+  return start + '-' + String(start + 1).slice(-2);
+}
+
+/* Grey reference bar: "GSTIN:<gstin>/<FY>" on the left, "dated:<DD.MM.YYYY>"
+   flush right — replaces the old "Notice No / Dated" line. */
+function noticeRefLeft(notice) {
+  var fy = noticeFinancialYear(notice.date);
+  return 'GSTIN:' + (notice.gstin || '—') + (fy ? '/' + fy : '');
+}
+function noticeRefBar(notice) {
+  return nPara(noticeRefLeft(notice) + '\tdated:' + fmtDateDot(notice.date),
+    { shade: 'C0C0C0', tabRight: DOCX_CONTENT_WIDTH, spacingAfter: 160, keepNext: true });
+}
+
+var noticeNoteItems = [
+  'If the tax has already been paid, you are requested to submit the payment details to this office immediately, otherwise it will be presumed that the balance still exists.',
+  'If the case is pending before any appellate forum, you are requested to submit the details to this office immediately.',
+  'Other than above no representation, in person or through postal.'
+];
+
+/* "Note:" (bold, underlined) + arrow bullets with a hanging indent, justified. */
+function noticeNoteBlock() {
+  return nPara('Note:', { bold: true, underline: true, spacingAfter: 40, keepNext: true })
+    + noticeNoteItems.map(function (t, i) {
+      return nPara('➢\t' + t, { align: 'justify', hanging: { left: 720, hang: 360 }, spacingAfter: i === noticeNoteItems.length - 1 ? 300 : 60, keepLines: true });
+    }).join('');
+}
+
+/* Officer block: bold, centred lines inside a right-hand column. */
+function noticeSignatureBlock(cfg) {
+  var right = ['desig', 'circle', 'city'].map(function (k) {
+    return nPara(cfg[k] || '', { align: 'center', bold: true, spacingAfter: 0, keepLines: true });
+  }).join('');
+  return wKeepTogetherBlock(wFromToGrid(wSpacer(2), right, 4300, DOCX_CONTENT_WIDTH - 4300)) + wSpacer(14);
+}
+
 /* ===== 1. Arrear Notice (Intimation / Urgent) — matches the office's official
    "Urgent Notice Final Format" / "Intimation Notice Format" letterheads. ===== */
 function buildNoticeDocx(notice, cfg) {
@@ -426,46 +489,44 @@ function buildNoticeDocx(notice, cfg) {
   var subText = 'TNGST Act 2017 – ' + (cfg.circle || '') + ' – Tvl.' + legalName + ', GSTIN : ' + gstin
     + ' - Arrears of Tax outstanding – ' + (isUrgent ? 'Urgent' : 'Intimation') + ' Notice issued – Regarding.';
   var refText = isUrgent ? 'This Office DRC-07 issued' : 'Statutory Orders issued in form DRC 07';
-  var actionList = noticeActionList.map(function (t) { return wPara('✓  ' + t, { spacingAfter: 60, keepLines: true }); }).join('');
+  var actionList = noticeActionList.map(function (t) { return nPara('✓  ' + t, { spacingAfter: 60, keepLines: true }); }).join('');
+  var tableOpts = { noBorder: true, noHeaderShade: true, size: NOTICE_SIZE, line: NOTICE_LINE };
 
   var toBlock = wKeepTogetherBlock(
-    wPara('To')
+    nPara('To')
     + wTable([
       ['GSTIN', ': ' + gstin],
       ['Legal Name of the Business', ': ' + legalName]
-    ], [3600, 6106], { noBorder: true, noHeaderShade: true })
+    ], [3900, 5806], tableOpts)
   ) + wSpacer(4);
 
   var body = noticeHeaderTable(cfg, '')
-    + wPara('Notice No: ' + (notice.num || '—') + '          Dated : ' + fmtDateDot(notice.date), { spacingAfter: 160, keepNext: true })
-    + wHeading(isUrgent ? 'URGENT NOTICE' : 'INTIMATION NOTICE', { align: 'center', size: 13, spacingAfter: 20 })
-    + wHeading('NON-PAYMENT OF GST ARREARS', { align: 'center', size: 12, spacingAfter: 200 })
+    + noticeRefBar(notice)
+    + nHeading(isUrgent ? 'URGENT NOTICE' : 'INTIMATION NOTICE', { align: 'center', spacingAfter: 20 })
+    + nHeading('NON-PAYMENT OF GST ARREARS', { align: 'center', spacingAfter: 200 })
     + toBlock
-    + wTable([[{ text: 'Sub', bold: true }, subText], [{ text: 'Ref', bold: true }, refText]], [900, 8806], { noBorder: true, noHeaderShade: true })
-    + wPara('*******', { align: 'center', spacingAfter: 120 })
-    + wPara('Tvl.' + legalName + ', registered with the office of the ' + (cfg.desig || '') + ', ' + (cfg.circle || '')
+    + wTable([[{ text: 'Sub', bold: true }, subText], [{ text: 'Ref', bold: true }, refText]], [900, 8806], tableOpts)
+    + nPara('*******', { align: 'center', spacingAfter: 120 })
+    + nPara('Tvl.' + legalName + ', registered with the office of the ' + (cfg.desig || '') + ', ' + (cfg.circle || '')
       + ' is hereby informed they are in arrears of Goods and Services Tax as detailed below:', { align: 'justify', firstLineIndent: true, spacingAfter: 120, keepNext: true })
     + wTable(d.rows, [1700, 1700, 1000, 1050, 1150, 1150, 750, 1350])
-    + wPara('(AMOUNT IN RS)', { align: 'right', size: 9, spacingAfter: 160 })
-    + wPara('Total Amount Payable: ' + fmt(d.total) + ' (Rupees ' + numToWords(d.total) + ' Only)', { bold: true, spacingAfter: 160 })
-    + (notice.details ? wPara('Remarks: ' + notice.details, { spacingAfter: 160 }) : '')
-    + wPara((isUrgent
+    + nPara('(AMOUNT IN RS)', { align: 'right', size: 9, spacingAfter: 160 })
+    + nPara('Total Amount Payable: ' + fmt(d.total) + ' (Rupees ' + numToWords(d.total) + ' Only)', { bold: true, spacingAfter: 160 })
+    + (notice.details ? nPara('Remarks: ' + notice.details, { spacingAfter: 160 }) : '')
+    + nPara((isUrgent
       ? 'The Taxpayer is informed that the arrears have not been paid even after the expiry of 90 days from the date of the order. If the above amount is not paid immediately on receipt of this notice, recovery action will be initiated to realise the arrears in accordance with the provisions of the GST Act, 2017 by:'
       : 'The taxpayer is hereby informed that arrears are pending. If the arrears remain unpaid after the expiry of 90 days from the date of the order and no appeal has been filed, recovery action will be initiated to realise the dues in accordance with the provisions of the GST Act, 2017, by:'), { align: 'justify', firstLineIndent: true, spacingAfter: 100, keepNext: true })
     + actionList
-    + wPara('Payment Gateway:', { bold: true, spacingAfter: 40, keepNext: true })
-    + wPara('The Taxpayer is advised to pay the above said arrears through GSTIN Portal by selecting the option "Payment towards demand".', { align: 'justify', firstLineIndent: true, spacingAfter: 160 })
-    + wPara('Note:', { bold: true, spacingAfter: 40, keepNext: true })
-    + wPara('➤  If the tax has already been paid, you are requested to submit the payment details to this office immediately, otherwise it will be presumed that the balance still exists.', { spacingAfter: 60, keepLines: true })
-    + wPara('➤  If the case is pending before any appellate forum, you are requested to submit the details to this office immediately.', { spacingAfter: 60, keepLines: true })
-    + wPara('➤  Other than above no representation, in person or through postal.', { spacingAfter: 300, keepLines: true })
-    + wSignatureBlock(cfg, { spacingAfter: 300 })
+    + nPara('Payment Gateway:', { bold: true, spacingAfter: 40, keepNext: true })
+    + nPara('The Taxpayer is advised to pay the above said arrears through GSTIN Portal by selecting the option "Payment towards demand".', { align: 'justify', firstLineIndent: true, spacingAfter: 160 })
+    + noticeNoteBlock()
+    + noticeSignatureBlock(cfg)
     + wKeepTogetherBlock(
-      wPara('To,')
-      + wPara(legalName, { bold: true })
-      + (notice.address ? wPara(notice.address, { keepLines: true }) : '')
+      nPara('To,')
+      + nPara(legalName, { bold: true })
+      + (notice.address ? nPara(notice.address, { keepLines: true }) : '')
     );
-  return buildDocxBlob(body, { headerText: 'Notice No: ' + (notice.num || '—') + '   |   GSTIN: ' + gstin });
+  return buildDocxBlob(body, { noHeader: true });
 }
 
 /* ===== 2. Bank Attachment — Release Order =====
