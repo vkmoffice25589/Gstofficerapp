@@ -259,19 +259,20 @@ function pdfNoticeNoteBlock(ctx, y) {
   doc.setDrawColor(0, 0, 0); doc.setLineWidth(0.7);
   doc.line(ctx.marginX, y + 2, ctx.marginX + w, y + 2);
   y += PDF_NOTICE_LINE + 2;
-  return pdfNoticeBullets(ctx, y, noticeNoteItems) + 14;
+  return pdfNoticeBullets(ctx, y, noticeNoteItems);
 }
 
 /* Officer block — bold, centred lines in a right-hand column (mirrors
    noticeSignatureBlock() in docx-export.js). */
 function pdfNoticeSignatureBlock(ctx, y, cfg) {
-  var doc = ctx.doc;
-  y = pdfEnsureSpace(ctx, y, 3 * PDF_NOTICE_LINE + 10);
+  var doc = ctx.doc, lh = 17;                       // single-spaced: no gaps between the three lines
+  y = pdfEnsureSpace(ctx, y, 3 * lh + 60);
+  y += 48;                                          // blank room for the officer's signature
   var centerX = ctx.rightX - 131;
   doc.setFont(PDF_FONT, 'bold'); doc.setFontSize(PDF_NOTICE_SIZE);
   ['desig', 'circle', 'city'].forEach(function (k) {
     doc.text(cfg[k] || '', centerX, y, { align: 'center' });
-    y += PDF_NOTICE_LINE;
+    y += lh;
   });
   return y + 20;
 }

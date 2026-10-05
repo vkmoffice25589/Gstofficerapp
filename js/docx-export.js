@@ -473,13 +473,15 @@ function noticeBulletList(items, spacingAfterLast) {
 
 /* "Note:" (bold, underlined) + its bullets. */
 function noticeNoteBlock() {
-  return nPara('Note:', { bold: true, underline: true, spacingAfter: 40, keepNext: true }) + noticeBulletList(noticeNoteItems, 300);
+  return nPara('Note:', { bold: true, underline: true, spacingAfter: 40, keepNext: true }) + noticeBulletList(noticeNoteItems, 60);
 }
 
-/* Officer block: bold, centred lines inside a right-hand column. */
+/* Officer block: bold, centred, single-spaced lines (no gaps between them)
+   in a right-hand column, with blank room above for the signature. */
+var NOTICE_SIGN_GAP = 1100; // twips (~0.75in) left blank for the officer's signature
 function noticeSignatureBlock(cfg) {
-  var right = ['desig', 'circle', 'city'].map(function (k) {
-    return nPara(cfg[k] || '', { align: 'center', bold: true, spacingAfter: 0, keepLines: true });
+  var right = ['desig', 'circle', 'city'].map(function (k, i) {
+    return nPara(cfg[k] || '', { align: 'center', bold: true, line: 240, spacingAfter: 0, spacingBefore: i === 0 ? NOTICE_SIGN_GAP : 0, keepLines: true });
   }).join('');
   return wKeepTogetherBlock(wFromToGrid(wSpacer(2), right, 4300, DOCX_CONTENT_WIDTH - 4300)) + wSpacer(14);
 }
