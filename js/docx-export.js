@@ -463,12 +463,17 @@ var noticeNoteItems = [
   'Other than above no representation, in person or through postal.'
 ];
 
-/* "Note:" (bold, underlined) + arrow bullets with a hanging indent, justified. */
+/* Arrow bullets with a hanging indent, justified — shared by the action list
+   and the Note so both read the same. */
+function noticeBulletList(items, spacingAfterLast) {
+  return items.map(function (t, i) {
+    return nPara('➢\t' + t, { align: 'justify', hanging: { left: 720, hang: 360 }, spacingAfter: i === items.length - 1 ? spacingAfterLast : 60, keepLines: true });
+  }).join('');
+}
+
+/* "Note:" (bold, underlined) + its bullets. */
 function noticeNoteBlock() {
-  return nPara('Note:', { bold: true, underline: true, spacingAfter: 40, keepNext: true })
-    + noticeNoteItems.map(function (t, i) {
-      return nPara('➢\t' + t, { align: 'justify', hanging: { left: 720, hang: 360 }, spacingAfter: i === noticeNoteItems.length - 1 ? 300 : 60, keepLines: true });
-    }).join('');
+  return nPara('Note:', { bold: true, underline: true, spacingAfter: 40, keepNext: true }) + noticeBulletList(noticeNoteItems, 300);
 }
 
 /* Officer block: bold, centred lines inside a right-hand column. */
@@ -500,7 +505,7 @@ function buildNoticeDocx(notice, cfg) {
   var subText = 'TNGST Act 2017 – ' + (cfg.circle || '') + ' – Tvl.' + legalName + ', GSTIN : ' + gstin
     + ' - Arrears of Tax outstanding – ' + (isUrgent ? 'Urgent' : 'Intimation') + ' Notice issued – Regarding.';
   var refText = isUrgent ? 'This Office DRC-07 issued' : 'Statutory Orders issued in form DRC 07';
-  var actionList = noticeActionList.map(function (t) { return nPara('✓  ' + t, { align: 'justify', spacingAfter: 60, keepLines: true }); }).join('');
+  var actionList = noticeBulletList(noticeActionList, 160);
   var tableOpts = { noBorder: true, noHeaderShade: true, size: NOTICE_SIZE, line: NOTICE_LINE };
 
   var toBlock = wKeepTogetherBlock(

@@ -224,23 +224,16 @@ function pdfArrowBullet(ctx, x, baseY) {
   ctx.doc.triangle(x, baseY - h, x, baseY, x + w, baseY - h / 2, 'F');
 }
 
-/* "Note:" (bold, underlined) + arrow bullets with a hanging indent. */
-function pdfNoticeNoteBlock(ctx, y) {
-  var doc = ctx.doc;
-  y = pdfEnsureSpace(ctx, y, 2 * PDF_NOTICE_LINE);
-  doc.setFont(PDF_FONT, 'bold'); doc.setFontSize(PDF_NOTICE_SIZE);
-  var w = doc.getTextWidth('Note:');
-  doc.text('Note:', ctx.marginX, y);
-  doc.setDrawColor(0, 0, 0); doc.setLineWidth(0.7);
-  doc.line(ctx.marginX, y + 2, ctx.marginX + w, y + 2);
-  y += PDF_NOTICE_LINE + 2;
-  var indent = 36;
-  noticeNoteItems.forEach(function (t) {
+/* Arrow bullets with a hanging indent, justified — shared by the action list
+   and the Note so both read the same (mirrors noticeBulletList() in
+   docx-export.js). */
+function pdfNoticeBullets(ctx, y, items) {
+  var doc = ctx.doc, indent = 36, bw = ctx.rightX - ctx.marginX - indent;
+  items.forEach(function (t) {
     doc.setFont(PDF_FONT, 'normal'); doc.setFontSize(PDF_NOTICE_SIZE);
-    var lines = doc.splitTextToSize(t, ctx.rightX - ctx.marginX - indent);
+    var lines = doc.splitTextToSize(t, bw);
     y = pdfEnsureSpace(ctx, y, lines.length * PDF_NOTICE_LINE);
     pdfArrowBullet(ctx, ctx.marginX + 14, y);
-    var bw = ctx.rightX - ctx.marginX - indent;
     lines.forEach(function (line, i) {
       var words = line.trim().split(/\s+/), ly = y + i * PDF_NOTICE_LINE;
       if (i < lines.length - 1 && words.length > 1) {
@@ -253,7 +246,20 @@ function pdfNoticeNoteBlock(ctx, y) {
     });
     y += lines.length * PDF_NOTICE_LINE + 3;
   });
-  return y + 14;
+  return y;
+}
+
+/* "Note:" (bold, underlined) + its bullets. */
+function pdfNoticeNoteBlock(ctx, y) {
+  var doc = ctx.doc;
+  y = pdfEnsureSpace(ctx, y, 2 * PDF_NOTICE_LINE);
+  doc.setFont(PDF_FONT, 'bold'); doc.setFontSize(PDF_NOTICE_SIZE);
+  var w = doc.getTextWidth('Note:');
+  doc.text('Note:', ctx.marginX, y);
+  doc.setDrawColor(0, 0, 0); doc.setLineWidth(0.7);
+  doc.line(ctx.marginX, y + 2, ctx.marginX + w, y + 2);
+  y += PDF_NOTICE_LINE + 2;
+  return pdfNoticeBullets(ctx, y, noticeNoteItems) + 14;
 }
 
 /* Officer block — bold, centred lines in a right-hand column (mirrors
@@ -353,8 +359,7 @@ async function buildNoticePdfDoc(notice, cfg) {
     : 'The taxpayer is hereby informed that arrears are pending. If the arrears remain unpaid after the expiry of 90 days from the date of the order and no appeal has been filed, recovery action will be initiated to realise the dues in accordance with the provisions of the GST Act, 2017, by:';
   y = P(leadIn, y, { firstLineIndent: true, spacingAfter: 6 });
 
-  noticeActionList.forEach(function (t) { y = P('•  ' + t, y, { spacingAfter: 2 }); });
-  y += 8;
+  y = pdfNoticeBullets(ctx, y, noticeActionList) + 8;
 
   y = P('Payment Gateway:', y, { bold: true, spacingAfter: 2 });
   y = P('The Taxpayer is advised to pay the above said arrears through GSTIN Portal by selecting the option "Payment towards demand".', y, { firstLineIndent: true, spacingAfter: 10 });
