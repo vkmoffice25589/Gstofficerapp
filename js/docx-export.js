@@ -45,6 +45,11 @@ var DOCX_TABLE_SIZE = 11;  // pt
 var DOCX_LINE = 276;
 var DOCX_SPACING_AFTER = 160;
 var DOCX_FIRST_LINE_INDENT = 720; // 0.5in — narrative body paragraphs only
+/* Set (via wStyled) while a notice / attachment document is being built: body
+   paragraphs that don't name their own size then default to 14pt at 1.5 line
+   spacing instead of the shared 12pt / 1.15. Paragraphs with an explicit size
+   (letterheads, titles, table text) are untouched. */
+var DOCX_STYLE = null;
 
 function wRunProps(opts) {
   opts = opts || {};
@@ -70,10 +75,10 @@ function wRunProps(opts) {
 function wPara(text, opts) {
   opts = opts || {};
   var align = normJc(opts.align || 'left');
-  var size = opts.size || DOCX_BODY_SIZE;
+  var size = opts.size || (DOCX_STYLE ? DOCX_STYLE.size : DOCX_BODY_SIZE);
   var spacingAfter = opts.spacingAfter != null ? opts.spacingAfter : DOCX_SPACING_AFTER;
   var spacingBefore = opts.spacingBefore ? ' w:before="' + opts.spacingBefore + '"' : '';
-  var line = opts.line || DOCX_LINE;
+  var line = opts.line || ((DOCX_STYLE && !opts.size) ? DOCX_STYLE.line : DOCX_LINE);
   var spacing = '<w:spacing w:after="' + spacingAfter + '"' + spacingBefore + ' w:line="' + line + '" w:lineRule="auto"/>';
   var keepNext = opts.keepNext ? '<w:keepNext/>' : '';
   var keepLines = opts.keepLines ? '<w:keepLines/>' : '';
@@ -420,6 +425,14 @@ var noticeActionList = [
    one page and the city on the next. */
 function wSignatureBlock(cfg, opts) {
   opts = opts || {};
+  if (DOCX_STYLE) {   // bold, centred, single-spaced, with signature room above
+    var lines = [cfg.desig || '', (cfg.circle || '') + (opts.circleSuffix || '')];
+    if (opts.showCity !== false) lines.push(cfg.city || '');
+    var right = lines.map(function (t, i) {
+      return wPara(t, { align: 'center', bold: true, line: 240, spacingAfter: 0, spacingBefore: i === 0 ? NOTICE_SIGN_GAP : 0, keepLines: true });
+    }).join('');
+    return wKeepTogetherBlock(wFromToGrid(wSpacer(2), right, 4300, DOCX_CONTENT_WIDTH - 4300)) + wSpacer(opts.spacingAfter != null ? Math.min(opts.spacingAfter, 14) : 8);
+  }
   var inner = wPara((cfg.desig || ''), { align: 'right', keepLines: true })
     + wPara((cfg.circle || '') + (opts.circleSuffix || ''), { align: 'right', keepLines: true })
     + (opts.showCity !== false ? wPara(cfg.city || '', { align: 'right', keepLines: true }) : '');
@@ -432,6 +445,10 @@ function wSignatureBlock(cfg, opts) {
    table size: at 14pt its headers and amounts would not fit on one line. */
 var NOTICE_SIZE = 14;
 var NOTICE_LINE = 360;
+function wStyled(build) {
+  DOCX_STYLE = { size: NOTICE_SIZE, line: NOTICE_LINE };
+  try { return build(); } finally { DOCX_STYLE = null; }
+}
 function nPara(text, opts) { return wPara(text, Object.assign({ size: NOTICE_SIZE, line: NOTICE_LINE }, opts)); }
 function nHeading(text, opts) { return wHeading(text, Object.assign({ size: NOTICE_SIZE, line: NOTICE_LINE }, opts)); }
 
@@ -446,15 +463,21 @@ function noticeFinancialYear(d) {
   return start + '-' + String(start + 1).slice(-2);
 }
 
-/* Grey reference bar: "GSTIN:<gstin>/<FY>" on the left, "dated:<DD.MM.YYYY>"
-   flush right — replaces the old "Notice No / Dated" line. */
+/* Reference line: "GSTIN:<gstin>/<FY>" on the left, "dated:<DD.MM.YYYY>" flush
+   right — replaces the old "Notice No / Dated" line. */
 function noticeRefLeft(notice) {
   var fy = noticeFinancialYear(notice.date);
   return 'GSTIN:' + (notice.gstin || '—') + (fy ? '/' + fy : '');
 }
 function noticeRefBar(notice) {
   return nPara(noticeRefLeft(notice) + '\tdated:' + fmtDateDot(notice.date),
-    { shade: 'C0C0C0', tabRight: DOCX_CONTENT_WIDTH, spacingAfter: 160, keepNext: true });
+    { tabRight: DOCX_CONTENT_WIDTH, spacingAfter: 160, keepNext: true });
+}
+
+/* Same reference line for the bank / third-party / property documents. */
+function docRefLine(gstin, date) {
+  var fy = noticeFinancialYear(date);
+  return wPara('GSTIN:' + (gstin || '—') + (fy ? '/' + fy : '') + '\tdated:' + fmtDateDot(date), { tabRight: DOCX_CONTENT_WIDTH, spacingAfter: 160, keepNext: true });
 }
 
 var noticeNoteItems = [
@@ -556,7 +579,7 @@ function buildNoticeDocx(notice, cfg) {
    the saved bankAtt record (releasedReason/releasedDate/etc.) so the
    order can be regenerated later without re-asking the officer. */
 var RELEASE_TEMPORARY_REASONS = ['First Appeal Filed', 'WP Filed & Stay Obtained'];
-function buildBankReleaseDocx(b, cfg) {
+function buildBankReleaseDocxInner(b, cfg) {
   var isTemporary = RELEASE_TEMPORARY_REASONS.indexOf(b.releasedReason) !== -1;
   var fromText = wPara('From', { size: 10, spacingAfter: 20 })
     + wPara((cfg.officerName ? cfg.officerName + ', ' : '') + (cfg.desig || '') + ',', { bold: true, size: 10, spacingAfter: 20 })
@@ -576,9 +599,9 @@ function buildBankReleaseDocx(b, cfg) {
 
   var body = wHeading('COMMERCIAL TAXES DEPARTMENT', { align: 'center', size: 13, spacingAfter: 160 })
     + wKeepTogetherBlock(wFromToGrid(fromText, toText, 4300, 5406)) + wSpacer(4)
-    + wPara('GSTIN: ' + (b.gstin || '—') + '/ dated: ' + fmtDate(b.releasedDate || todayISO()), { spacingAfter: 160 })
+    + docRefLine(b.gstin, b.releasedDate || todayISO())
     + wPara('Sir/Madam,', { spacingAfter: 100, keepNext: true })
-    + wTable([[{ text: 'Sub:-', bold: true }, subText], [{ text: 'Ref:', bold: true }, refText]], [900, 8806], { noBorder: true, noHeaderShade: true })
+    + wTable([[{ text: 'Sub:-', bold: true }, { text: subText, align: 'justify' }], [{ text: 'Ref:', bold: true }, { text: refText, align: 'justify' }]], [900, 8806], { noBorder: true, noHeaderShade: true, size: NOTICE_SIZE, line: NOTICE_LINE })
     + wPara('*********', { align: 'center', spacingAfter: 160 })
     + wPara('Tvl. ' + (b.legalName || '—') + ' doing business at ' + (b.releasedAddr || '—').replace(/\.+\s*$/, '') + '. ' + (b.releasedNarrative || ''), { align: 'justify', firstLineIndent: true, spacingAfter: 120 })
     + wPara(closing, { align: 'justify', firstLineIndent: true, spacingAfter: 300 })
@@ -588,7 +611,7 @@ function buildBankReleaseDocx(b, cfg) {
       + wPara(b.legalName || '—', { spacingAfter: 20 })
       + wPara(b.releasedAddr || '—', { spacingAfter: 20, keepLines: true })
     );
-  return buildDocxBlob(body, { headerText: 'Bank Release — GSTIN: ' + (b.gstin || '—') });
+  return buildDocxBlob(body, { noHeader: true });
 }
 
 /* 9-column tax-head breakdown table for the DRC-13 bank notice — same shape
@@ -643,7 +666,7 @@ function wOfficerClosingBlock(b, cfg) {
    Matches the office's "Bank Attachment Reference to bank" letter format:
    a From/To letterhead table, a Sub/Ref block, then the statutory request
    to remit funds under Section 79(1)(c), with Form DRC-13 enclosed. */
-function buildBankLetterDocx(b, cfg) {
+function buildBankLetterDocxInner(b, cfg) {
   var tradeName = bankAttTradeName(b);
   var amountWords = numToWords(b.totalAmt) + ' Only';
   var fromText = wPara('From', { size: 10, spacingAfter: 20 })
@@ -661,9 +684,9 @@ function buildBankLetterDocx(b, cfg) {
 
   var body = wHeading('COMMERCIAL TAXES DEPARTMENT', { align: 'center', size: 13, spacingAfter: 160 })
     + wKeepTogetherBlock(wFromToGrid(fromText, toText, 4300, 5406)) + wSpacer(4)
-    + wPara('GSTIN: ' + (b.gstin || '—') + '/' + (b.ref || '—') + '  dated: ' + fmtDate(b.date), { spacingAfter: 160 })
+    + docRefLine(b.gstin, b.date)
     + wPara('Sir / Madam,', { spacingAfter: 100, keepNext: true })
-    + wTable([[{ text: 'Sub', bold: true }, subText], [{ text: 'Ref', bold: true }, 'This Office DRC-07 issued']], [900, 8806], { noBorder: true, noHeaderShade: true })
+    + wTable([[{ text: 'Sub', bold: true }, { text: subText, align: 'justify' }], [{ text: 'Ref', bold: true }, { text: 'This Office DRC-07 issued', align: 'justify' }]], [900, 8806], { noBorder: true, noHeaderShade: true, size: NOTICE_SIZE, line: NOTICE_LINE })
     + wPara('*******', { align: 'center', spacingAfter: 160 })
     + wPara('Tvl. ' + (b.legalName || '—') + (tradeName && tradeName !== b.legalName ? ' (' + tradeName + ')' : '') + ', having an Current Account / CC with your Bank, is an assessee on the file of the ' + (cfg.desig || '') + ', ' + (cfg.circle || '') + ' and is in arrears of tax of Rs. ' + fmt0(b.totalAmt) + '/- (Rupees ' + amountWords + ') under the GST Act.', { align: 'justify', firstLineIndent: true, spacingAfter: 120 })
     + wPara('Under Section 79(1)(c) of the SGST Act, 2017 read with Section 142(7)(a) of the SGST Act, 2017 & Rule 145(1) of the SGST Rules, 2017, you are required to remit to me forthwith the sum of Rs. ' + fmt0(b.totalAmt) + '/- (Rupees ' + amountWords + ') from out of money you hold for or on account of the defaulter. If you do not hold money to that extent now, the amount available may be remitted now and the balance remitted as and when funds become available, as first charge to the Government. If the dealer is having an Overdraft account, you may require to remit the amount. A statutory demand notice in Form DRC-13 is enclosed.', { align: 'justify', firstLineIndent: true, spacingAfter: 120 })
@@ -672,13 +695,13 @@ function buildBankLetterDocx(b, cfg) {
     + wPara('The above mentioned demand amount or the amount available in the taxpayer bank account has to be issued as a Demand Draft or Bank Cheque in favour of the undersigned.', { align: 'justify', firstLineIndent: true, spacingAfter: 200, keepNext: true })
     + wPara('Encl: Form DRC-13.', { spacingAfter: 300 })
     + wOfficerClosingBlock(b, cfg);
-  return buildDocxBlob(body, { headerText: 'DRC-13 Covering Letter — GSTIN: ' + (b.gstin || '—') });
+  return buildDocxBlob(body, { noHeader: true });
 }
 
 /* ===== 2b. Bank Attachment — Form GST DRC-13 (Rule 145(1)) =====
    The statutory "Notice to a third person under Section 79(1)(c)" served on
    the bank, matching the office's DRC-13 format exactly. */
-function buildBankDrc13Docx(b, cfg) {
+function buildBankDrc13DocxInner(b, cfg) {
   var tradeName = bankAttTradeName(b);
   var d = demandRowsForBankDrc13(b.cases || []);
   var amountWords = numToWords(b.totalAmt) + ' Only';
@@ -691,7 +714,8 @@ function buildBankDrc13Docx(b, cfg) {
     + wPara('Trade Name- ' + (tradeName || '—'), { spacingAfter: 20, keepLines: true })
     + wPara('Demand order No: ', { spacingAfter: 160 });
 
-  var body = wHeading('FORM GST DRC – 13', { align: 'center', size: 13, spacingAfter: 20 })
+  var body = docRefLine(b.gstin, b.date)
+    + wHeading('FORM GST DRC – 13', { align: 'center', size: 13, spacingAfter: 20 })
     + wPara('[See rule 145(1)]', { align: 'center', size: 10, spacingAfter: 20, keepNext: true })
     + wHeading('Notice to a third person under section 79(1)(c)', { align: 'center', size: 11, spacingAfter: 200 })
     + wKeepTogetherBlock(
@@ -711,11 +735,11 @@ function buildBankDrc13Docx(b, cfg) {
     + wPara('Please note that, in case you fail to make payment in pursuance of this notice, you shall be deemed to be a defaulter in respect of the amount specified in the notice and consequences of the Act or the rules made thereunder shall follow.', { align: 'justify', firstLineIndent: true, spacingAfter: 120 })
     + wPara('The above mentioned demand amount or the amount available in the taxpayer bank account has to be issued as a Demand Draft or Bank Cheque in favour of the undersigned.', { align: 'justify', firstLineIndent: true, spacingAfter: 300, keepNext: true })
     + wOfficerClosingBlock(b, cfg);
-  return buildDocxBlob(body, { headerText: 'FORM GST DRC-13 — GSTIN: ' + (b.gstin || '—') });
+  return buildDocxBlob(body, { noHeader: true });
 }
 
 /* ===== 3. Third-Party (Debtor) Notice — DRC-13 style ===== */
-function buildThirdPartyDocx(tp, cfg) {
+function buildThirdPartyDocxInner(tp, cfg) {
   var d = demandRowsForDocx(tp.cases || []);
   var toBlock = wKeepTogetherBlock(
     wPara('To,')
@@ -725,6 +749,7 @@ function buildThirdPartyDocx(tp, cfg) {
     + (tp.debtorAddr ? wPara(tp.debtorAddr, { keepLines: true }) : '')
   );
   var body = officeHeaderBlock(cfg)
+    + docRefLine(tp.defaulterGstin, tp.date)
     + wHeading('FORM GST DRC-13', { align: 'center', size: 13, spacingAfter: 0 })
     + wHeading('Notice to a Third Person under Section 79(1)(c)', { align: 'center', size: 11, spacingAfter: 160 })
     + toBlock + wSpacer(6)
@@ -732,7 +757,7 @@ function buildThirdPartyDocx(tp, cfg) {
     + wTable(d.rows, [2200, 2200, 1600, 1800, 2200])
     + wPara('Amount to be paid: ' + fmt(d.total), { bold: true, spacingAfter: 300 })
     + wSignatureBlock(cfg, { showCity: false });
-  return buildDocxBlob(body, { headerText: 'FORM GST DRC-13 — GSTIN: ' + (tp.defaulterGstin || '—') });
+  return buildDocxBlob(body, { noHeader: true });
 }
 
 /* ===== 3a. Third-Party Notice — Release Order =====
@@ -741,7 +766,7 @@ function buildThirdPartyDocx(tp, cfg) {
    released, so they are no longer required to withhold or remit any
    amount on the defaulter's account. Reads release fields directly off
    the saved thirdPartyNotices record. */
-function buildThirdPartyReleaseDocx(tp, cfg) {
+function buildThirdPartyReleaseDocxInner(tp, cfg) {
   var isTemporary = RELEASE_TEMPORARY_REASONS.indexOf(tp.releasedReason) !== -1;
   var fromText = wPara('From', { size: 10, spacingAfter: 20 })
     + wPara((cfg.officerName ? cfg.officerName + ', ' : '') + (cfg.desig || '') + ',', { bold: true, size: 10, spacingAfter: 20 })
@@ -760,20 +785,21 @@ function buildThirdPartyReleaseDocx(tp, cfg) {
 
   var body = wHeading('COMMERCIAL TAXES DEPARTMENT', { align: 'center', size: 13, spacingAfter: 160 })
     + wKeepTogetherBlock(wFromToGrid(fromText, toText, 4300, 5406)) + wSpacer(4)
-    + wPara('GSTIN: ' + (tp.defaulterGstin || '—') + '/ dated: ' + fmtDate(tp.releasedDate || todayISO()), { spacingAfter: 160 })
+    + docRefLine(tp.defaulterGstin, tp.releasedDate || todayISO())
     + wPara('Sir/Madam,', { spacingAfter: 100, keepNext: true })
-    + wTable([[{ text: 'Sub:-', bold: true }, subText], [{ text: 'Ref:', bold: true }, refText]], [900, 8806], { noBorder: true, noHeaderShade: true })
+    + wTable([[{ text: 'Sub:-', bold: true }, { text: subText, align: 'justify' }], [{ text: 'Ref:', bold: true }, { text: refText, align: 'justify' }]], [900, 8806], { noBorder: true, noHeaderShade: true, size: NOTICE_SIZE, line: NOTICE_LINE })
     + wPara('*********', { align: 'center', spacingAfter: 160 })
     + wPara('Tvl. ' + (tp.legalName || '—') + ' being the defaulter referred to above. ' + (tp.releasedNarrative || ''), { align: 'justify', firstLineIndent: true, spacingAfter: 120 })
     + wPara(closing, { align: 'justify', firstLineIndent: true, spacingAfter: 300 })
     + wSignatureBlock(cfg, { showCity: false, circleSuffix: '.', spacingAfter: 300 });
-  return buildDocxBlob(body, { headerText: 'Third-Party Release — GSTIN: ' + (tp.defaulterGstin || '—') });
+  return buildDocxBlob(body, { noHeader: true });
 }
 
 /* ===== 4. Property Attachment Order — Section 79(d) ===== */
-function buildPropertyAttachmentDocx(pa, cfg) {
+function buildPropertyAttachmentDocxInner(pa, cfg) {
   var d = demandRowsForDocx(pa.cases || []);
   var body = officeHeaderBlock(cfg)
+    + docRefLine(pa.gstin, pa.date)
     + wHeading('ORDER OF ATTACHMENT OF PROPERTY', { align: 'center', size: 13, spacingAfter: 0 })
     + wHeading('under Section 79(1)(d) of the GST Act', { align: 'center', bold: false, size: 11, spacingAfter: 160 })
     + wPara('Defaulter: ' + (pa.legalName || '—') + '   GSTIN: ' + (pa.gstin || '—'), { bold: true, spacingAfter: 160, keepNext: true })
@@ -785,7 +811,7 @@ function buildPropertyAttachmentDocx(pa, cfg) {
       + wPara('Estimated Value: ' + fmt(pa.propertyValue), { spacingAfter: 300 })
     )
     + wSignatureBlock(cfg, { showCity: false });
-  return buildDocxBlob(body, { headerText: 'Property Attachment — GSTIN: ' + (pa.gstin || '—') });
+  return buildDocxBlob(body, { noHeader: true });
 }
 
 /* ===== 4a. Property Attachment — Release Order =====
@@ -793,9 +819,10 @@ function buildPropertyAttachmentDocx(pa, cfg) {
    party) releasing or temporarily withdrawing the property attachment
    recorded under Section 79(1)(d). Reads release fields directly off the
    saved propertyAttachments record. */
-function buildPropertyReleaseDocx(pa, cfg) {
+function buildPropertyReleaseDocxInner(pa, cfg) {
   var isTemporary = RELEASE_TEMPORARY_REASONS.indexOf(pa.releasedReason) !== -1;
   var body = officeHeaderBlock(cfg)
+    + docRefLine(pa.gstin, pa.releasedDate || todayISO())
     + wHeading('ORDER OF RELEASE OF PROPERTY ATTACHMENT', { align: 'center', size: 13, spacingAfter: 0 })
     + wHeading('under Section 79(1)(d) of the GST Act', { align: 'center', bold: false, size: 11, spacingAfter: 160 })
     + wPara('Defaulter: ' + (pa.legalName || '—') + '   GSTIN: ' + (pa.gstin || '—'), { bold: true, spacingAfter: 160, keepNext: true })
@@ -808,5 +835,16 @@ function buildPropertyReleaseDocx(pa, cfg) {
       ? 'In view of the above, the attachment of the said property is temporarily withdrawn till further orders.'
       : 'In view of the above, the attachment of the said property is hereby released.', { align: 'justify', firstLineIndent: true, spacingAfter: 300 })
     + wSignatureBlock(cfg, { showCity: false });
-  return buildDocxBlob(body, { headerText: 'Property Release — GSTIN: ' + (pa.gstin || '—') });
+  return buildDocxBlob(body, { noHeader: true });
 }
+
+/* ===== House style for the bank / third-party / property documents =====
+   Times New Roman 14pt, 1.5 line spacing, justified body, centred officer block,
+   GSTIN/FY + dated reference line, no running header — same look as the notice. */
+function buildBankReleaseDocx(a, cfg) { return wStyled(function () { return buildBankReleaseDocxInner(a, cfg); }); }
+function buildBankLetterDocx(a, cfg) { return wStyled(function () { return buildBankLetterDocxInner(a, cfg); }); }
+function buildBankDrc13Docx(a, cfg) { return wStyled(function () { return buildBankDrc13DocxInner(a, cfg); }); }
+function buildThirdPartyDocx(a, cfg) { return wStyled(function () { return buildThirdPartyDocxInner(a, cfg); }); }
+function buildThirdPartyReleaseDocx(a, cfg) { return wStyled(function () { return buildThirdPartyReleaseDocxInner(a, cfg); }); }
+function buildPropertyAttachmentDocx(a, cfg) { return wStyled(function () { return buildPropertyAttachmentDocxInner(a, cfg); }); }
+function buildPropertyReleaseDocx(a, cfg) { return wStyled(function () { return buildPropertyReleaseDocxInner(a, cfg); }); }

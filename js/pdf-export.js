@@ -17,7 +17,7 @@ var PDF_BODY_SIZE = 10.5;
 /* Creates the jsPDF document plus the small set of numbers every builder
    needs (page width, right edge, bottom-of-content line) so page geometry
    lives in one place instead of being recomputed per document. */
-async function newA4Doc() {
+async function newA4Doc(opts) {
   await window.LibsReady;
   var jsPDFCtor = window.jspdf ? window.jspdf.jsPDF : window.jsPDF;
   var doc = new jsPDFCtor({ unit: 'pt', format: 'a4' });
@@ -25,7 +25,7 @@ async function newA4Doc() {
   var pageH = doc.internal.pageSize.getHeight();
   doc.setFont(PDF_FONT, 'normal'); doc.setFontSize(PDF_BODY_SIZE);
   return {
-    doc: doc, pageW: pageW, pageH: pageH,
+    doc: doc, pageW: pageW, pageH: pageH, house: !!(opts && opts.house),
     marginX: PDF_MARGIN_LEFT, rightX: pageW - PDF_MARGIN,
     top: PDF_TOP, bottom: pageH - 64 /* leaves room for the footer page-number line */
   };
@@ -47,16 +47,53 @@ function pdfEnsureSpace(ctx, y, needed) {
 function pdfPara(ctx, text, y, opts) {
   opts = opts || {};
   var doc = ctx.doc;
+  /* ctx.house (notice / attachment documents): paragraphs that don't name a
+     size use 14pt at 1.5 spacing and are justified — mirrors DOCX_STYLE. */
+  var house = !!ctx.house && opts.size == null;
+  var size = opts.size || (house ? PDF_NOTICE_SIZE : PDF_BODY_SIZE);
+  var lineHeight = opts.lineHeight || (house ? PDF_NOTICE_LINE : PDF_LINE_HEIGHT);
   var x = opts.x != null ? opts.x : ctx.marginX;
   var maxWidth = opts.maxWidth != null ? opts.maxWidth : (ctx.rightX - ctx.marginX);
-  var lineHeight = opts.lineHeight || PDF_LINE_HEIGHT;
+  var justify = opts.justify != null ? opts.justify : (house && !opts.align);
+  var indent = opts.firstLineIndent ? 36 : 0;
+  var after = opts.spacingAfter != null ? opts.spacingAfter : 4;
   doc.setFont(PDF_FONT, opts.bold ? 'bold' : (opts.italic ? 'italic' : 'normal'));
-  doc.setFontSize(opts.size || PDF_BODY_SIZE);
-  var lines = doc.splitTextToSize(String(text == null ? '' : text), maxWidth);
-  var blockHeight = lines.length * lineHeight;
+  doc.setFontSize(size);
+  var str = String(text == null ? '' : text);
+
+  if (!opts.align && (justify || indent)) {
+    /* Justified body text (every line except a paragraph's last, like Word's
+       "justify"), with an optional first-line indent: the first line wraps
+       0.5in narrower, the rest use the full width. */
+    var lines;
+    if (indent) {
+      var first = doc.splitTextToSize(str, maxWidth - indent)[0] || '';
+      var rest = str.slice(first.length).replace(/^\s+/, '');
+      lines = [first].concat(rest ? doc.splitTextToSize(rest, maxWidth) : []);
+    } else {
+      lines = doc.splitTextToSize(str, maxWidth);
+    }
+    var height = lines.length * lineHeight;
+    y = pdfEnsureSpace(ctx, y, height);
+    lines.forEach(function (line, i) {
+      var x0 = x + (i === 0 ? indent : 0), w = maxWidth - (i === 0 ? indent : 0), ly = y + i * lineHeight;
+      var words = line.trim().split(/\s+/);
+      if (justify && i < lines.length - 1 && words.length > 1) {
+        var used = words.reduce(function (sum, wd) { return sum + doc.getTextWidth(wd); }, 0);
+        var gap = (w - used) / (words.length - 1), wx = x0;
+        words.forEach(function (wd) { doc.text(wd, wx, ly); wx += doc.getTextWidth(wd) + gap; });
+      } else {
+        doc.text(line, x0, ly);
+      }
+    });
+    return y + height + after;
+  }
+
+  var plain = doc.splitTextToSize(str, maxWidth);
+  var blockHeight = plain.length * lineHeight;
   y = pdfEnsureSpace(ctx, y, blockHeight);
-  doc.text(lines, opts.align === 'right' ? ctx.rightX : (opts.align === 'center' ? ctx.pageW / 2 : x), y, opts.align ? { align: opts.align } : undefined);
-  return y + blockHeight + (opts.spacingAfter != null ? opts.spacingAfter : 4);
+  doc.text(plain, opts.align === 'right' ? ctx.rightX : (opts.align === 'center' ? ctx.pageW / 2 : x), y, opts.align ? { align: opts.align } : undefined);
+  return y + blockHeight + after;
 }
 
 /* Section heading — checks that the heading AND at least a little of what
@@ -133,6 +170,16 @@ function pdfFromTo(ctx, y, fromLines, toLines) {
    page boundary. */
 function pdfSignatureBlock(ctx, y, cfg, opts) {
   opts = opts || {};
+  if (ctx.house) {   // bold, centred, single-spaced, with signature room above
+    var lh = 17, doc = ctx.doc;
+    var lines = [cfg.desig || '', (cfg.circle || '') + (opts.circleSuffix || '')];
+    if (opts.showCity !== false) lines.push(cfg.city || '');
+    y = pdfEnsureSpace(ctx, y, lines.length * lh + 60);
+    y += 48;
+    doc.setFont(PDF_FONT, 'bold'); doc.setFontSize(PDF_NOTICE_SIZE);
+    lines.forEach(function (t) { doc.text(t, ctx.rightX - 131, y, { align: 'center' }); y += lh; });
+    return y + 20;
+  }
   y = pdfEnsureSpace(ctx, y, 3 * PDF_LINE_HEIGHT + 10);
   y = pdfPara(ctx, cfg.desig || '', y, { align: 'right', spacingAfter: 0 });
   y = pdfPara(ctx, (cfg.circle || '') + (opts.circleSuffix || ''), y, { align: 'right', spacingAfter: 0 });
@@ -142,7 +189,7 @@ function pdfSignatureBlock(ctx, y, cfg, opts) {
 
 /* Shared officer closing block for the two statutory bank letters. */
 function pdfOfficerClosingBlock(ctx, y, b, cfg) {
-  y = pdfEnsureSpace(ctx, y, 6 * PDF_LINE_HEIGHT + 40);
+  y = pdfEnsureSpace(ctx, y, 6 * (ctx.house ? PDF_NOTICE_LINE : PDF_LINE_HEIGHT) + 40);
   y = pdfPara(ctx, 'Date: ' + fmtDate(b.date), y, { spacingAfter: 0 });
   y = pdfPara(ctx, 'Signature:', y, { spacingAfter: 16 });
   y = pdfPara(ctx, 'Place : ' + (cfg.city || ''), y, { spacingAfter: 0 });
@@ -168,53 +215,21 @@ function pdfOfficeHeaderBlock(ctx, y, cfg) {
 var PDF_NOTICE_SIZE = 14;
 var PDF_NOTICE_LINE = 21;
 function pdfNoticePara(ctx, text, y, opts) {
-  opts = Object.assign({ size: PDF_NOTICE_SIZE, lineHeight: PDF_NOTICE_LINE }, opts);
-  if (opts.align) return pdfPara(ctx, text, y, opts);   // centred / right-aligned lines are never justified
-  /* Justified body text (every line except a paragraph's last, like Word's
-     "justify"), with an optional first-line indent (the Word notice's 0.5in
-     tab): the first line wraps 0.5in narrower, the rest use the full width. */
-  var doc = ctx.doc, full = ctx.rightX - ctx.marginX, indent = opts.firstLineIndent ? 36 : 0;
-  var str = String(text == null ? '' : text);
-  doc.setFont(PDF_FONT, opts.bold ? 'bold' : 'normal'); doc.setFontSize(opts.size);
-  var lines;
-  if (indent) {
-    var first = doc.splitTextToSize(str, full - indent)[0] || '';
-    var rest = str.slice(first.length).replace(/^\s+/, '');
-    lines = [first].concat(rest ? doc.splitTextToSize(rest, full) : []);
-  } else {
-    lines = doc.splitTextToSize(str, full);
-  }
-  var height = lines.length * opts.lineHeight;
-  y = pdfEnsureSpace(ctx, y, height);
-  lines.forEach(function (line, i) {
-    var x0 = ctx.marginX + (i === 0 ? indent : 0), w = full - (i === 0 ? indent : 0), ly = y + i * opts.lineHeight;
-    var words = line.trim().split(/\s+/);
-    if (i < lines.length - 1 && words.length > 1) {
-      var used = words.reduce(function (sum, wd) { return sum + doc.getTextWidth(wd); }, 0);
-      var gap = (w - used) / (words.length - 1);
-      var x = x0;
-      words.forEach(function (wd) { doc.text(wd, x, ly); x += doc.getTextWidth(wd) + gap; });
-    } else {
-      doc.text(line, x0, ly);
-    }
-  });
-  return y + height + (opts.spacingAfter != null ? opts.spacingAfter : 4);
+  return pdfPara(ctx, text, y, Object.assign({ size: PDF_NOTICE_SIZE, lineHeight: PDF_NOTICE_LINE, justify: true }, opts));
 }
 
-/* Grey reference bar — "GSTIN:<gstin>/<FY>" left, "dated:<DD.MM.YYYY>" right
-   (mirrors noticeRefBar() in docx-export.js). */
-function pdfNoticeRefBar(ctx, y, notice) {
+/* Reference line — "GSTIN:<gstin>/<FY>" left, "dated:<DD.MM.YYYY>" right
+   (mirrors docRefLine() / noticeRefBar() in docx-export.js). */
+function pdfDocRefLine(ctx, y, gstin, date) {
   var doc = ctx.doc;
-  var barH = PDF_NOTICE_LINE + 2;
-  y = pdfEnsureSpace(ctx, y, barH + 14);
-  doc.setFillColor(192, 192, 192);
-  doc.rect(ctx.marginX, y, ctx.rightX - ctx.marginX, barH, 'F');
+  var fy = noticeFinancialYear(date);
+  y = pdfEnsureSpace(ctx, y, PDF_NOTICE_LINE + 14);
   doc.setFont(PDF_FONT, 'normal'); doc.setFontSize(PDF_NOTICE_SIZE); doc.setTextColor(0, 0, 0);
-  var base = y + PDF_NOTICE_LINE - 6;
-  doc.text(noticeRefLeft(notice), ctx.marginX + 3, base);
-  doc.text('dated:' + fmtDateDot(notice.date), ctx.rightX - 3, base, { align: 'right' });
-  return y + barH + 14;
+  doc.text('GSTIN:' + (gstin || '—') + (fy ? '/' + fy : ''), ctx.marginX, y + PDF_NOTICE_LINE - 6);
+  doc.text('dated:' + fmtDateDot(date), ctx.rightX, y + PDF_NOTICE_LINE - 6, { align: 'right' });
+  return y + PDF_NOTICE_LINE + 12;
 }
+function pdfNoticeRefBar(ctx, y, notice) { return pdfDocRefLine(ctx, y, notice.gstin, notice.date); }
 
 /* Small filled arrow-head used as the Note bullet (the built-in Times font
    has no arrow glyph). */
@@ -389,7 +404,7 @@ async function buildNoticePdfBlob(notice, cfg) {
 /* ===== Bank Attachment — Covering Letter to Bank (PDF) =====
    Mirrors buildBankLetterDocx() in docx-export.js. */
 async function buildBankLetterPdfDoc(b, cfg) {
-  var ctx = await newA4Doc();
+  var ctx = await newA4Doc({ house: true });
   var tradeName = bankAttTradeName(b);
   var amountWords = numToWords(b.totalAmt) + ' Only';
   var y = ctx.top;
@@ -411,7 +426,7 @@ async function buildBankLetterPdfDoc(b, cfg) {
     ].concat(b.branchAddr ? [{ text: b.branchAddr }] : [])
   );
 
-  y = pdfPara(ctx, 'GSTIN: ' + (b.gstin || '—') + '/' + (b.ref || '—') + '  dated: ' + fmtDate(b.date), y, { spacingAfter: 10 });
+  y = pdfDocRefLine(ctx, y, b.gstin, b.date);
   y = pdfPara(ctx, 'Sir / Madam,', y, { spacingAfter: 4 });
 
   var subText = 'GST Act, 2017 – ' + (cfg.circle || '') + ' – Tvl. ' + (b.legalName || '—') + ', GSTIN – ' + (b.gstin || '—')
@@ -423,7 +438,8 @@ async function buildBankLetterPdfDoc(b, cfg) {
       [{ content: 'Ref', styles: { fontStyle: 'bold' } }, 'This Office DRC-07 issued']
     ],
     theme: 'plain',
-    columnStyles: { 0: { cellWidth: 35 } }
+    styles: { fontSize: PDF_NOTICE_SIZE },
+    columnStyles: { 0: { cellWidth: 45 } }
   }) + 10;
 
   y = pdfPara(ctx, '*******', y, { align: 'center', spacingAfter: 6 });
@@ -435,7 +451,7 @@ async function buildBankLetterPdfDoc(b, cfg) {
     'I request you to give the account balance as on today or on receiving the Form DRC-13, whichever is later.',
     'The above mentioned demand amount or the amount available in the taxpayer bank account has to be issued as a Demand Draft or Bank Cheque in favour of the undersigned.'
   ];
-  paras.forEach(function (t) { y = pdfPara(ctx, t, y, { spacingAfter: 8 }); });
+  paras.forEach(function (t) { y = pdfPara(ctx, t, y, { firstLineIndent: true, spacingAfter: 8 }); });
 
   y = pdfPara(ctx, 'Encl: Form DRC-13.', y, { spacingAfter: 20 });
   y = pdfOfficerClosingBlock(ctx, y, b, cfg);
@@ -451,7 +467,7 @@ async function generateBankLetterPDF(b, cfg) {
 /* ===== Bank Attachment — Release Order (PDF) =====
    Mirrors buildBankReleaseDocx() in docx-export.js. */
 async function buildBankReleasePdfDoc(b, cfg) {
-  var ctx = await newA4Doc();
+  var ctx = await newA4Doc({ house: true });
   var isTemporary = RELEASE_TEMPORARY_REASONS.indexOf(b.releasedReason) !== -1;
   var y = ctx.top;
 
@@ -471,7 +487,7 @@ async function buildBankReleasePdfDoc(b, cfg) {
     ].concat(b.branchAddr ? [{ text: b.branchAddr }] : [])
   );
 
-  y = pdfPara(ctx, 'GSTIN: ' + (b.gstin || '—') + '/ dated: ' + fmtDate(b.releasedDate || todayISO()), y, { spacingAfter: 10 });
+  y = pdfDocRefLine(ctx, y, b.gstin, b.releasedDate || todayISO());
   y = pdfPara(ctx, 'Sir/Madam,', y, { spacingAfter: 4 });
 
   var subText = 'GST Act 2017 – Tvl. ' + (b.legalName || '—') + ' - Payment of GST Arrear - Arrears of Tax Recovery Under Section 145(1) – Notice in DRC-13 issued – Attachment ' + (isTemporary ? 'Temporarily Withdrawn' : 'Released') + ' - Regarding.';
@@ -484,18 +500,19 @@ async function buildBankReleasePdfDoc(b, cfg) {
       [{ content: 'Ref:', styles: { fontStyle: 'bold' } }, refText]
     ],
     theme: 'plain',
-    columnStyles: { 0: { cellWidth: 35 } }
+    styles: { fontSize: PDF_NOTICE_SIZE },
+    columnStyles: { 0: { cellWidth: 45 } }
   }) + 10;
 
   y = pdfPara(ctx, '*********', y, { align: 'center', spacingAfter: 6 });
 
   var narrative = 'Tvl. ' + (b.legalName || '—') + ' doing business at ' + (b.releasedAddr || '—').replace(/\.+\s*$/, '') + '. ' + (b.releasedNarrative || '');
-  y = pdfPara(ctx, narrative, y, { spacingAfter: 8 });
+  y = pdfPara(ctx, narrative, y, { firstLineIndent: true, spacingAfter: 8 });
 
   var closing = isTemporary
     ? 'In view of the above, the Bank Attachment issued by this circle in the reference 1st cited is temporarily withdrawn and all action (lien, freeze, etc.) that has been imposed to withhold the account may be withdrawn.'
     : 'In view of the above, the Bank Attachment issued by this circle in the reference 1st cited is released and all action (lien, freeze, etc.) that has been imposed to withhold the account may be withdrawn.';
-  y = pdfPara(ctx, closing, y, { spacingAfter: 20 });
+  y = pdfPara(ctx, closing, y, { firstLineIndent: true, spacingAfter: 20 });
 
   y = pdfSignatureBlock(ctx, y, cfg, { showCity: false, circleSuffix: '.', spacingAfter: 20 });
 
@@ -515,11 +532,12 @@ async function generateBankReleasePDF(b, cfg) {
 /* ===== Bank Attachment — Form GST DRC-13 (PDF) =====
    Mirrors buildBankDrc13Docx() in docx-export.js. */
 async function buildBankDrc13PdfDoc(b, cfg) {
-  var ctx = await newA4Doc();
+  var ctx = await newA4Doc({ house: true });
   var tradeName = bankAttTradeName(b);
   var amountWords = numToWords(b.totalAmt) + ' Only';
   var y = ctx.top;
 
+  y = pdfDocRefLine(ctx, y, b.gstin, b.date);
   y = pdfHeading(ctx, 'FORM GST DRC – 13', y, { size: 13, spacingAfter: 6 });
   y = pdfPara(ctx, '[See rule 145(1)]', y, { align: 'center', spacingAfter: 4 });
   y = pdfPara(ctx, 'Notice to a third person under section 79(1)(c)', y, { align: 'center', bold: true, spacingAfter: 16 });
@@ -575,7 +593,7 @@ async function buildBankDrc13PdfDoc(b, cfg) {
     'Please note that, in case you fail to make payment in pursuance of this notice, you shall be deemed to be a defaulter in respect of the amount specified in the notice and consequences of the Act or the rules made thereunder shall follow.',
     'The above mentioned demand amount or the amount available in the taxpayer bank account has to be issued as a Demand Draft or Bank Cheque in favour of the undersigned.'
   ];
-  paras.forEach(function (t) { y = pdfPara(ctx, t, y, { spacingAfter: 8 }); });
+  paras.forEach(function (t) { y = pdfPara(ctx, t, y, { firstLineIndent: true, spacingAfter: 8 }); });
 
   y = pdfOfficerClosingBlock(ctx, y, b, cfg);
   return finishPdfDoc(ctx);
@@ -589,10 +607,11 @@ async function generateBankDrc13PDF(b, cfg) {
 /* ===== Third-Party (Debtor) Notice — DRC-13 style (PDF) =====
    Mirrors buildThirdPartyDocx() in docx-export.js. */
 async function buildThirdPartyPdfDoc(tp, cfg) {
-  var ctx = await newA4Doc();
+  var ctx = await newA4Doc({ house: true });
   var y = ctx.top;
 
   y = pdfOfficeHeaderBlock(ctx, y, cfg);
+  y = pdfDocRefLine(ctx, y, tp.defaulterGstin, tp.date);
   y = pdfHeading(ctx, 'FORM GST DRC-13', y, { spacingAfter: 4 });
   y = pdfPara(ctx, 'Notice to a Third Person under Section 79(1)(c)', y, { align: 'center', size: 11, spacingAfter: 14 });
 
@@ -604,7 +623,7 @@ async function buildThirdPartyPdfDoc(tp, cfg) {
   if (tp.debtorAddr) y = pdfPara(ctx, tp.debtorAddr, y, { spacingAfter: 0 });
   y += 10;
 
-  y = pdfPara(ctx, 'Whereas ' + (tp.legalName || tp.defaulterGstin) + ' (GSTIN: ' + (tp.defaulterGstin || '—') + ') has failed to pay the tax dues detailed below, and whereas it appears that you owe / hold money for or on account of the said defaulter, you are hereby required, under Section 79(1)(c) of the GST Act, to pay to the Government the amount due to the defaulter, or up to the amount specified below, whichever is less.', y, { spacingAfter: 10 });
+  y = pdfPara(ctx, 'Whereas ' + (tp.legalName || tp.defaulterGstin) + ' (GSTIN: ' + (tp.defaulterGstin || '—') + ') has failed to pay the tax dues detailed below, and whereas it appears that you owe / hold money for or on account of the said defaulter, you are hereby required, under Section 79(1)(c) of the GST Act, to pay to the Government the amount due to the defaulter, or up to the amount specified below, whichever is less.', y, { firstLineIndent: true, spacingAfter: 10 });
 
   var d = demandRowsForDocx(tp.cases || []);
   y = pdfTable(ctx, {
@@ -633,7 +652,7 @@ async function buildThirdPartyPdfBlob(tp, cfg) {
 /* ===== Third-Party Notice — Release Order (PDF) =====
    Mirrors buildThirdPartyReleaseDocx() in docx-export.js. */
 async function buildThirdPartyReleasePdfDoc(tp, cfg) {
-  var ctx = await newA4Doc();
+  var ctx = await newA4Doc({ house: true });
   var isTemporary = RELEASE_TEMPORARY_REASONS.indexOf(tp.releasedReason) !== -1;
   var y = ctx.top;
 
@@ -651,7 +670,7 @@ async function buildThirdPartyReleasePdfDoc(tp, cfg) {
     ].concat(tp.debtorAddr ? [{ text: tp.debtorAddr }] : [])
   );
 
-  y = pdfPara(ctx, 'GSTIN: ' + (tp.defaulterGstin || '—') + '/ dated: ' + fmtDate(tp.releasedDate || todayISO()), y, { spacingAfter: 10 });
+  y = pdfDocRefLine(ctx, y, tp.defaulterGstin, tp.releasedDate || todayISO());
   y = pdfPara(ctx, 'Sir/Madam,', y, { spacingAfter: 4 });
 
   var subText = 'GST Act 2017 – Tvl. ' + (tp.legalName || '—') + ' - Arrears of Tax Recovery Under Section 79(1)(c) – Notice in DRC-13 issued to third party – Attachment ' + (isTemporary ? 'Temporarily Withdrawn' : 'Released') + ' - Regarding.';
@@ -664,16 +683,17 @@ async function buildThirdPartyReleasePdfDoc(tp, cfg) {
       [{ content: 'Ref:', styles: { fontStyle: 'bold' } }, refText]
     ],
     theme: 'plain',
-    columnStyles: { 0: { cellWidth: 35 } }
+    styles: { fontSize: PDF_NOTICE_SIZE },
+    columnStyles: { 0: { cellWidth: 45 } }
   }) + 10;
 
   y = pdfPara(ctx, '*********', y, { align: 'center', spacingAfter: 6 });
-  y = pdfPara(ctx, 'Tvl. ' + (tp.legalName || '—') + ' being the defaulter referred to above. ' + (tp.releasedNarrative || ''), y, { spacingAfter: 8 });
+  y = pdfPara(ctx, 'Tvl. ' + (tp.legalName || '—') + ' being the defaulter referred to above. ' + (tp.releasedNarrative || ''), y, { firstLineIndent: true, spacingAfter: 8 });
 
   var closing = isTemporary
     ? 'In view of the above, the notice issued to you in the reference 1st cited is temporarily withdrawn and you are no longer required to withhold any amount on account of the defaulter till further orders.'
     : 'In view of the above, the notice issued to you in the reference 1st cited is released and you are no longer required to withhold any amount on account of the defaulter.';
-  y = pdfPara(ctx, closing, y, { spacingAfter: 20 });
+  y = pdfPara(ctx, closing, y, { firstLineIndent: true, spacingAfter: 20 });
 
   y = pdfSignatureBlock(ctx, y, cfg, { showCity: false, circleSuffix: '.', spacingAfter: 20 });
   return finishPdfDoc(ctx);
@@ -687,15 +707,16 @@ async function generateThirdPartyReleasePDF(tp, cfg) {
 /* ===== Property Attachment Order — Section 79(d) (PDF) =====
    Mirrors buildPropertyAttachmentDocx() in docx-export.js. */
 async function buildPropertyAttachmentPdfDoc(pa, cfg) {
-  var ctx = await newA4Doc();
+  var ctx = await newA4Doc({ house: true });
   var y = ctx.top;
 
   y = pdfOfficeHeaderBlock(ctx, y, cfg);
+  y = pdfDocRefLine(ctx, y, pa.gstin, pa.date);
   y = pdfHeading(ctx, 'ORDER OF ATTACHMENT OF PROPERTY', y, { spacingAfter: 4 });
   y = pdfPara(ctx, 'under Section 79(1)(d) of the GST Act', y, { align: 'center', size: 11, spacingAfter: 14 });
 
   y = pdfPara(ctx, 'Defaulter: ' + (pa.legalName || '—') + '   GSTIN: ' + (pa.gstin || '—'), y, { bold: true, spacingAfter: 10 });
-  y = pdfPara(ctx, 'Whereas the amounts detailed below remain outstanding and unpaid, and recovery by other modes has not been effective, the movable/immovable property described below, belonging to the above defaulter, is hereby attached in exercise of powers under Section 79(1)(d) of the GST Act, until the outstanding dues are discharged in full.', y, { spacingAfter: 10 });
+  y = pdfPara(ctx, 'Whereas the amounts detailed below remain outstanding and unpaid, and recovery by other modes has not been effective, the movable/immovable property described below, belonging to the above defaulter, is hereby attached in exercise of powers under Section 79(1)(d) of the GST Act, until the outstanding dues are discharged in full.', y, { firstLineIndent: true, spacingAfter: 10 });
 
   var d = demandRowsForDocx(pa.cases || []);
   y = pdfTable(ctx, {
@@ -727,16 +748,17 @@ async function buildPropertyAttachmentPdfBlob(pa, cfg) {
 /* ===== Property Attachment — Release Order (PDF) =====
    Mirrors buildPropertyReleaseDocx() in docx-export.js. */
 async function buildPropertyReleasePdfDoc(pa, cfg) {
-  var ctx = await newA4Doc();
+  var ctx = await newA4Doc({ house: true });
   var isTemporary = RELEASE_TEMPORARY_REASONS.indexOf(pa.releasedReason) !== -1;
   var y = ctx.top;
 
   y = pdfOfficeHeaderBlock(ctx, y, cfg);
+  y = pdfDocRefLine(ctx, y, pa.gstin, pa.releasedDate || todayISO());
   y = pdfHeading(ctx, 'ORDER OF RELEASE OF PROPERTY ATTACHMENT', y, { spacingAfter: 4 });
   y = pdfPara(ctx, 'under Section 79(1)(d) of the GST Act', y, { align: 'center', size: 11, spacingAfter: 14 });
 
   y = pdfPara(ctx, 'Defaulter: ' + (pa.legalName || '—') + '   GSTIN: ' + (pa.gstin || '—'), y, { bold: true, spacingAfter: 10 });
-  y = pdfPara(ctx, 'Whereas the property described below was attached vide this office order dated ' + fmtDate(pa.date) + ' under Section 79(1)(d) of the GST Act' + (pa.releasedPetitionDate ? ', and whereas the taxpayer has submitted a petition dated ' + fmtDate(pa.releasedPetitionDate) : '') + '. ' + (pa.releasedNarrative || ''), y, { spacingAfter: 10 });
+  y = pdfPara(ctx, 'Whereas the property described below was attached vide this office order dated ' + fmtDate(pa.date) + ' under Section 79(1)(d) of the GST Act' + (pa.releasedPetitionDate ? ', and whereas the taxpayer has submitted a petition dated ' + fmtDate(pa.releasedPetitionDate) : '') + '. ' + (pa.releasedNarrative || ''), y, { firstLineIndent: true, spacingAfter: 10 });
 
   y = pdfEnsureSpace(ctx, y, 3 * PDF_LINE_HEIGHT);
   y = pdfPara(ctx, 'Property Description: ' + (pa.propertyDescription || '—'), y, { spacingAfter: 0 });
@@ -744,7 +766,7 @@ async function buildPropertyReleasePdfDoc(pa, cfg) {
 
   y = pdfPara(ctx, isTemporary
     ? 'In view of the above, the attachment of the said property is temporarily withdrawn till further orders.'
-    : 'In view of the above, the attachment of the said property is hereby released.', y, { spacingAfter: 20 });
+    : 'In view of the above, the attachment of the said property is hereby released.', y, { firstLineIndent: true, spacingAfter: 20 });
 
   y = pdfSignatureBlock(ctx, y, cfg, { showCity: false });
   return finishPdfDoc(ctx);
