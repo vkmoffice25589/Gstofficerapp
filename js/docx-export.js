@@ -581,14 +581,14 @@ function buildNoticeDocx(notice, cfg) {
 var RELEASE_TEMPORARY_REASONS = ['First Appeal Filed', 'WP Filed & Stay Obtained'];
 function buildBankReleaseDocxInner(b, cfg) {
   var isTemporary = RELEASE_TEMPORARY_REASONS.indexOf(b.releasedReason) !== -1;
-  var fromText = wPara('From', { size: 10, spacingAfter: 20 })
-    + wPara((cfg.officerName ? cfg.officerName + ', ' : '') + (cfg.desig || '') + ',', { bold: true, size: 10, spacingAfter: 20 })
-    + wPara(cfg.circle || '', { size: 10, spacingAfter: 20 })
-    + wPara(cfg.city || '', { size: 10, spacingAfter: 20 });
-  var toText = wPara('To', { size: 10, spacingAfter: 20 })
-    + wPara('The Branch Manager', { bold: true, size: 10, spacingAfter: 20 })
-    + wPara(b.bankName || '—', { bold: true, size: 10, spacingAfter: 20 })
-    + (b.branchAddr ? wPara(b.branchAddr, { size: 10, spacingAfter: 20, keepLines: true }) : '');
+  var fromText = wPara('From', { spacingAfter: 20 })
+    + wPara((cfg.officerName ? cfg.officerName + ', ' : '') + (cfg.desig || '') + ',', { bold: true, spacingAfter: 20 })
+    + wPara(cfg.circle || '', { spacingAfter: 20 })
+    + wPara(cfg.city || '', { spacingAfter: 20 });
+  var toText = wPara('To', { spacingAfter: 20 })
+    + wPara('The Branch Manager', { bold: true, spacingAfter: 20 })
+    + wPara(b.bankName || '—', { bold: true, spacingAfter: 20 })
+    + (b.branchAddr ? wPara(b.branchAddr, { spacingAfter: 20, keepLines: true }) : '');
 
   var subText = 'GST Act 2017 – Tvl. ' + (b.legalName || '—') + ' - Payment of GST Arrear - Arrears of Tax Recovery Under Section 145(1) – Notice in DRC-13 issued – Attachment ' + (isTemporary ? 'Temporarily Withdrawn' : 'Released') + ' - Regarding.';
   var refText = 'This office Ref in GSTIN. ' + (b.gstin || '—') + ', dt.' + fmtDate(b.date) + '.'
@@ -669,15 +669,15 @@ function wOfficerClosingBlock(b, cfg) {
 function buildBankLetterDocxInner(b, cfg) {
   var tradeName = bankAttTradeName(b);
   var amountWords = numToWords(b.totalAmt) + ' Only';
-  var fromText = wPara('From', { size: 10, spacingAfter: 20 })
-    + wPara((cfg.officerName ? cfg.officerName + ',' : '') + '     ' + (cfg.desig || ''), { bold: true, size: 10, spacingAfter: 20 })
-    + wPara(cfg.circle || '', { size: 10, spacingAfter: 20 })
-    + wPara((cfg.addr1 || '') + ' ' + (cfg.addr2 || ''), { size: 10, spacingAfter: 20 });
-  var toText = wPara('To', { size: 10, spacingAfter: 20 })
-    + wPara('THE BRANCH MANAGER,', { bold: true, size: 10, spacingAfter: 20 })
-    + wPara((b.bankName || '—').toUpperCase(), { bold: true, size: 10, spacingAfter: 20 })
-    + wPara('IFSC : ' + (b.ifsc || '—'), { size: 10, spacingAfter: 20 })
-    + (b.branchAddr ? wPara(b.branchAddr, { size: 10, spacingAfter: 20, keepLines: true }) : '');
+  var fromText = wPara('From', { spacingAfter: 20 })
+    + wPara((cfg.officerName ? cfg.officerName + ',' : '') + '     ' + (cfg.desig || ''), { bold: true, spacingAfter: 20 })
+    + wPara(cfg.circle || '', { spacingAfter: 20 })
+    + wPara((cfg.addr1 || '') + ' ' + (cfg.addr2 || ''), { spacingAfter: 20 });
+  var toText = wPara('To', { spacingAfter: 20 })
+    + wPara('THE BRANCH MANAGER,', { bold: true, spacingAfter: 20 })
+    + wPara((b.bankName || '—').toUpperCase(), { bold: true, spacingAfter: 20 })
+    + wPara('IFSC : ' + (b.ifsc || '—'), { spacingAfter: 20 })
+    + (b.branchAddr ? wPara(b.branchAddr, { spacingAfter: 20, keepLines: true }) : '');
 
   var subText = 'GST Act, 2017 – ' + (cfg.circle || '') + ' – Tvl. ' + (b.legalName || '—') + ', GSTIN – ' + (b.gstin || '—')
     + ' – Arrear of Tax Rs. ' + fmt0(b.totalAmt) + ' – Arrears of Tax outstanding against the dealer – Form DRC-13 issued – Regarding.';
@@ -768,13 +768,13 @@ function buildThirdPartyDocxInner(tp, cfg) {
    the saved thirdPartyNotices record. */
 function buildThirdPartyReleaseDocxInner(tp, cfg) {
   var isTemporary = RELEASE_TEMPORARY_REASONS.indexOf(tp.releasedReason) !== -1;
-  var fromText = wPara('From', { size: 10, spacingAfter: 20 })
-    + wPara((cfg.officerName ? cfg.officerName + ', ' : '') + (cfg.desig || '') + ',', { bold: true, size: 10, spacingAfter: 20 })
-    + wPara(cfg.circle || '', { size: 10, spacingAfter: 20 })
-    + wPara(cfg.city || '', { size: 10, spacingAfter: 20 });
-  var toText = wPara('To', { size: 10, spacingAfter: 20 })
-    + wPara(tp.debtorLegal || '—', { bold: true, size: 10, spacingAfter: 20 })
-    + (tp.debtorAddr ? wPara(tp.debtorAddr, { size: 10, spacingAfter: 20, keepLines: true }) : '');
+  var fromText = wPara('From', { spacingAfter: 20 })
+    + wPara((cfg.officerName ? cfg.officerName + ', ' : '') + (cfg.desig || '') + ',', { bold: true, spacingAfter: 20 })
+    + wPara(cfg.circle || '', { spacingAfter: 20 })
+    + wPara(cfg.city || '', { spacingAfter: 20 });
+  var toText = wPara('To', { spacingAfter: 20 })
+    + wPara(tp.debtorLegal || '—', { bold: true, spacingAfter: 20 })
+    + (tp.debtorAddr ? wPara(tp.debtorAddr, { spacingAfter: 20, keepLines: true }) : '');
 
   var subText = 'GST Act 2017 – Tvl. ' + (tp.legalName || '—') + ' - Arrears of Tax Recovery Under Section 79(1)(c) – Notice in DRC-13 issued to third party – Attachment ' + (isTemporary ? 'Temporarily Withdrawn' : 'Released') + ' - Regarding.';
   var refText = 'This office Notice in FORM GST DRC-13, GSTIN. ' + (tp.defaulterGstin || '—') + ', dt.' + fmtDate(tp.date) + '.'

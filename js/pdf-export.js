@@ -149,18 +149,19 @@ function finishPdfDoc(ctx) {
    up like a real two-column letterhead instead of two independent text
    blocks that can drift apart. */
 function pdfFromTo(ctx, y, fromLines, toLines) {
+  var size = ctx.house ? PDF_NOTICE_SIZE : PDF_BODY_SIZE, lh = ctx.house ? PDF_NOTICE_LINE : PDF_LINE_HEIGHT;
   var colW = (ctx.rightX - ctx.marginX - 20) / 2;
   var leftX = ctx.marginX, rightColX = ctx.marginX + colW + 20;
   var leftY = y, rightY = y;
   fromLines.forEach(function (l) {
-    ctx.doc.setFont(PDF_FONT, l.bold ? 'bold' : 'normal'); ctx.doc.setFontSize(l.size || PDF_BODY_SIZE);
+    ctx.doc.setFont(PDF_FONT, l.bold ? 'bold' : 'normal'); ctx.doc.setFontSize(l.size || size);
     var lines = ctx.doc.splitTextToSize(l.text, colW);
-    ctx.doc.text(lines, leftX, leftY); leftY += lines.length * PDF_LINE_HEIGHT;
+    ctx.doc.text(lines, leftX, leftY); leftY += lines.length * lh;
   });
   toLines.forEach(function (l) {
-    ctx.doc.setFont(PDF_FONT, l.bold ? 'bold' : 'normal'); ctx.doc.setFontSize(l.size || PDF_BODY_SIZE);
+    ctx.doc.setFont(PDF_FONT, l.bold ? 'bold' : 'normal'); ctx.doc.setFontSize(l.size || size);
     var lines = ctx.doc.splitTextToSize(l.text, colW);
-    ctx.doc.text(lines, rightColX, rightY); rightY += lines.length * PDF_LINE_HEIGHT;
+    ctx.doc.text(lines, rightColX, rightY); rightY += lines.length * lh;
   });
   return Math.max(leftY, rightY) + 6;
 }
