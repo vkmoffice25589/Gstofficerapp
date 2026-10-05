@@ -168,7 +168,20 @@ function pdfOfficeHeaderBlock(ctx, y, cfg) {
 var PDF_NOTICE_SIZE = 14;
 var PDF_NOTICE_LINE = 21;
 function pdfNoticePara(ctx, text, y, opts) {
-  return pdfPara(ctx, text, y, Object.assign({ size: PDF_NOTICE_SIZE, lineHeight: PDF_NOTICE_LINE }, opts));
+  opts = Object.assign({ size: PDF_NOTICE_SIZE, lineHeight: PDF_NOTICE_LINE }, opts);
+  if (!opts.firstLineIndent) return pdfPara(ctx, text, y, opts);
+  /* First-line indent (the Word notice's 0.5in tab): the first line wraps
+     0.5in narrower, the rest use the full width. */
+  var doc = ctx.doc, indent = 36, full = ctx.rightX - ctx.marginX;
+  doc.setFont(PDF_FONT, opts.bold ? 'bold' : 'normal'); doc.setFontSize(opts.size);
+  var first = doc.splitTextToSize(String(text), full - indent)[0] || '';
+  var rest = String(text).slice(first.length).replace(/^\s+/, '');
+  var restLines = rest ? doc.splitTextToSize(rest, full) : [];
+  var height = (1 + restLines.length) * opts.lineHeight;
+  y = pdfEnsureSpace(ctx, y, height);
+  doc.text(first, ctx.marginX + indent, y);
+  if (restLines.length) doc.text(restLines, ctx.marginX, y + opts.lineHeight);
+  return y + height + (opts.spacingAfter != null ? opts.spacingAfter : 4);
 }
 
 /* Grey reference bar — "GSTIN:<gstin>/<FY>" left, "dated:<DD.MM.YYYY>" right
@@ -258,10 +271,11 @@ async function buildNoticePdfDoc(notice, cfg) {
   y = P('To', y, { spacingAfter: 2 });
   y = pdfTable(ctx, {
     startY: y,
-    body: [['GSTIN', ': ' + gstin], ['Legal Name of the Business', ': ' + legalName]],
-    theme: 'plain',
-    styles: bigTable
-  }) + 8;
+    body: noticeTaxpayerRows(notice),
+    theme: 'grid',
+    styles: { fontSize: PDF_NOTICE_SIZE, cellPadding: 5, lineColor: [0, 0, 0], lineWidth: 0.6 },
+    columnStyles: { 0: { cellWidth: 150 } }
+  }) + 10;
 
   var subText = 'TNGST Act 2017 – ' + (cfg.circle || '') + ' – Tvl.' + legalName + ', GSTIN : ' + gstin
     + ' - Arrears of Tax outstanding – ' + (isUrgent ? 'Urgent' : 'Intimation') + ' Notice issued – Regarding.';
@@ -279,7 +293,7 @@ async function buildNoticePdfDoc(notice, cfg) {
 
   y = P('*******', y, { align: 'center', spacingAfter: 6 });
   y = P('Tvl.' + legalName + ', registered with the office of the ' + (cfg.desig || '') + ', ' + (cfg.circle || '')
-    + ' is hereby informed they are in arrears of Goods and Services Tax as detailed below:', y, { spacingAfter: 8 });
+    + ' is hereby informed they are in arrears of Goods and Services Tax as detailed below:', y, { firstLineIndent: true, spacingAfter: 8 });
 
   var rows = (notice.cases || []).map(function (c) {
     return [c.taxPeriod || '—', c.demandId || '—', fmtDate(c.dcr_date || c.demandDate),
@@ -304,19 +318,19 @@ async function buildNoticePdfDoc(notice, cfg) {
   }) + 12;
 
   y = pdfPara(ctx, '(AMOUNT IN RS)', y, { align: 'right', size: 8, spacingAfter: 4 });
-  y = P('Total Amount Payable: Rs. ' + fmt0(sums.total) + ' (Rupees ' + numToWords(sums.total) + ' Only)', y, { bold: true, spacingAfter: 8 });
-  if (notice.details) y = P('Remarks: ' + notice.details, y, { spacingAfter: 8 });
+  y = P('Total Amount Payable: Rs. ' + fmt0(sums.total) + ' (Rupees ' + numToWords(sums.total) + ' Only)', y, { bold: true, firstLineIndent: true, spacingAfter: 8 });
+  if (notice.details) y = P('Remarks: ' + notice.details, y, { firstLineIndent: true, spacingAfter: 8 });
 
   var leadIn = isUrgent
     ? 'The Taxpayer is informed that the arrears have not been paid even after the expiry of 90 days from the date of the order. If the above amount is not paid immediately on receipt of this notice, recovery action will be initiated to realise the arrears in accordance with the provisions of the GST Act, 2017 by:'
     : 'The taxpayer is hereby informed that arrears are pending. If the arrears remain unpaid after the expiry of 90 days from the date of the order and no appeal has been filed, recovery action will be initiated to realise the dues in accordance with the provisions of the GST Act, 2017, by:';
-  y = P(leadIn, y, { spacingAfter: 6 });
+  y = P(leadIn, y, { firstLineIndent: true, spacingAfter: 6 });
 
   noticeActionList.forEach(function (t) { y = P('•  ' + t, y, { spacingAfter: 2 }); });
   y += 8;
 
   y = P('Payment Gateway:', y, { bold: true, spacingAfter: 2 });
-  y = P('The Taxpayer is advised to pay the above said arrears through GSTIN Portal by selecting the option "Payment towards demand".', y, { spacingAfter: 10 });
+  y = P('The Taxpayer is advised to pay the above said arrears through GSTIN Portal by selecting the option "Payment towards demand".', y, { firstLineIndent: true, spacingAfter: 10 });
 
   y = pdfNoticeNoteBlock(ctx, y);
   y = pdfNoticeSignatureBlock(ctx, y, cfg);

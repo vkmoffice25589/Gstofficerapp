@@ -138,7 +138,7 @@ function wKeepTogetherBlock(innerXml, width) {
     + '</w:tcMar></w:tcPr>' + innerXml + (needsTrailingPara ? wSpacer(2) : '') + '</w:tc></w:tr></w:tbl>';
 }
 
-/* opts: noBorder, noHeaderShade, size/line (cell font pt / line spacing; default is the shared table size), colWidths given in dxa. Every table:
+/* opts: noBorder, noHeaderShade, size/line (cell font pt / line spacing; default is the shared table size), borderColor (hex, default light blue-grey), colWidths given in dxa. Every table:
      - repeats its header row on every page it spans (w:tblHeader)
      - never splits a single row across a page break (w:cantSplit)
      - gets real cell padding (w:tcMar) instead of Word's bare default
@@ -172,11 +172,12 @@ function wTable(rows, colWidths, opts) {
     return '<w:tr>' + trPr + tcs + '</w:tr>';
   }).join('');
 
+  var bc = opts.borderColor || 'C8D3E0';
   var borders = opts.noBorder
     ? '<w:tblBorders><w:top w:val="none"/><w:left w:val="none"/><w:bottom w:val="none"/><w:right w:val="none"/><w:insideH w:val="none"/><w:insideV w:val="none"/></w:tblBorders>'
-    : '<w:tblBorders><w:top w:val="single" w:sz="4" w:color="C8D3E0"/><w:left w:val="single" w:sz="4" w:color="C8D3E0"/>'
-      + '<w:bottom w:val="single" w:sz="4" w:color="C8D3E0"/><w:right w:val="single" w:sz="4" w:color="C8D3E0"/>'
-      + '<w:insideH w:val="single" w:sz="4" w:color="C8D3E0"/><w:insideV w:val="single" w:sz="4" w:color="C8D3E0"/></w:tblBorders>';
+    : '<w:tblBorders><w:top w:val="single" w:sz="4" w:color="' + bc + '"/><w:left w:val="single" w:sz="4" w:color="' + bc + '"/>'
+      + '<w:bottom w:val="single" w:sz="4" w:color="' + bc + '"/><w:right w:val="single" w:sz="4" w:color="' + bc + '"/>'
+      + '<w:insideH w:val="single" w:sz="4" w:color="' + bc + '"/><w:insideV w:val="single" w:sz="4" w:color="' + bc + '"/></w:tblBorders>';
   return '<w:tbl><w:tblPr><w:tblW w:w="' + totalWidth + '" w:type="dxa"/>' + borders
     + '<w:tblLayout w:type="fixed"/></w:tblPr><w:tblGrid>' + grid + '</w:tblGrid>' + trs + '</w:tbl>' + wSpacer(4);
 }
@@ -478,6 +479,16 @@ function noticeSignatureBlock(cfg) {
   return wKeepTogetherBlock(wFromToGrid(wSpacer(2), right, 4300, DOCX_CONTENT_WIDTH - 4300)) + wSpacer(14);
 }
 
+/* Taxpayer box printed under "To": GSTIN, Legal Name, Trade Name (the register's
+   business name, same lookup the Arrear Action Register uses) and Registration
+   Status, read from the imported register at generation time. */
+function noticeTaxpayerRows(notice) {
+  var reg = (typeof AppState !== 'undefined' && AppState.addressCache && AppState.addressCache[notice.gstin]) || {};
+  var legal = notice.legalName || '—';
+  var trade = (typeof arGetTraderName === 'function' && arGetTraderName(notice.gstin)) || reg.tradeName || legal;
+  return [['GSTIN', notice.gstin || '—'], ['Legal Name', legal], ['Trade Name', trade], ['Registration Status', reg.regStatus || '—']];
+}
+
 /* ===== 1. Arrear Notice (Intimation / Urgent) — matches the office's official
    "Urgent Notice Final Format" / "Intimation Notice Format" letterheads. ===== */
 function buildNoticeDocx(notice, cfg) {
@@ -493,11 +504,9 @@ function buildNoticeDocx(notice, cfg) {
   var tableOpts = { noBorder: true, noHeaderShade: true, size: NOTICE_SIZE, line: NOTICE_LINE };
 
   var toBlock = wKeepTogetherBlock(
-    nPara('To')
-    + wTable([
-      ['GSTIN', ': ' + gstin],
-      ['Legal Name of the Business', ': ' + legalName]
-    ], [3900, 5806], tableOpts)
+    nPara('To', { spacingAfter: 60 })
+    + wTable(noticeTaxpayerRows(notice), [3000, DOCX_CONTENT_WIDTH - 3000],
+      { noHeaderShade: true, size: NOTICE_SIZE, line: NOTICE_LINE, borderColor: '000000' })
   ) + wSpacer(4);
 
   var body = noticeHeaderTable(cfg, '')
@@ -511,8 +520,8 @@ function buildNoticeDocx(notice, cfg) {
       + ' is hereby informed they are in arrears of Goods and Services Tax as detailed below:', { align: 'justify', firstLineIndent: true, spacingAfter: 120, keepNext: true })
     + wTable(d.rows, [1700, 1700, 1000, 1050, 1150, 1150, 750, 1350])
     + nPara('(AMOUNT IN RS)', { align: 'right', size: 9, spacingAfter: 160 })
-    + nPara('Total Amount Payable: ' + fmt(d.total) + ' (Rupees ' + numToWords(d.total) + ' Only)', { bold: true, spacingAfter: 160 })
-    + (notice.details ? nPara('Remarks: ' + notice.details, { spacingAfter: 160 }) : '')
+    + nPara('Total Amount Payable: ' + fmt(d.total) + ' (Rupees ' + numToWords(d.total) + ' Only)', { bold: true, firstLineIndent: true, spacingAfter: 160 })
+    + (notice.details ? nPara('Remarks: ' + notice.details, { firstLineIndent: true, spacingAfter: 160 }) : '')
     + nPara((isUrgent
       ? 'The Taxpayer is informed that the arrears have not been paid even after the expiry of 90 days from the date of the order. If the above amount is not paid immediately on receipt of this notice, recovery action will be initiated to realise the arrears in accordance with the provisions of the GST Act, 2017 by:'
       : 'The taxpayer is hereby informed that arrears are pending. If the arrears remain unpaid after the expiry of 90 days from the date of the order and no appeal has been filed, recovery action will be initiated to realise the dues in accordance with the provisions of the GST Act, 2017, by:'), { align: 'justify', firstLineIndent: true, spacingAfter: 100, keepNext: true })
