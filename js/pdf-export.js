@@ -169,18 +169,35 @@ var PDF_NOTICE_SIZE = 14;
 var PDF_NOTICE_LINE = 21;
 function pdfNoticePara(ctx, text, y, opts) {
   opts = Object.assign({ size: PDF_NOTICE_SIZE, lineHeight: PDF_NOTICE_LINE }, opts);
-  if (!opts.firstLineIndent) return pdfPara(ctx, text, y, opts);
-  /* First-line indent (the Word notice's 0.5in tab): the first line wraps
-     0.5in narrower, the rest use the full width. */
-  var doc = ctx.doc, indent = 36, full = ctx.rightX - ctx.marginX;
+  if (opts.align) return pdfPara(ctx, text, y, opts);   // centred / right-aligned lines are never justified
+  /* Justified body text (every line except a paragraph's last, like Word's
+     "justify"), with an optional first-line indent (the Word notice's 0.5in
+     tab): the first line wraps 0.5in narrower, the rest use the full width. */
+  var doc = ctx.doc, full = ctx.rightX - ctx.marginX, indent = opts.firstLineIndent ? 36 : 0;
+  var str = String(text == null ? '' : text);
   doc.setFont(PDF_FONT, opts.bold ? 'bold' : 'normal'); doc.setFontSize(opts.size);
-  var first = doc.splitTextToSize(String(text), full - indent)[0] || '';
-  var rest = String(text).slice(first.length).replace(/^\s+/, '');
-  var restLines = rest ? doc.splitTextToSize(rest, full) : [];
-  var height = (1 + restLines.length) * opts.lineHeight;
+  var lines;
+  if (indent) {
+    var first = doc.splitTextToSize(str, full - indent)[0] || '';
+    var rest = str.slice(first.length).replace(/^\s+/, '');
+    lines = [first].concat(rest ? doc.splitTextToSize(rest, full) : []);
+  } else {
+    lines = doc.splitTextToSize(str, full);
+  }
+  var height = lines.length * opts.lineHeight;
   y = pdfEnsureSpace(ctx, y, height);
-  doc.text(first, ctx.marginX + indent, y);
-  if (restLines.length) doc.text(restLines, ctx.marginX, y + opts.lineHeight);
+  lines.forEach(function (line, i) {
+    var x0 = ctx.marginX + (i === 0 ? indent : 0), w = full - (i === 0 ? indent : 0), ly = y + i * opts.lineHeight;
+    var words = line.trim().split(/\s+/);
+    if (i < lines.length - 1 && words.length > 1) {
+      var used = words.reduce(function (sum, wd) { return sum + doc.getTextWidth(wd); }, 0);
+      var gap = (w - used) / (words.length - 1);
+      var x = x0;
+      words.forEach(function (wd) { doc.text(wd, x, ly); x += doc.getTextWidth(wd) + gap; });
+    } else {
+      doc.text(line, x0, ly);
+    }
+  });
   return y + height + (opts.spacingAfter != null ? opts.spacingAfter : 4);
 }
 
@@ -223,7 +240,17 @@ function pdfNoticeNoteBlock(ctx, y) {
     var lines = doc.splitTextToSize(t, ctx.rightX - ctx.marginX - indent);
     y = pdfEnsureSpace(ctx, y, lines.length * PDF_NOTICE_LINE);
     pdfArrowBullet(ctx, ctx.marginX + 14, y);
-    doc.text(lines, ctx.marginX + indent, y);
+    var bw = ctx.rightX - ctx.marginX - indent;
+    lines.forEach(function (line, i) {
+      var words = line.trim().split(/\s+/), ly = y + i * PDF_NOTICE_LINE;
+      if (i < lines.length - 1 && words.length > 1) {
+        var used = words.reduce(function (sum, wd) { return sum + doc.getTextWidth(wd); }, 0);
+        var gap = (bw - used) / (words.length - 1), x = ctx.marginX + indent;
+        words.forEach(function (wd) { doc.text(wd, x, ly); x += doc.getTextWidth(wd) + gap; });
+      } else {
+        doc.text(line, ctx.marginX + indent, ly);
+      }
+    });
     y += lines.length * PDF_NOTICE_LINE + 3;
   });
   return y + 14;

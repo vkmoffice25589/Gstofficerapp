@@ -500,7 +500,7 @@ function buildNoticeDocx(notice, cfg) {
   var subText = 'TNGST Act 2017 – ' + (cfg.circle || '') + ' – Tvl.' + legalName + ', GSTIN : ' + gstin
     + ' - Arrears of Tax outstanding – ' + (isUrgent ? 'Urgent' : 'Intimation') + ' Notice issued – Regarding.';
   var refText = isUrgent ? 'This Office DRC-07 issued' : 'Statutory Orders issued in form DRC 07';
-  var actionList = noticeActionList.map(function (t) { return nPara('✓  ' + t, { spacingAfter: 60, keepLines: true }); }).join('');
+  var actionList = noticeActionList.map(function (t) { return nPara('✓  ' + t, { align: 'justify', spacingAfter: 60, keepLines: true }); }).join('');
   var tableOpts = { noBorder: true, noHeaderShade: true, size: NOTICE_SIZE, line: NOTICE_LINE };
 
   var toBlock = wKeepTogetherBlock(
@@ -514,14 +514,14 @@ function buildNoticeDocx(notice, cfg) {
     + nHeading(isUrgent ? 'URGENT NOTICE' : 'INTIMATION NOTICE', { align: 'center', spacingAfter: 20 })
     + nHeading('NON-PAYMENT OF GST ARREARS', { align: 'center', spacingAfter: 200 })
     + toBlock
-    + wTable([[{ text: 'Sub', bold: true }, subText], [{ text: 'Ref', bold: true }, refText]], [900, 8806], tableOpts)
+    + wTable([[{ text: 'Sub', bold: true }, { text: subText, align: 'justify' }], [{ text: 'Ref', bold: true }, { text: refText, align: 'justify' }]], [900, 8806], tableOpts)
     + nPara('*******', { align: 'center', spacingAfter: 120 })
     + nPara('Tvl.' + legalName + ', registered with the office of the ' + (cfg.desig || '') + ', ' + (cfg.circle || '')
       + ' is hereby informed they are in arrears of Goods and Services Tax as detailed below:', { align: 'justify', firstLineIndent: true, spacingAfter: 120, keepNext: true })
     + wTable(d.rows, [1700, 1700, 1000, 1050, 1150, 1150, 750, 1350])
     + nPara('(AMOUNT IN RS)', { align: 'right', size: 9, spacingAfter: 160 })
-    + nPara('Total Amount Payable: ' + fmt(d.total) + ' (Rupees ' + numToWords(d.total) + ' Only)', { bold: true, firstLineIndent: true, spacingAfter: 160 })
-    + (notice.details ? nPara('Remarks: ' + notice.details, { firstLineIndent: true, spacingAfter: 160 }) : '')
+    + nPara('Total Amount Payable: ' + fmt(d.total) + ' (Rupees ' + numToWords(d.total) + ' Only)', { align: 'justify', bold: true, firstLineIndent: true, spacingAfter: 160 })
+    + (notice.details ? nPara('Remarks: ' + notice.details, { align: 'justify', firstLineIndent: true, spacingAfter: 160 }) : '')
     + nPara((isUrgent
       ? 'The Taxpayer is informed that the arrears have not been paid even after the expiry of 90 days from the date of the order. If the above amount is not paid immediately on receipt of this notice, recovery action will be initiated to realise the arrears in accordance with the provisions of the GST Act, 2017 by:'
       : 'The taxpayer is hereby informed that arrears are pending. If the arrears remain unpaid after the expiry of 90 days from the date of the order and no appeal has been filed, recovery action will be initiated to realise the dues in accordance with the provisions of the GST Act, 2017, by:'), { align: 'justify', firstLineIndent: true, spacingAfter: 100, keepNext: true })
@@ -533,7 +533,7 @@ function buildNoticeDocx(notice, cfg) {
     + wKeepTogetherBlock(
       nPara('To,')
       + nPara(legalName, { bold: true })
-      + (notice.address ? nPara(notice.address, { keepLines: true }) : '')
+      + (notice.address ? nPara(notice.address, { align: 'justify', keepLines: true }) : '')
     );
   return buildDocxBlob(body, { noHeader: true });
 }
