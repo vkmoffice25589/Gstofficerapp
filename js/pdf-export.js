@@ -149,17 +149,17 @@ function finishPdfDoc(ctx) {
    up like a real two-column letterhead instead of two independent text
    blocks that can drift apart. */
 function pdfFromTo(ctx, y, fromLines, toLines) {
-  var size = ctx.house ? PDF_NOTICE_SIZE : PDF_BODY_SIZE, lh = ctx.house ? PDF_NOTICE_LINE : PDF_LINE_HEIGHT;
+  var size = ctx.house ? PDF_NOTICE_SIZE : PDF_BODY_SIZE, lh = ctx.house ? 17 : PDF_LINE_HEIGHT;   // house: regular weight, single-spaced
   var colW = (ctx.rightX - ctx.marginX - 20) / 2;
   var leftX = ctx.marginX, rightColX = ctx.marginX + colW + 20;
   var leftY = y, rightY = y;
   fromLines.forEach(function (l) {
-    ctx.doc.setFont(PDF_FONT, l.bold ? 'bold' : 'normal'); ctx.doc.setFontSize(l.size || size);
+    ctx.doc.setFont(PDF_FONT, (l.bold && !ctx.house) ? 'bold' : 'normal'); ctx.doc.setFontSize(l.size || size);
     var lines = ctx.doc.splitTextToSize(l.text, colW);
     ctx.doc.text(lines, leftX, leftY); leftY += lines.length * lh;
   });
   toLines.forEach(function (l) {
-    ctx.doc.setFont(PDF_FONT, l.bold ? 'bold' : 'normal'); ctx.doc.setFontSize(l.size || size);
+    ctx.doc.setFont(PDF_FONT, (l.bold && !ctx.house) ? 'bold' : 'normal'); ctx.doc.setFontSize(l.size || size);
     var lines = ctx.doc.splitTextToSize(l.text, colW);
     ctx.doc.text(lines, rightColX, rightY); rightY += lines.length * lh;
   });
@@ -545,10 +545,10 @@ async function buildBankDrc13PdfDoc(b, cfg) {
   y = pdfPara(ctx, 'Notice to a third person under section 79(1)(c)', y, { align: 'center', bold: true, spacingAfter: 16 });
 
   y = pdfEnsureSpace(ctx, y, 4 * PDF_LINE_HEIGHT);
-  y = pdfPara(ctx, 'To', y, { spacingAfter: 0 });
-  y = pdfPara(ctx, 'THE BRANCH MANAGER,', y, { bold: true, spacingAfter: 0 });
-  y = pdfPara(ctx, (b.bankName || '—').toUpperCase(), y, { bold: true, spacingAfter: 0 });
-  y = pdfPara(ctx, 'IFSC : ' + (b.ifsc || '—'), y, { spacingAfter: 12 });
+  y = pdfPara(ctx, 'To', y, { lineHeight: 17, spacingAfter: 0 });
+  y = pdfPara(ctx, 'THE BRANCH MANAGER,', y, { lineHeight: 17, spacingAfter: 0 });
+  y = pdfPara(ctx, (b.bankName || '—').toUpperCase(), y, { lineHeight: 17, spacingAfter: 0 });
+  y = pdfPara(ctx, 'IFSC : ' + (b.ifsc || '—'), y, { lineHeight: 17, spacingAfter: 12 });
 
   y = pdfEnsureSpace(ctx, y, 7 * PDF_LINE_HEIGHT);
   y = pdfPara(ctx, 'Particulars of defaulter:-', y, { bold: true, spacingAfter: 0 });
