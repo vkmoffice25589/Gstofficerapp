@@ -188,8 +188,79 @@ function pdfSignatureBlock(ctx, y, cfg, opts) {
   return y + (opts.spacingAfter != null ? opts.spacingAfter : 14);
 }
 
+/* Letter title: underlined, regular weight (mirrors the Word letters). */
+function pdfLetterTitle(ctx, y) {
+  var doc = ctx.doc, t = 'COMMERCIAL TAXES DEPARTMENT';
+  y = pdfEnsureSpace(ctx, y, 40);
+  doc.setFont(PDF_FONT, 'normal'); doc.setFontSize(13);
+  doc.text(t, ctx.pageW / 2, y, { align: 'center' });
+  var w = doc.getTextWidth(t);
+  doc.setDrawColor(0, 0, 0); doc.setLineWidth(0.6);
+  doc.line(ctx.pageW / 2 - w / 2, y + 2, ctx.pageW / 2 + w / 2, y + 2);
+  return y + 24;
+}
+
+/* Centred, bold, underlined reference line used on the bank covering letter. */
+function pdfCenteredRef(ctx, y, text) {
+  var doc = ctx.doc;
+  y = pdfEnsureSpace(ctx, y, PDF_NOTICE_LINE + 10);
+  doc.setFont(PDF_FONT, 'bold'); doc.setFontSize(PDF_NOTICE_SIZE);
+  doc.text(text, ctx.pageW / 2, y, { align: 'center' });
+  var w = doc.getTextWidth(text);
+  doc.setDrawColor(0, 0, 0); doc.setLineWidth(0.7);
+  doc.line(ctx.pageW / 2 - w / 2, y + 2, ctx.pageW / 2 + w / 2, y + 2);
+  return y + PDF_NOTICE_LINE + 4;
+}
+
+/* Numbered, justified paragraph with a hanging number; text between ** markers
+   prints bold (mirrors wNumPara() in docx-export.js). */
+function pdfNumPara(ctx, n, text, y, spacingAfter) {
+  var doc = ctx.doc, size = PDF_NOTICE_SIZE, lh = PDF_NOTICE_LINE, indent = 27;
+  var x0 = ctx.marginX + indent, width = ctx.rightX - x0;
+  var words = [];
+  String(text).split('**').forEach(function (seg, i) {
+    seg.split(/\s+/).filter(Boolean).forEach(function (w) { words.push({ w: w, bold: i % 2 === 1 }); });
+  });
+  doc.setFont(PDF_FONT, 'normal'); doc.setFontSize(size);
+  var space = doc.getTextWidth(' ');
+  words.forEach(function (t) { doc.setFont(PDF_FONT, t.bold ? 'bold' : 'normal'); t.width = doc.getTextWidth(t.w); });
+  var lines = [], cur = [], curW = 0;
+  words.forEach(function (t) {
+    var add = cur.length ? space + t.width : t.width;
+    if (cur.length && curW + add > width) { lines.push(cur); cur = [t]; curW = t.width; }
+    else { cur.push(t); curW += add; }
+  });
+  if (cur.length) lines.push(cur);
+  y = pdfEnsureSpace(ctx, y, Math.min(lines.length, 2) * lh);
+  doc.setFont(PDF_FONT, 'normal'); doc.text(n + '.', ctx.marginX, y);
+  lines.forEach(function (ln, i) {
+    if (i > 0) { y = pdfEnsureSpace(ctx, y + lh, lh); }
+    var used = ln.reduce(function (sum, t) { return sum + t.width; }, 0);
+    var gap = (i < lines.length - 1 && ln.length > 1) ? (width - used) / (ln.length - 1) : space;
+    var x = x0;
+    ln.forEach(function (t) { doc.setFont(PDF_FONT, t.bold ? 'bold' : 'normal'); doc.text(t.w, x, y); x += t.width + gap; });
+  });
+  return y + lh + (spacingAfter != null ? spacingAfter : 6);
+}
+
 /* Shared officer closing block for the two statutory bank letters. */
 function pdfOfficerClosingBlock(ctx, y, b, cfg) {
+  if (ctx.house) {
+    var doc = ctx.doc, lh = 17, rx = ctx.marginX + 170, rw = ctx.rightX - rx;
+    y = pdfEnsureSpace(ctx, y, 10 * lh + 40);
+    doc.setFont(PDF_FONT, 'normal'); doc.setFontSize(PDF_NOTICE_SIZE);
+    doc.text('Date: ' + fmtDateDot(b.date), ctx.marginX, y);
+    doc.text('Signature:', rx, y);
+    y += lh + 24;
+    doc.text('Place : ' + (cfg.city || ''), ctx.marginX, y);
+    [['Name of Proper Officer: ' + (cfg.officerName || '_______________________'), 12],
+     ['Designation: ' + (cfg.desig || ''), 0],
+     ['Office Address: ' + (cfg.addr1 || '') + ' ' + (cfg.addr2 || ''), 0]].forEach(function (row) {
+      var lines = doc.splitTextToSize(row[0], rw);
+      doc.text(lines, rx, y); y += lines.length * lh + row[1];
+    });
+    return y;
+  }
   y = pdfEnsureSpace(ctx, y, 6 * (ctx.house ? PDF_NOTICE_LINE : PDF_LINE_HEIGHT) + 40);
   y = pdfPara(ctx, 'Date: ' + fmtDate(b.date), y, { spacingAfter: 0 });
   y = pdfPara(ctx, 'Signature:', y, { spacingAfter: 16 });
@@ -411,15 +482,12 @@ async function buildBankLetterPdfDoc(b, cfg) {
   var amountWords = numToWords(b.totalAmt) + ' Only';
   var y = ctx.top;
 
-  y = pdfHeading(ctx, 'COMMERCIAL TAXES DEPARTMENT', y, { spacingAfter: 14 });
+  y = pdfLetterTitle(ctx, y);
 
   y = pdfFromTo(ctx, y,
-    [
-      { text: 'From', bold: false },
-      { text: (cfg.officerName ? cfg.officerName + ',' : '') + ' ' + (cfg.desig || ''), bold: true },
-      { text: cfg.circle || '' },
-      { text: (cfg.addr1 || '') + ' ' + (cfg.addr2 || '') }
-    ],
+    [{ text: 'From' }].concat([
+      cfg.officerName ? cfg.officerName + ',' : '', cfg.desig ? cfg.desig + ',' : '', cfg.circle ? cfg.circle + ',' : '', cfg.addr1, cfg.addr2
+    ].filter(Boolean).map(function (t) { return { text: t }; })),
     [
       { text: 'To', bold: false },
       { text: 'THE BRANCH MANAGER,', bold: true },
@@ -428,32 +496,29 @@ async function buildBankLetterPdfDoc(b, cfg) {
     ].concat(b.branchAddr ? [{ text: b.branchAddr }] : [])
   );
 
-  y = pdfDocRefLine(ctx, y, b.gstin, b.date);
+  y = pdfCenteredRef(ctx, y, 'GSTIN: ' + (b.gstin || '—') + (noticeFinancialYear(b.date) ? '/' + noticeFinancialYear(b.date) : '') + ' dated: ' + fmtDateDot(b.date));
   y = pdfPara(ctx, 'Sir / Madam,', y, { spacingAfter: 4 });
 
   var subText = 'GST Act, 2017 – ' + (cfg.circle || '') + ' – Tvl. ' + (b.legalName || '—') + ', GSTIN – ' + (b.gstin || '—')
     + ' – Arrear of Tax Rs. ' + fmt0(b.totalAmt) + ' – Arrears of Tax outstanding against the dealer – Form DRC-13 issued – Regarding.';
   y = pdfTable(ctx, {
     startY: y,
-    body: [
-      [{ content: 'Sub', styles: { fontStyle: 'bold' } }, subText],
-      [{ content: 'Ref', styles: { fontStyle: 'bold' } }, 'This Office DRC-07 issued']
-    ],
-    theme: 'plain',
-    styles: { fontSize: PDF_NOTICE_SIZE },
+    body: [['Sub', subText], ['Ref', 'This Office DRC-07 issued']],
+    theme: 'grid',
+    styles: { fontSize: PDF_NOTICE_SIZE, cellPadding: 4 },
     columnStyles: { 0: { cellWidth: 45 } }
   }) + 10;
 
   y = pdfPara(ctx, '*******', y, { align: 'center', spacingAfter: 6 });
 
   var paras = [
-    'Tvl. ' + (b.legalName || '—') + (tradeName && tradeName !== b.legalName ? ' (' + tradeName + ')' : '') + ', having an Current Account / CC with your Bank, is an assessee on the file of the ' + (cfg.desig || '') + ', ' + (cfg.circle || '') + ' and is in arrears of tax of Rs. ' + fmt0(b.totalAmt) + '/- (Rupees ' + amountWords + ') under the GST Act.',
-    'Under Section 79(1)(c) of the SGST Act, 2017 read with Section 142(7)(a) of the SGST Act, 2017 & Rule 145(1) of the SGST Rules, 2017, you are required to remit to me forthwith the sum of Rs. ' + fmt0(b.totalAmt) + '/- (Rupees ' + amountWords + ') from out of money you hold for or on account of the defaulter. If you do not hold money to that extent now, the amount available may be remitted now and the balance remitted as and when funds become available, as first charge to the Government. If the dealer is having an Overdraft account, you may require to remit the amount. A statutory demand notice in Form DRC-13 is enclosed.',
+    'Tvl. ' + (b.legalName || '—') + (tradeName && tradeName !== b.legalName ? ' (' + tradeName + ')' : '') + ', having an Current Account / CC with your Bank, is an assessee on the file of the ' + (cfg.desig || '') + ', ' + (cfg.circle || '') + ' and is in arrears of tax of **Rs. ' + fmt0(b.totalAmt) + '/- (Rupees ' + amountWords + ')** under the GST Act.',
+    'Under Section 79(1)(c) of the SGST Act, 2017 read with Section 142(7)(a) of the SGST Act, 2017 & Rule 145(1) of the SGST Rules, 2017, you are required to remit to me forthwith the sum of **Rs. ' + fmt0(b.totalAmt) + '/- (Rupees ' + amountWords + ')** from out of money you hold for or on account of the defaulter. If you do not hold money to that extent now, the amount available may be remitted now and the balance remitted as and when funds become available, as first charge to the Government. If the dealer is having an Overdraft account, you may require to remit the amount. A statutory demand notice in Form DRC-13 is enclosed.',
     'You are also prohibited from paying any money to the assessee from the Current Account (or) Overdraft Account, till the above notice is withdrawn.',
     'I request you to give the account balance as on today or on receiving the Form DRC-13, whichever is later.',
     'The above mentioned demand amount or the amount available in the taxpayer bank account has to be issued as a Demand Draft or Bank Cheque in favour of the undersigned.'
   ];
-  paras.forEach(function (t) { y = pdfPara(ctx, t, y, { firstLineIndent: true, spacingAfter: 8 }); });
+  paras.forEach(function (t, i) { y = pdfNumPara(ctx, i + 1, t, y, 8); });
 
   y = pdfPara(ctx, 'Encl: Form DRC-13.', y, { spacingAfter: 20 });
   y = pdfOfficerClosingBlock(ctx, y, b, cfg);
@@ -473,7 +538,7 @@ async function buildBankReleasePdfDoc(b, cfg) {
   var isTemporary = RELEASE_TEMPORARY_REASONS.indexOf(b.releasedReason) !== -1;
   var y = ctx.top;
 
-  y = pdfHeading(ctx, 'COMMERCIAL TAXES DEPARTMENT', y, { spacingAfter: 14 });
+  y = pdfLetterTitle(ctx, y);
 
   y = pdfFromTo(ctx, y,
     [
@@ -658,7 +723,7 @@ async function buildThirdPartyReleasePdfDoc(tp, cfg) {
   var isTemporary = RELEASE_TEMPORARY_REASONS.indexOf(tp.releasedReason) !== -1;
   var y = ctx.top;
 
-  y = pdfHeading(ctx, 'COMMERCIAL TAXES DEPARTMENT', y, { spacingAfter: 14 });
+  y = pdfLetterTitle(ctx, y);
   y = pdfFromTo(ctx, y,
     [
       { text: 'From' },

@@ -543,6 +543,13 @@ function noticeRefBar(notice) {
     { tabRight: DOCX_CONTENT_WIDTH, spacingAfter: 160, keepNext: true });
 }
 
+/* Numbered, justified paragraph with a hanging number ("1.", "2." ...). Text
+   between ** markers prints bold (used for the amounts in words). */
+function wNumPara(n, text, opts) {
+  var runs = [{ text: n + '.\t' }].concat(String(text).split('**').map(function (t, i) { return { text: t, bold: i % 2 === 1 }; }).filter(function (r) { return r.text; }));
+  return nPara('', Object.assign({ runs: runs, align: 'justify', hanging: { left: 540, hang: 540 }, spacingAfter: 120 }, opts));
+}
+
 /* Same reference line for the bank / third-party / property documents. */
 function docRefLine(gstin, date) {
   var fy = noticeFinancialYear(date);
@@ -667,7 +674,7 @@ function buildBankReleaseDocxInner(b, cfg) {
     ? 'In view of the above, the Bank Attachment issued by this circle in the reference 1st cited is temporarily withdrawn and all action (lien, freeze, etc.) that has been imposed to withhold the account may be withdrawn.'
     : 'In view of the above, the Bank Attachment issued by this circle in the reference 1st cited is released and all action (lien, freeze, etc.) that has been imposed to withhold the account may be withdrawn.';
 
-  var body = wHeading('COMMERCIAL TAXES DEPARTMENT', { align: 'center', size: 13, spacingAfter: 160 })
+  var body = wHeading('COMMERCIAL TAXES DEPARTMENT', { align: 'center', size: 13, bold: false, underline: true, spacingAfter: 160 })
     + wKeepTogetherBlock(wFromToGrid(fromText, toText, 4300, 5406)) + wSpacer(4)
     + docRefLine(b.gstin, b.releasedDate || todayISO())
     + wPara('Sir/Madam,', { spacingAfter: 100, keepNext: true })
@@ -723,13 +730,14 @@ function bankAttTradeName(b) {
    and Form DRC-13) — Date / Signature / Place / Officer / Designation /
    Office Address, kept together as one unit. */
 function wOfficerClosingBlock(b, cfg) {
-  var inner = wPara('Date: ' + fmtDate(b.date), { spacingAfter: 20 })
-    + wPara('Signature:', { spacingAfter: 200 })
-    + wPara('Place : ' + (cfg.city || ''), { spacingAfter: 20 })
-    + wPara('Name of Proper Officer: ' + (cfg.officerName || '_______________________'), { spacingAfter: 200 })
-    + wPara('Designation: ' + (cfg.desig || ''), { spacingAfter: 20 })
-    + wPara('Office Address: ' + (cfg.addr1 || '') + ' ' + (cfg.addr2 || ''), { spacingAfter: 20, keepLines: true });
-  return wKeepTogetherBlock(inner);
+  var P = function (t, o) { return wPara(t, Object.assign({ line: 240, spacingAfter: 0 }, o)); };
+  var left = P('Date: ' + fmtDateDot(b.date), { spacingAfter: 360 })
+    + P('Place : ' + (cfg.city || ''));
+  var right = P('Signature:', { spacingAfter: 360 })
+    + P('Name of Proper Officer: ' + (cfg.officerName || '_______________________'), { spacingAfter: 200 })
+    + P('Designation: ' + (cfg.desig || ''))
+    + P('Office Address: ' + (cfg.addr1 || '') + ' ' + (cfg.addr2 || ''), { keepLines: true });
+  return wKeepTogetherBlock(wFromToGrid(left, right, 3400, DOCX_CONTENT_WIDTH - 3400));
 }
 
 /* ===== 2a. Bank Attachment — Covering Letter to Bank =====
@@ -739,10 +747,12 @@ function wOfficerClosingBlock(b, cfg) {
 function buildBankLetterDocxInner(b, cfg) {
   var tradeName = bankAttTradeName(b);
   var amountWords = numToWords(b.totalAmt) + ' Only';
-  var fromText = wPara('From', { line: 240, spacingAfter: 0 })
-    + wPara((cfg.officerName ? cfg.officerName + ',' : '') + '     ' + (cfg.desig || ''), { line: 240, spacingAfter: 0 })
-    + wPara(cfg.circle || '', { line: 240, spacingAfter: 0 })
-    + wPara((cfg.addr1 || '') + ' ' + (cfg.addr2 || ''), { line: 240, spacingAfter: 0 });
+  var fromLine = function (t) { return t ? wPara(t, { line: 240, spacingAfter: 0 }) : ''; };
+  var fromText = fromLine('From')
+    + fromLine(cfg.officerName ? cfg.officerName + ',' : '')
+    + fromLine(cfg.desig ? cfg.desig + ',' : '')
+    + fromLine(cfg.circle ? cfg.circle + ',' : '')
+    + fromLine(cfg.addr1) + fromLine(cfg.addr2);
   var toText = wPara('To', { line: 240, spacingAfter: 0 })
     + wPara('THE BRANCH MANAGER,', { line: 240, spacingAfter: 0 })
     + wPara((b.bankName || '—').toUpperCase(), { line: 240, spacingAfter: 0 })
@@ -752,17 +762,17 @@ function buildBankLetterDocxInner(b, cfg) {
   var subText = 'GST Act, 2017 – ' + (cfg.circle || '') + ' – Tvl. ' + (b.legalName || '—') + ', GSTIN – ' + (b.gstin || '—')
     + ' – Arrear of Tax Rs. ' + fmt0(b.totalAmt) + ' – Arrears of Tax outstanding against the dealer – Form DRC-13 issued – Regarding.';
 
-  var body = wHeading('COMMERCIAL TAXES DEPARTMENT', { align: 'center', size: 13, spacingAfter: 160 })
+  var body = wHeading('COMMERCIAL TAXES DEPARTMENT', { align: 'center', size: 13, bold: false, underline: true, spacingAfter: 160 })
     + wKeepTogetherBlock(wFromToGrid(fromText, toText, 4300, 5406)) + wSpacer(4)
-    + docRefLine(b.gstin, b.date)
+    + wPara('GSTIN: ' + (b.gstin || '—') + (noticeFinancialYear(b.date) ? '/' + noticeFinancialYear(b.date) : '') + ' dated: ' + fmtDateDot(b.date), { align: 'center', bold: true, underline: true, spacingAfter: 160, keepNext: true })
     + wPara('Sir / Madam,', { spacingAfter: 100, keepNext: true })
-    + wTable([[{ text: 'Sub', bold: true }, { text: subText, align: 'justify' }], [{ text: 'Ref', bold: true }, { text: 'This Office DRC-07 issued', align: 'justify' }]], [900, 8806], { noBorder: true, noHeaderShade: true, size: NOTICE_SIZE, line: NOTICE_LINE })
+    + wTable([['Sub', { text: subText, align: 'justify' }], ['Ref', { text: 'This Office DRC-07 issued', align: 'justify' }]], [900, DOCX_CONTENT_WIDTH - 900], { noHeaderShade: true, autoFit: false, size: NOTICE_SIZE, line: 276 })
     + wPara('*******', { align: 'center', spacingAfter: 160 })
-    + wPara('Tvl. ' + (b.legalName || '—') + (tradeName && tradeName !== b.legalName ? ' (' + tradeName + ')' : '') + ', having an Current Account / CC with your Bank, is an assessee on the file of the ' + (cfg.desig || '') + ', ' + (cfg.circle || '') + ' and is in arrears of tax of Rs. ' + fmt0(b.totalAmt) + '/- (Rupees ' + amountWords + ') under the GST Act.', { align: 'justify', firstLineIndent: true, spacingAfter: 120 })
-    + wPara('Under Section 79(1)(c) of the SGST Act, 2017 read with Section 142(7)(a) of the SGST Act, 2017 & Rule 145(1) of the SGST Rules, 2017, you are required to remit to me forthwith the sum of Rs. ' + fmt0(b.totalAmt) + '/- (Rupees ' + amountWords + ') from out of money you hold for or on account of the defaulter. If you do not hold money to that extent now, the amount available may be remitted now and the balance remitted as and when funds become available, as first charge to the Government. If the dealer is having an Overdraft account, you may require to remit the amount. A statutory demand notice in Form DRC-13 is enclosed.', { align: 'justify', firstLineIndent: true, spacingAfter: 120 })
-    + wPara('You are also prohibited from paying any money to the assessee from the Current Account (or) Overdraft Account, till the above notice is withdrawn.', { align: 'justify', firstLineIndent: true, spacingAfter: 120 })
-    + wPara('I request you to give the account balance as on today or on receiving the Form DRC-13, whichever is later.', { align: 'justify', firstLineIndent: true, spacingAfter: 120 })
-    + wPara('The above mentioned demand amount or the amount available in the taxpayer bank account has to be issued as a Demand Draft or Bank Cheque in favour of the undersigned.', { align: 'justify', firstLineIndent: true, spacingAfter: 200, keepNext: true })
+    + wNumPara(1, 'Tvl. ' + (b.legalName || '—') + (tradeName && tradeName !== b.legalName ? ' (' + tradeName + ')' : '') + ', having an Current Account / CC with your Bank, is an assessee on the file of the ' + (cfg.desig || '') + ', ' + (cfg.circle || '') + ' and is in arrears of tax of **Rs. ' + fmt0(b.totalAmt) + '/- (Rupees ' + amountWords + ')** under the GST Act.', { spacingAfter: 120 })
+    + wNumPara(2, 'Under Section 79(1)(c) of the SGST Act, 2017 read with Section 142(7)(a) of the SGST Act, 2017 & Rule 145(1) of the SGST Rules, 2017, you are required to remit to me forthwith the sum of **Rs. ' + fmt0(b.totalAmt) + '/- (Rupees ' + amountWords + ')** from out of money you hold for or on account of the defaulter. If you do not hold money to that extent now, the amount available may be remitted now and the balance remitted as and when funds become available, as first charge to the Government. If the dealer is having an Overdraft account, you may require to remit the amount. A statutory demand notice in Form DRC-13 is enclosed.', { spacingAfter: 120 })
+    + wNumPara(3, 'You are also prohibited from paying any money to the assessee from the Current Account (or) Overdraft Account, till the above notice is withdrawn.', { spacingAfter: 120 })
+    + wNumPara(4, 'I request you to give the account balance as on today or on receiving the Form DRC-13, whichever is later.', { spacingAfter: 120 })
+    + wNumPara(5, 'The above mentioned demand amount or the amount available in the taxpayer bank account has to be issued as a Demand Draft or Bank Cheque in favour of the undersigned.', { spacingAfter: 200, keepNext: true })
     + wPara('Encl: Form DRC-13.', { spacingAfter: 300 })
     + wOfficerClosingBlock(b, cfg);
   return buildDocxBlob(body, { noHeader: true });
@@ -853,7 +863,7 @@ function buildThirdPartyReleaseDocxInner(tp, cfg) {
     ? 'In view of the above, the notice issued to you in the reference 1st cited is temporarily withdrawn and you are no longer required to withhold any amount on account of the defaulter till further orders.'
     : 'In view of the above, the notice issued to you in the reference 1st cited is released and you are no longer required to withhold any amount on account of the defaulter.';
 
-  var body = wHeading('COMMERCIAL TAXES DEPARTMENT', { align: 'center', size: 13, spacingAfter: 160 })
+  var body = wHeading('COMMERCIAL TAXES DEPARTMENT', { align: 'center', size: 13, bold: false, underline: true, spacingAfter: 160 })
     + wKeepTogetherBlock(wFromToGrid(fromText, toText, 4300, 5406)) + wSpacer(4)
     + docRefLine(tp.defaulterGstin, tp.releasedDate || todayISO())
     + wPara('Sir/Madam,', { spacingAfter: 100, keepNext: true })
