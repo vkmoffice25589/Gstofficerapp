@@ -236,7 +236,7 @@ function wTable(rows, colWidths, opts) {
       cell = typeof cell === 'object' ? cell : { text: cell };
       var bold = isHeaderRow || cell.bold ? true : false;
       var align = normJc(cell.align || (opts.noHeaderShade ? 'left' : (ci === 0 ? 'left' : 'center')));
-      var shade = isHeaderRow ? '<w:shd w:val="clear" w:fill="EDF1F7"/>' : '';
+      var shade = '';   // plain white header (bold text), black grid — same look as the notice's "To" box
       var vAlign = '<w:vAlign w:val="center"/>';
       return '<w:tc><w:tcPr><w:tcW w:w="' + widths[ci] + '" w:type="dxa"/>' + shade + cellMar + vAlign + '</w:tcPr>'
         + '<w:p><w:pPr><w:spacing w:after="0" w:line="' + (opts.line || DOCX_LINE) + '" w:lineRule="auto"/><w:jc w:val="' + align + '"/></w:pPr>'
@@ -246,7 +246,7 @@ function wTable(rows, colWidths, opts) {
     return '<w:tr>' + trPr + tcs + '</w:tr>';
   }).join('');
 
-  var bc = opts.borderColor || 'C8D3E0';
+  var bc = opts.borderColor || '000000';
   var borders = opts.noBorder
     ? '<w:tblBorders><w:top w:val="none"/><w:left w:val="none"/><w:bottom w:val="none"/><w:right w:val="none"/><w:insideH w:val="none"/><w:insideV w:val="none"/></w:tblBorders>'
     : '<w:tblBorders><w:top w:val="single" w:sz="4" w:color="' + bc + '"/><w:left w:val="single" w:sz="4" w:color="' + bc + '"/>'
@@ -486,7 +486,7 @@ var noticeActionList = [
   'Attaching properties under section 79(d) of the GST act 2017.',
   'Detaining Properties under section 79(d) of the GST act 2017.',
   'Action will be taken under section 79(e) of the GST act 2017 & CRR Act 1890.',
-  'Filing an application before the Court Of Magistrate under section 79(f) of the GST act 2017.'
+  'Filing an application before the Court of Magistrate under section 79(f) of the GST act 2017.'
 ];
 
 /* Shared signature block — Designation / Circle / City, right-aligned, kept

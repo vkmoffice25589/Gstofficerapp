@@ -114,8 +114,8 @@ function pdfTable(ctx, opts) {
   opts.startY = opts.startY;
   var base = {
     theme: opts.theme || 'grid',
-    styles: Object.assign({ font: PDF_FONT, fontSize: 9.5, cellPadding: 4, lineColor: [200, 211, 224], lineWidth: opts.theme === 'plain' ? 0 : 0.5 }, opts.styles || {}),
-    headStyles: Object.assign({ fillColor: [237, 241, 247], textColor: [15, 23, 42], fontStyle: 'bold' }, opts.headStyles || {}),
+    styles: Object.assign({ font: PDF_FONT, fontSize: 9.5, cellPadding: 4, lineColor: [0, 0, 0], lineWidth: opts.theme === 'plain' ? 0 : 0.5 }, opts.styles || {}),
+    headStyles: Object.assign({ fillColor: [255, 255, 255], textColor: [0, 0, 0], fontStyle: 'bold' }, opts.headStyles || {}),
     margin: { left: ctx.marginX, right: PDF_MARGIN },
     tableWidth: 'auto',
     rowPageBreak: 'avoid'
