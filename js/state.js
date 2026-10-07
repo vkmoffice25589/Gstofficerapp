@@ -51,13 +51,13 @@ var STORAGE_KEYS = {
 };
 
 var defaultSettings = {
-  division: 'Chennai Division',
-  circle: 'Villivakkam Assessment Circle',
+  division: 'Chennai Commissionerate South',
+  circle: 'AAAAAA Assessment Circle',
   addr1: '350 Fifth Avenue, 21st Floor,',
-  addr2: 'New York, NY 10118, USA.',
-  desig: 'Assistant Commissioner (ST),(FAC)',
-  city: 'New York',
-  officerName: 'Thiru. Sachin Tendulkar'
+  addr2: 'Patel Road, 1st Street,',
+  desig: 'Assistant Commissioner (ST),',
+  city: 'Chennai',
+  officerName: 'Thiru. XXXXX CCCCCCCC'
 };
 
 function getSettings() {
