@@ -345,6 +345,8 @@ async function buildNoticePdfDoc(notice, cfg) {
   y = P('Tvl.' + legalName + ', registered with the office of the ' + (cfg.desig || '') + ', ' + (cfg.circle || '')
     + ' is hereby informed they are in arrears of Goods and Services Tax as detailed below:', y, { firstLineIndent: true, spacingAfter: 8 });
 
+  y = pdfPara(ctx, '(AMOUNT IN RS)', y, { align: 'right', size: 8, spacingAfter: 2 });
+
   var rows = (notice.cases || []).map(function (c) {
     return [c.taxPeriod || '—', c.demandId || '—', fmtDate(c.dcr_date || c.demandDate),
       fmt0(c.pend_igst), fmt0(c.pend_cgst), fmt0(c.pend_sgst), fmt0(c.pend_cess), fmt0(c.pend_total)];
@@ -367,7 +369,6 @@ async function buildNoticePdfDoc(notice, cfg) {
     columnStyles: { 3: { halign: 'right' }, 4: { halign: 'right' }, 5: { halign: 'right' }, 6: { halign: 'right' }, 7: { halign: 'right' } }
   }) + 12;
 
-  y = pdfPara(ctx, '(AMOUNT IN RS)', y, { align: 'right', size: 8, spacingAfter: 4 });
   y = P('Total Amount Payable: Rs. ' + fmt0(sums.total) + ' (Rupees ' + numToWords(sums.total) + ' Only)', y, { bold: true, firstLineIndent: true, spacingAfter: 8 });
   if (notice.details) y = P('Remarks: ' + notice.details, y, { firstLineIndent: true, spacingAfter: 8 });
 

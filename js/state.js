@@ -60,13 +60,18 @@ var defaultSettings = {
   officerName: 'Thiru. XXXXX CCCCCCCC'
 };
 
+/* Designation / circle go into running text ("... office of the <desig>, <circle>"), so a trailing
+   comma typed in Settings is dropped here rather than printed as ",,". */
 function getSettings() {
+  var out;
   try {
     var s = localStorage.getItem(STORAGE_KEYS.settings);
-    return s ? Object.assign({}, defaultSettings, JSON.parse(s)) : Object.assign({}, defaultSettings);
+    out = s ? Object.assign({}, defaultSettings, JSON.parse(s)) : Object.assign({}, defaultSettings);
   } catch (e) {
-    return Object.assign({}, defaultSettings);
+    out = Object.assign({}, defaultSettings);
   }
+  ['desig', 'circle'].forEach(function (k) { out[k] = String(out[k] == null ? '' : out[k]).replace(/[,\s]+$/, ''); });
+  return out;
 }
 
 function saveSettingsObject(s) {

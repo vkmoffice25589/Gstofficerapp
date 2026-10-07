@@ -143,7 +143,70 @@ function wKeepTogetherBlock(innerXml, width) {
     + '</w:tcMar></w:tcPr>' + innerXml + (needsTrailingPara ? wSpacer(2) : '') + '</w:tc></w:tr></w:tbl>';
 }
 
-/* opts: noBorder, noHeaderShade, size/line (cell font pt / line spacing; default is the shared table size), borderColor (hex, default light blue-grey), colWidths given in dxa. Every table:
+/* ===== Content-fitted table columns =====
+   Word lays out a fixed-width table exactly as told, so hand-picked column
+   widths wrap real data badly (demand IDs and tax periods split mid-word,
+   "ASSESSMENT" / "CESS" headers break). wFitColumns() estimates each
+   column's text width in Times New Roman, then picks the largest font size
+   (from the table's size down to 8pt) at which every column can hold its
+   longest unbreakable word, and shares out the remaining width in
+   proportion to what each column would like. The PDF does the same
+   automatically through jspdf-autotable. */
+function docxTextWidth(str, size, bold) {
+  var em = 0;
+  String(str == null ? '' : str).split('').forEach(function (ch) {
+    if (/[0-9]/.test(ch)) em += 0.5;
+    else if (/[,.:;'|!]/.test(ch)) em += 0.27;
+    else if (ch === ' ') em += 0.25;
+    else if (/[-–]/.test(ch)) em += 0.33;
+    else if (ch === '/') em += 0.28;
+    else if (/[A-Z]/.test(ch)) em += bold ? 0.74 : 0.68;
+    else if (/[a-z]/.test(ch)) em += bold ? 0.5 : 0.46;
+    else em += 0.55;
+  });
+  return em * size * 20;   // twips
+}
+
+var DOCX_FIT_PAD = 160;    // left + right cell padding in a fitted table (80 each)
+
+function wFitColumns(rows, n, startSize, total, headerBold) {
+  function measure(size) {
+    var min = [], ideal = [], c;
+    for (c = 0; c < n; c++) { min[c] = 0; ideal[c] = 0; }
+    rows.forEach(function (row, ri) {
+      row.forEach(function (cell, ci) {
+        if (ci >= n) return;
+        var o = (cell && typeof cell === 'object') ? cell : { text: cell };
+        var bold = (ri === 0 && headerBold) || o.bold;
+        var text = String(o.text == null ? '' : o.text);
+        var longest = 0;
+        text.split(/\s+/).forEach(function (w) { longest = Math.max(longest, docxTextWidth(w, size, bold)); });
+        min[ci] = Math.max(min[ci], longest * 1.06);   // 6% safety margin: Word's real glyph widths differ slightly from the estimate
+        ideal[ci] = Math.max(ideal[ci], docxTextWidth(text, size, bold));
+      });
+    });
+    for (c = 0; c < n; c++) { min[c] += DOCX_FIT_PAD; ideal[c] = Math.max(ideal[c] + DOCX_FIT_PAD, min[c]); }
+    return { min: min, ideal: ideal };
+  }
+  var size = startSize, m = measure(size), sumMin = m.min.reduce(function (a, b) { return a + b; }, 0);
+  while (sumMin > total && size > 8) { size -= 0.5; m = measure(size); sumMin = m.min.reduce(function (a, b) { return a + b; }, 0); }
+  var sumIdeal = m.ideal.reduce(function (a, b) { return a + b; }, 0);
+  var widths;
+  if (sumMin >= total) {                       // even 8pt does not fit: shrink proportionally
+    widths = m.min.map(function (w) { return w * total / sumMin; });
+  } else if (sumIdeal <= total) {              // everything fits on one line: spread the spare width
+    widths = m.ideal.map(function (w) { return w + (total - sumIdeal) * w / sumIdeal; });
+  } else {                                     // give each column its minimum plus a share of the rest
+    var want = m.ideal.map(function (w, i) { return w - m.min[i]; });
+    var sumWant = want.reduce(function (a, b) { return a + b; }, 0), extra = total - sumMin;
+    widths = m.min.map(function (w, i) { return w + extra * want[i] / sumWant; });
+  }
+  widths = widths.map(function (w) { return Math.floor(w); });
+  widths[widths.length - 1] += total - widths.reduce(function (a, b) { return a + b; }, 0);
+  return { widths: widths, size: size };
+}
+
+/* opts: noBorder, noHeaderShade, size/line (cell font pt / line spacing; default is the shared table size), borderColor (hex, default light blue-grey), colWidths given in dxa (the starting hint — bordered data tables are re-fitted to their content, see wFitColumns; autoFit:false opts out). Every table:
      - repeats its header row on every page it spans (w:tblHeader)
      - never splits a single row across a page break (w:cantSplit)
      - gets real cell padding (w:tcMar) instead of Word's bare default
@@ -156,10 +219,16 @@ function wTable(rows, colWidths, opts) {
   var rawTotal = colWidths.reduce(function (s, w) { return s + w; }, 0);
   var scale = rawTotal > DOCX_CONTENT_WIDTH ? (DOCX_CONTENT_WIDTH / rawTotal) : 1;
   var widths = colWidths.map(function (w) { return Math.round(w * scale); });
+  var tblSize = opts.size || DOCX_TABLE_SIZE;
+  var fitted = !opts.noBorder && opts.autoFit !== false && rows.length > 0;
+  if (fitted) {
+    var fit = wFitColumns(rows, colWidths.length, tblSize, DOCX_CONTENT_WIDTH, !opts.noHeaderShade);
+    widths = fit.widths; tblSize = fit.size;
+  }
   var totalWidth = widths.reduce(function (s, w) { return s + w; }, 0);
   var grid = widths.map(function (w) { return '<w:gridCol w:w="' + w + '"/>'; }).join('');
 
-  var cellMar = '<w:tcMar><w:top w:w="60" w:type="dxa"/><w:left w:w="120" w:type="dxa"/><w:bottom w:w="60" w:type="dxa"/><w:right w:w="120" w:type="dxa"/></w:tcMar>';
+  var cellMar = '<w:tcMar><w:top w:w="60" w:type="dxa"/><w:left w:w="' + (fitted ? DOCX_FIT_PAD / 2 : 120) + '" w:type="dxa"/><w:bottom w:w="60" w:type="dxa"/><w:right w:w="' + (fitted ? DOCX_FIT_PAD / 2 : 120) + '" w:type="dxa"/></w:tcMar>';
 
   var trs = rows.map(function (row, ri) {
     var isHeaderRow = ri === 0 && !opts.noHeaderShade;
@@ -171,7 +240,7 @@ function wTable(rows, colWidths, opts) {
       var vAlign = '<w:vAlign w:val="center"/>';
       return '<w:tc><w:tcPr><w:tcW w:w="' + widths[ci] + '" w:type="dxa"/>' + shade + cellMar + vAlign + '</w:tcPr>'
         + '<w:p><w:pPr><w:spacing w:after="0" w:line="' + (opts.line || DOCX_LINE) + '" w:lineRule="auto"/><w:jc w:val="' + align + '"/></w:pPr>'
-        + '<w:r>' + wRunProps({ bold: bold, size: opts.size || DOCX_TABLE_SIZE }) + '<w:t xml:space="preserve">' + xmlEsc(cell.text) + '</w:t></w:r></w:p></w:tc>';
+        + '<w:r>' + wRunProps({ bold: bold, size: tblSize }) + '<w:t xml:space="preserve">' + xmlEsc(cell.text) + '</w:t></w:r></w:p></w:tc>';
     }).join('');
     var trPr = '<w:trPr><w:cantSplit/>' + (isHeaderRow ? '<w:tblHeader/>' : '') + '</w:trPr>';
     return '<w:tr>' + trPr + tcs + '</w:tr>';
@@ -548,8 +617,9 @@ function buildNoticeDocx(notice, cfg) {
     + nPara('*******', { align: 'center', spacingAfter: 120 })
     + nPara('Tvl.' + legalName + ', registered with the office of the ' + (cfg.desig || '') + ', ' + (cfg.circle || '')
       + ' is hereby informed they are in arrears of Goods and Services Tax as detailed below:', { align: 'justify', firstLineIndent: true, spacingAfter: 120, keepNext: true })
+    + nPara('(AMOUNT IN RS)', { align: 'right', size: 9, spacingAfter: 40, keepNext: true })
     + wTable(d.rows, [1700, 1700, 1000, 1050, 1150, 1150, 750, 1350])
-    + nPara('(AMOUNT IN RS)', { align: 'right', size: 9, spacingAfter: 160 })
+    + wSpacer(6)
     + nPara('Total Amount Payable: ' + fmt(d.total) + ' (Rupees ' + numToWords(d.total) + ' Only)', { align: 'justify', bold: true, firstLineIndent: true, spacingAfter: 160 })
     + (notice.details ? nPara('Remarks: ' + notice.details, { align: 'justify', firstLineIndent: true, spacingAfter: 160 }) : '')
     + nPara((isUrgent
