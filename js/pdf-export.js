@@ -486,7 +486,7 @@ async function buildBankLetterPdfDoc(b, cfg) {
 
   y = pdfFromTo(ctx, y,
     [{ text: 'From' }].concat([
-      cfg.officerName ? cfg.officerName + ',' : '', cfg.desig ? cfg.desig + ',' : '', cfg.circle ? cfg.circle + ',' : '', cfg.addr1, cfg.addr2
+      cfg.officerName ? cfg.officerName + ',' : '', cfg.desig ? cfg.desig + ',' : '', cfg.circle ? cfg.circle + ',' : '', cfg.addr1, cfg.addr2, cfg.email ? 'Mail : ' + cfg.email : ''
     ].filter(Boolean).map(function (t) { return { text: t }; })),
     [
       { text: 'To', bold: false },

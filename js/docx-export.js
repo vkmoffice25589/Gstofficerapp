@@ -752,7 +752,8 @@ function buildBankLetterDocxInner(b, cfg) {
     + fromLine(cfg.officerName ? cfg.officerName + ',' : '')
     + fromLine(cfg.desig ? cfg.desig + ',' : '')
     + fromLine(cfg.circle ? cfg.circle + ',' : '')
-    + fromLine(cfg.addr1) + fromLine(cfg.addr2);
+    + fromLine(cfg.addr1) + fromLine(cfg.addr2)
+    + fromLine(cfg.email ? 'Mail : ' + cfg.email : '');
   var toText = wPara('To', { line: 240, spacingAfter: 0 })
     + wPara('THE BRANCH MANAGER,', { line: 240, spacingAfter: 0 })
     + wPara((b.bankName || '—').toUpperCase(), { line: 240, spacingAfter: 0 })

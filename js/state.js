@@ -57,7 +57,8 @@ var defaultSettings = {
   addr2: 'Patel Road, 1st Street,',
   desig: 'Assistant Commissioner (ST),',
   city: 'Chennai',
-  officerName: 'Thiru. XXXXX CCCCCCCC'
+  officerName: 'Thiru. XXXXX CCCCCCCC',
+  email: 'acxxxxxx.ctd@tn.gov.in'
 };
 
 /* Designation / circle go into running text ("... office of the <desig>, <circle>"), so a trailing
